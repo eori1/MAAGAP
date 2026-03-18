@@ -1,0 +1,148 @@
+"""Multi-stage predictive framework: RF, XGBoost, LSTM, and Meta-ensemble.
+
+Stage 1 — Ensemble classifiers (Random Forest + XGBoost) on static features
+Stage 2 — LSTM on temporal quarterly monitoring sequences
+Meta    — Stacking classifier that fuses Stage 1 & Stage 2 probabilities
+"""
+
+import numpy as np
+import os, warnings
+
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.linear_model import LogisticRegression
+from xgboost import XGBClassifier
+import joblib
+
+from .config import (
+    SEED, MODELS_DIR,
+    RF_N_ESTIMATORS, RF_MAX_DEPTH,
+    XGB_N_ESTIMATORS, XGB_MAX_DEPTH, XGB_LEARNING_RATE,
+    LSTM_UNITS, LSTM_EPOCHS, LSTM_BATCH_SIZE, LSTM_MAX_TIMESTEPS,
+)
+
+
+# ---------------------------------------------------------------------------
+# Stage 1 — Tree-based ensemble classifiers
+# ---------------------------------------------------------------------------
+
+def train_random_forest(X_train, y_train, task="binary"):
+    n_classes = len(np.unique(y_train))
+    rf = RandomForestClassifier(
+        n_estimators=RF_N_ESTIMATORS,
+        max_depth=RF_MAX_DEPTH,
+        class_weight="balanced",
+        random_state=SEED,
+        n_jobs=-1,
+    )
+    rf.fit(X_train, y_train)
+    joblib.dump(rf, os.path.join(MODELS_DIR, f"rf_{task}.pkl"))
+    return rf
+
+
+def train_xgboost(X_train, y_train, task="binary"):
+    n_classes = len(np.unique(y_train))
+    params = dict(
+        n_estimators=XGB_N_ESTIMATORS,
+        max_depth=XGB_MAX_DEPTH,
+        learning_rate=XGB_LEARNING_RATE,
+        random_state=SEED,
+        eval_metric="logloss",
+        use_label_encoder=False,
+        n_jobs=-1,
+    )
+    if n_classes > 2:
+        params["objective"] = "multi:softprob"
+        params["num_class"] = n_classes
+    else:
+        params["objective"] = "binary:logistic"
+        # Handle imbalance
+        pos = (y_train == 1).sum()
+        neg = (y_train == 0).sum()
+        params["scale_pos_weight"] = neg / max(pos, 1)
+
+    xgb = XGBClassifier(**params)
+    xgb.fit(X_train, y_train)
+    joblib.dump(xgb, os.path.join(MODELS_DIR, f"xgb_{task}.pkl"))
+    return xgb
+
+
+# ---------------------------------------------------------------------------
+# Stage 2 — LSTM for temporal dependencies
+# ---------------------------------------------------------------------------
+
+def _build_lstm(n_features, n_classes=2):
+    os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+    warnings.filterwarnings("ignore", category=DeprecationWarning)
+
+    import tensorflow as tf
+    tf.get_logger().setLevel("ERROR")
+    from tensorflow.keras.models import Sequential
+    from tensorflow.keras.layers import (
+        LSTM as KerasLSTM, Dense, Dropout, Masking, BatchNormalization,
+    )
+    from tensorflow.keras.optimizers import Adam
+
+    model = Sequential([
+        Masking(mask_value=0.0, input_shape=(LSTM_MAX_TIMESTEPS, n_features)),
+        KerasLSTM(LSTM_UNITS, return_sequences=True),
+        Dropout(0.3),
+        KerasLSTM(LSTM_UNITS // 2, return_sequences=False),
+        Dropout(0.3),
+        BatchNormalization(),
+        Dense(32, activation="relu"),
+        Dropout(0.2),
+        Dense(1, activation="sigmoid") if n_classes == 2
+            else Dense(n_classes, activation="softmax"),
+    ])
+
+    loss = "binary_crossentropy" if n_classes == 2 else "sparse_categorical_crossentropy"
+    model.compile(optimizer=Adam(learning_rate=1e-3), loss=loss, metrics=["accuracy"])
+    return model
+
+
+def train_lstm(X_train, y_train, X_val, y_val, task="binary"):
+    n_features = X_train.shape[2]
+    n_classes = len(np.unique(y_train))
+
+    model = _build_lstm(n_features, n_classes if n_classes > 2 else 2)
+
+    # Class weights for imbalance
+    from sklearn.utils.class_weight import compute_class_weight
+    cw = compute_class_weight("balanced", classes=np.unique(y_train), y=y_train)
+    cw_dict = dict(enumerate(cw))
+
+    import tensorflow as tf
+    early_stop = tf.keras.callbacks.EarlyStopping(
+        monitor="val_loss", patience=8, restore_best_weights=True,
+    )
+
+    history = model.fit(
+        X_train, y_train,
+        validation_data=(X_val, y_val),
+        epochs=LSTM_EPOCHS,
+        batch_size=LSTM_BATCH_SIZE,
+        class_weight=cw_dict,
+        callbacks=[early_stop],
+        verbose=0,
+    )
+
+    model.save(os.path.join(MODELS_DIR, f"lstm_{task}.keras"))
+    return model, history
+
+
+# ---------------------------------------------------------------------------
+# Meta-ensemble — Stacking classifier
+# ---------------------------------------------------------------------------
+
+def train_meta_ensemble(rf_proba, xgb_proba, lstm_proba, y_train):
+    """Logistic-regression meta-learner on stacked Stage 1 + Stage 2 outputs."""
+    meta_X = np.column_stack([rf_proba, xgb_proba, lstm_proba])
+    meta = LogisticRegression(max_iter=500, random_state=SEED)
+    meta.fit(meta_X, y_train)
+    joblib.dump(meta, os.path.join(MODELS_DIR, "meta_ensemble.pkl"))
+    return meta
+
+
+def predict_meta(meta, rf_proba, xgb_proba, lstm_proba):
+    meta_X = np.column_stack([rf_proba, xgb_proba, lstm_proba])
+    return meta.predict(meta_X), meta.predict_proba(meta_X)

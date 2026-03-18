@@ -1,0 +1,47 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Trained model artifacts (large; regenerate via `python main.py`)
+models/*.pkl
+models/*.keras
+
+# Thesis manuscript (private academic document)
+*.docx
+
+# PPDO template forms (not used by ML pipeline)
+CNI-Template.xlsx
+FORM-TABULATED.xlsx
+GPPA-S-FORM.xlsx
+LBAC-FORM_2026-1-1.xlsx
+List-of-All-On-Going-and-To-Be-Implemented-Projects-template.xlsx
+
+# Empty staging directory
+data/raw/
+
+# IDE / Editor
+.vscode/
+.cursor/
+.idea/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+Desktop.ini
+.DS_Store
+
+# Jupyter checkpoints
+.ipynb_checkpoints/
+
+# Environment
+.env
+venv/
+.venv/
+env/
