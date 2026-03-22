@@ -1,8 +1,8 @@
 """Multi-stage predictive framework: RF, XGBoost, LSTM, and Meta-ensemble.
 
-Stage 1 — Ensemble classifiers (Random Forest + XGBoost) on static features
-Stage 2 — LSTM on temporal quarterly monitoring sequences
-Meta    — Stacking classifier that fuses Stage 1 & Stage 2 probabilities
+Stage 1 -- Ensemble classifiers (Random Forest + XGBoost) on static features
+Stage 2 -- LSTM on temporal quarterly monitoring sequences
+Meta    -- Stacking classifier that fuses Stage 1 & Stage 2 probabilities
 """
 
 import numpy as np
@@ -10,6 +10,7 @@ import os, warnings
 
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import RandomizedSearchCV
 from xgboost import XGBClassifier
 import joblib
 
@@ -20,54 +21,98 @@ from .config import (
     LSTM_UNITS, LSTM_EPOCHS, LSTM_BATCH_SIZE, LSTM_MAX_TIMESTEPS,
 )
 
+_RF_PARAM_DIST = {
+    "n_estimators": [200, 300, 400, 500],
+    "max_depth": [10, 15, 20, 25, None],
+    "min_samples_split": [2, 5, 10],
+    "min_samples_leaf": [1, 2, 4],
+    "max_features": ["sqrt", "log2", 0.5, 0.7],
+}
+
+_XGB_PARAM_DIST = {
+    "n_estimators": [200, 300, 400, 500],
+    "max_depth": [6, 8, 10, 12],
+    "learning_rate": [0.01, 0.05, 0.08, 0.1, 0.15],
+    "subsample": [0.7, 0.8, 0.9, 1.0],
+    "colsample_bytree": [0.7, 0.8, 0.9, 1.0],
+    "reg_alpha": [0, 0.1, 0.5, 1.0],
+    "reg_lambda": [0.5, 1.0, 2.0],
+    "min_child_weight": [1, 3, 5],
+}
+
 
 # ---------------------------------------------------------------------------
-# Stage 1 — Tree-based ensemble classifiers
+# Stage 1 -- Tree-based ensemble classifiers
 # ---------------------------------------------------------------------------
 
-def train_random_forest(X_train, y_train, task="binary"):
+def train_random_forest(X_train, y_train, task="binary", tune=True):
     n_classes = len(np.unique(y_train))
-    rf = RandomForestClassifier(
-        n_estimators=RF_N_ESTIMATORS,
-        max_depth=RF_MAX_DEPTH,
-        class_weight="balanced",
-        random_state=SEED,
-        n_jobs=-1,
-    )
-    rf.fit(X_train, y_train)
+    scoring = "roc_auc" if n_classes == 2 else "f1_macro"
+
+    if tune:
+        base = RandomForestClassifier(
+            class_weight="balanced", random_state=SEED, n_jobs=-1,
+        )
+        search = RandomizedSearchCV(
+            base, _RF_PARAM_DIST,
+            n_iter=25, cv=3, scoring=scoring,
+            random_state=SEED, n_jobs=-1, verbose=0,
+        )
+        search.fit(X_train, y_train)
+        rf = search.best_estimator_
+        print(f"    RF best params: {search.best_params_}")
+    else:
+        rf = RandomForestClassifier(
+            n_estimators=RF_N_ESTIMATORS, max_depth=RF_MAX_DEPTH,
+            class_weight="balanced", random_state=SEED, n_jobs=-1,
+        )
+        rf.fit(X_train, y_train)
+
     joblib.dump(rf, os.path.join(MODELS_DIR, f"rf_{task}.pkl"))
     return rf
 
 
-def train_xgboost(X_train, y_train, task="binary"):
+def train_xgboost(X_train, y_train, task="binary", tune=True):
     n_classes = len(np.unique(y_train))
-    params = dict(
-        n_estimators=XGB_N_ESTIMATORS,
-        max_depth=XGB_MAX_DEPTH,
-        learning_rate=XGB_LEARNING_RATE,
-        random_state=SEED,
-        eval_metric="logloss",
-        use_label_encoder=False,
-        n_jobs=-1,
+    scoring = "roc_auc" if n_classes == 2 else "f1_macro"
+
+    base_params = dict(
+        random_state=SEED, eval_metric="logloss",
+        use_label_encoder=False, n_jobs=-1,
     )
     if n_classes > 2:
-        params["objective"] = "multi:softprob"
-        params["num_class"] = n_classes
+        base_params["objective"] = "multi:softprob"
+        base_params["num_class"] = n_classes
     else:
-        params["objective"] = "binary:logistic"
-        # Handle imbalance
+        base_params["objective"] = "binary:logistic"
         pos = (y_train == 1).sum()
         neg = (y_train == 0).sum()
-        params["scale_pos_weight"] = neg / max(pos, 1)
+        base_params["scale_pos_weight"] = neg / max(pos, 1)
 
-    xgb = XGBClassifier(**params)
-    xgb.fit(X_train, y_train)
+    if tune:
+        base = XGBClassifier(**base_params)
+        search = RandomizedSearchCV(
+            base, _XGB_PARAM_DIST,
+            n_iter=25, cv=3, scoring=scoring,
+            random_state=SEED, n_jobs=-1, verbose=0,
+        )
+        search.fit(X_train, y_train)
+        xgb = search.best_estimator_
+        print(f"    XGB best params: {search.best_params_}")
+    else:
+        base_params.update(
+            n_estimators=XGB_N_ESTIMATORS, max_depth=XGB_MAX_DEPTH,
+            learning_rate=XGB_LEARNING_RATE,
+        )
+        xgb = XGBClassifier(**base_params)
+        xgb.fit(X_train, y_train)
+
     joblib.dump(xgb, os.path.join(MODELS_DIR, f"xgb_{task}.pkl"))
     return xgb
 
 
 # ---------------------------------------------------------------------------
-# Stage 2 — LSTM for temporal dependencies
+# Stage 2 -- LSTM for temporal dependencies
 # ---------------------------------------------------------------------------
 
 def _build_lstm(n_features, n_classes=2):
@@ -85,12 +130,12 @@ def _build_lstm(n_features, n_classes=2):
     model = Sequential([
         Masking(mask_value=0.0, input_shape=(LSTM_MAX_TIMESTEPS, n_features)),
         KerasLSTM(LSTM_UNITS, return_sequences=True),
-        Dropout(0.3),
+        Dropout(0.35),
         KerasLSTM(LSTM_UNITS // 2, return_sequences=False),
-        Dropout(0.3),
+        Dropout(0.35),
         BatchNormalization(),
         Dense(32, activation="relu"),
-        Dropout(0.2),
+        Dropout(0.25),
         Dense(1, activation="sigmoid") if n_classes == 2
             else Dense(n_classes, activation="softmax"),
     ])
@@ -106,7 +151,6 @@ def train_lstm(X_train, y_train, X_val, y_val, task="binary"):
 
     model = _build_lstm(n_features, n_classes if n_classes > 2 else 2)
 
-    # Class weights for imbalance
     from sklearn.utils.class_weight import compute_class_weight
     cw = compute_class_weight("balanced", classes=np.unique(y_train), y=y_train)
     cw_dict = dict(enumerate(cw))
@@ -131,7 +175,7 @@ def train_lstm(X_train, y_train, X_val, y_val, task="binary"):
 
 
 # ---------------------------------------------------------------------------
-# Meta-ensemble — Stacking classifier
+# Meta-ensemble -- Stacking classifier
 # ---------------------------------------------------------------------------
 
 def train_meta_ensemble(rf_proba, xgb_proba, lstm_proba, y_train):

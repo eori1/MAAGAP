@@ -12,7 +12,6 @@ from sklearn.preprocessing import LabelEncoder, MinMaxScaler
 from .config import LSTM_MAX_TIMESTEPS, RISK_LABELS
 
 
-# Columns used as static features for tree-based models
 _STATIC_NUMERIC = [
     "approved_budget", "planned_duration_months", "start_month",
     "has_contractor", "contractor_reliability", "agency_capacity",
@@ -32,7 +31,6 @@ def _add_engineered_features(df):
     df["is_infrastructure"] = (df["project_type"] == "Infrastructure").astype(float)
     df["is_typhoon_start"] = df["start_month"].isin([6, 7, 8, 9, 10, 11]).astype(float)
 
-    # Key interaction: infrastructure projects in typhoon season with low contractor quality
     df["infra_x_typhoon"] = df["is_infrastructure"] * df["typhoon_exposure"]
     df["infra_x_budget"] = df["is_infrastructure"] * df["budget_log"]
     df["contractor_x_typhoon"] = (1 - df["contractor_reliability"]) * df["typhoon_exposure"]
@@ -40,16 +38,23 @@ def _add_engineered_features(df):
     df["low_contractor_flag"] = (df["contractor_reliability"] < 0.5).astype(float)
     df["high_budget_flag"] = (df["approved_budget"] > df["approved_budget"].median()).astype(float)
     df["agency_risk"] = 1.0 - df["agency_capacity"]
+
+    df["contractor_x_agency"] = (1 - df["contractor_reliability"]) * df["agency_risk"]
+    df["infra_x_low_contractor"] = df["is_infrastructure"] * df["low_contractor_flag"]
+    df["typhoon_x_budget"] = df["typhoon_exposure"] * df["budget_log"] / 20.0
+    df["econ_pressure"] = np.abs(df["cpi_change"]) + np.abs(df["cmrpi_change"])
+
     df["composite_risk_features"] = (
-        df["is_infrastructure"] * 0.3
-        + df["high_budget_flag"] * 0.2
-        + df["low_contractor_flag"] * 0.2
+        df["is_infrastructure"] * 0.25
+        + df["high_budget_flag"] * 0.15
+        + df["low_contractor_flag"] * 0.20
         + df["is_typhoon_start"] * 0.15
         + df["agency_risk"] * 0.15
+        + (df["econ_pressure"] / df["econ_pressure"].max()) * 0.10
     )
     return df
 
-# Per-timestep features for LSTM
+
 _TEMPORAL_FEATURES = [
     "planned_progress_pct", "actual_progress_pct", "slippage_pct",
     "expenditure_ratio", "issues_count",
@@ -58,19 +63,15 @@ _TEMPORAL_FEATURES = [
 
 
 def build_static_features(df_projects):
-    """Label-encode categoricals + engineered interactions → feature matrix.
-
-    Tree-based models handle raw numeric ranges natively and don't benefit
-    from MinMax scaling; label encoding is preferred over one-hot to avoid
-    sparse high-dimensional splits.
-    """
+    """Label-encode categoricals + engineered interactions -> feature matrix."""
     df = _add_engineered_features(df_projects)
 
     engineered_cols = [
         "budget_log", "is_infrastructure", "is_typhoon_start",
         "infra_x_typhoon", "infra_x_budget", "contractor_x_typhoon",
         "budget_x_cpi_change", "low_contractor_flag", "high_budget_flag",
-        "agency_risk", "composite_risk_features",
+        "agency_risk", "contractor_x_agency", "infra_x_low_contractor",
+        "typhoon_x_budget", "econ_pressure", "composite_risk_features",
     ]
 
     label_encoders = {}
@@ -88,16 +89,12 @@ def build_static_features(df_projects):
     ], axis=1)
     feature_names = list(X.columns)
 
-    # No scaling — trees split on raw values; LSTM uses its own scaler
     scaler = None
     return X.values.astype(np.float32), feature_names, scaler, label_encoders
 
 
 def build_temporal_sequences(df_projects, df_quarterly):
-    """Pad/truncate quarterly records into fixed-length 3-D tensor for LSTM.
-
-    Returns shape (n_projects, LSTM_MAX_TIMESTEPS, n_features).
-    """
+    """Pad/truncate quarterly records into fixed-length 3-D tensor for LSTM."""
     n_features = len(_TEMPORAL_FEATURES)
     project_ids = df_projects["project_id"].values
     n = len(project_ids)

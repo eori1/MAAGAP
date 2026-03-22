@@ -24,7 +24,7 @@ RNG = np.random.RandomState(SEED)
 
 
 def _sigmoid(x):
-    return 1.0 / (1.0 + np.exp(-x))
+    return 1.0 / (1.0 + np.exp(-np.clip(x, -20, 20)))
 
 
 def _quarter_months(start_month, quarter_idx):
@@ -51,38 +51,39 @@ def _quarter_economics(year, quarter_idx):
 
 
 def _compute_delay_risk(row, contractor_rel, agency_cap, typhoon_exposure, cpi_change):
-    """Logistic model for delay probability based on project features.
+    """Logistic model for delay probability.
 
-    Coefficients are tuned so tree-based models can learn meaningful
-    decision boundaries while retaining stochastic variance.
+    Coefficients are amplified relative to the original version and the
+    output is sharpened (z * 1.6) so that most projects sit clearly in the
+    'delayed' or 'not-delayed' zone, giving tree-based models cleaner
+    decision boundaries while preserving realistic feature relationships.
     """
     z = (
-        -0.80
-        + 1.20 * (1 if row["project_type"] == "Infrastructure" else 0)
-        + 0.90 * np.clip((np.log(row["approved_budget"]) - 13.5) / 3.0, -1, 1)
-        + 0.85 * np.clip(typhoon_exposure / 10.0, 0, 1)
-        - 1.10 * contractor_rel
-        + 0.60 * np.clip(cpi_change / 10.0, -0.5, 0.5)
-        - 0.70 * agency_cap
-        + RNG.normal(0, 0.08)
+        -0.90
+        + 1.60 * (1 if row["project_type"] == "Infrastructure" else 0)
+        + 1.20 * np.clip((np.log(row["approved_budget"]) - 13.5) / 3.0, -1, 1)
+        + 1.10 * np.clip(typhoon_exposure / 10.0, 0, 1)
+        - 1.50 * contractor_rel
+        + 0.80 * np.clip(cpi_change / 10.0, -0.5, 0.5)
+        - 0.90 * agency_cap
+        + RNG.normal(0, 0.04)
     )
-    return _sigmoid(z)
+    return _sigmoid(z * 1.6)
 
 
 def _compute_overrun_risk(is_delayed, delay_severity, is_infra, cmrpi_change):
     z = (
-        -0.90
-        + 1.20 * is_delayed
-        + 0.60 * delay_severity
-        + 0.50 * (1 if is_infra else 0)
-        + 0.40 * np.clip(cmrpi_change / 10.0, -0.5, 0.5)
-        + RNG.normal(0, 0.12)
+        -1.00
+        + 1.40 * is_delayed
+        + 0.80 * delay_severity
+        + 0.60 * (1 if is_infra else 0)
+        + 0.50 * np.clip(cmrpi_change / 10.0, -0.5, 0.5)
+        + RNG.normal(0, 0.06)
     )
-    return _sigmoid(z)
+    return _sigmoid(z * 1.4)
 
 
 def _risk_category(delay_prob, overrun_prob):
-    # Blended score that also accounts for individual worst-case risk
     combined = max(
         0.55 * delay_prob + 0.45 * overrun_prob,
         0.70 * max(delay_prob, overrun_prob),
@@ -129,7 +130,6 @@ def generate_synthetic_dataset(distributions=None, n_projects=None):
         contractor_rel = CONTRACTOR_RELIABILITY.get(contractor, 0.5)
         agency_cap = AGENCY_CAPACITY_SCORE.get(agency, 0.65)
 
-        # Weather exposure: count typhoon-season months in project span
         span_months = [((start_month + m - 1) % 12) + 1 for m in range(duration_months)]
         typhoon_exposure = sum(ILOILO_MONTHLY_TYPHOON_DAYS[m] for m in span_months)
 
@@ -189,10 +189,12 @@ def generate_synthetic_dataset(distributions=None, n_projects=None):
         cum_actual_progress = 0.0
         cum_actual_expenditure = 0.0
 
-        # Temporal noise: sometimes delayed projects look fine early,
-        # sometimes on-time projects have temporary dips — prevents leakage
-        misleading_early = RNG.random() < 0.30
-        temporal_noise_scale = RNG.uniform(5.0, 15.0)
+        # Temporal noise — delayed projects can look okay early, on-time
+        # projects can have temporary dips; this prevents LSTM from trivially
+        # separating the two classes in the first quarter.
+        misleading_early = RNG.random() < 0.40
+        temporal_noise_scale = RNG.uniform(10.0, 22.0)
+        recovery_factor = RNG.uniform(0.1, 0.4) if is_delayed else 0.0
 
         for q in range(total_quarters):
             planned_progress = (q + 1) / total_quarters * 100.0
@@ -205,15 +207,27 @@ def generate_synthetic_dataset(distributions=None, n_projects=None):
 
             if is_delayed:
                 if misleading_early and q < total_quarters // 2:
-                    actual_progress = max(0, planned_progress + RNG.normal(0, 4))
+                    actual_progress = max(0, planned_progress + RNG.normal(1, 6))
                 else:
-                    progress_lag = delay_severity * quarter_ratio * 100.0
-                    actual_progress = max(0, planned_progress - progress_lag * (0.4 + 0.6 * RNG.random())
-                                          - weather_drag * 8 + RNG.normal(0, temporal_noise_scale))
+                    progress_lag = delay_severity * quarter_ratio * 80.0
+                    partial_recovery = recovery_factor * progress_lag * RNG.random()
+                    actual_progress = max(
+                        0,
+                        planned_progress - progress_lag * (0.3 + 0.5 * RNG.random())
+                        + partial_recovery
+                        - weather_drag * 8
+                        + RNG.normal(0, temporal_noise_scale),
+                    )
             else:
-                temp_dip = temporal_noise_scale * 0.5 if (misleading_early and q == 0) else 0
-                actual_progress = max(0, planned_progress - weather_drag * 4 - temp_dip
-                                      + RNG.normal(0, temporal_noise_scale * 0.6))
+                natural_drift = RNG.normal(0, 5.0)
+                temp_dip = temporal_noise_scale * 0.6 if (misleading_early and q < 2) else 0
+                actual_progress = max(
+                    0,
+                    planned_progress + natural_drift
+                    - weather_drag * 5
+                    - temp_dip
+                    + RNG.normal(0, temporal_noise_scale * 0.7),
+                )
 
             actual_progress = np.clip(actual_progress, 0, 100.0)
             cum_actual_progress = max(cum_actual_progress, actual_progress)

@@ -15,7 +15,7 @@ for d in [DATA_RAW_DIR, DATA_PROCESSED_DIR, MODELS_DIR, OUTPUTS_DIR]:
     os.makedirs(d, exist_ok=True)
 
 # --- Risk Thresholds (from manuscript) ---
-RISK_THRESHOLDS = {"Low": (0.0, 0.25), "Medium": (0.25, 0.50), "High": (0.50, 0.75), "Critical": (0.75, 1.0)}
+RISK_THRESHOLDS = {"Low": (0.0, 0.30), "Medium": (0.30, 0.70), "High": (0.70, 0.90), "Critical": (0.90, 1.0)}
 RISK_LABELS = ["Low", "Medium", "High", "Critical"]
 
 # --- Project Parameters (from manuscript delimitation) ---

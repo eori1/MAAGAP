@@ -14,9 +14,8 @@ warnings.filterwarnings("ignore")
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 import numpy as np
-from sklearn.metrics import roc_curve, auc
+from sklearn.metrics import roc_curve
 
-# ---------- local modules ----------
 from maagap.config import SEED, OUTPUTS_DIR, RISK_LABELS
 from maagap.data_preprocessing import load_and_clean_ppdo, extract_distributions
 from maagap.synthetic_generator import generate_synthetic_dataset
@@ -31,8 +30,8 @@ from maagap.models import (
 from maagap.evaluation import (
     binary_metrics, regression_metrics, multiclass_metrics,
     plot_confusion_matrix, plot_roc_curves, plot_feature_importance,
-    plot_training_history, plot_risk_distribution, generate_full_report,
-    find_optimal_threshold,
+    plot_training_history, plot_risk_distribution, plot_model_comparison,
+    generate_full_report, find_optimal_threshold,
 )
 
 np.random.seed(SEED)
@@ -48,7 +47,7 @@ def main():
     banner("MAAGAP — Objective 1: Multi-Stage Predictive Framework")
 
     # ==================================================================
-    # STEP 1  — Preprocess real PPDO data
+    # STEP 1 — Preprocess real PPDO data
     # ==================================================================
     banner("Step 1/7: Loading & Cleaning Real PPDO 2026 Data")
     ppdo_df = load_and_clean_ppdo()
@@ -61,7 +60,7 @@ def main():
         print(f"    {k}: {v:.1%}")
 
     # ==================================================================
-    # STEP 2  — Generate synthetic multi-year dataset
+    # STEP 2 — Generate synthetic multi-year dataset
     # ==================================================================
     banner("Step 2/7: Generating Synthetic Dataset (2016-2025)")
     df_proj, df_qtr = generate_synthetic_dataset(distributions)
@@ -75,7 +74,7 @@ def main():
         print(f"    {cat}: {n} ({n/len(df_proj):.1%})")
 
     # ==================================================================
-    # STEP 3  — Feature engineering
+    # STEP 3 — Feature engineering
     # ==================================================================
     banner("Step 3/7: Feature Engineering")
     X_static, feat_names, static_scaler, _ = build_static_features(df_proj)
@@ -90,7 +89,7 @@ def main():
     ))
 
     # ==================================================================
-    # STEP 4  — Train / Val / Test split (70 / 15 / 15)
+    # STEP 4 — Train / Val / Test split (70 / 15 / 15)
     # ==================================================================
     banner("Step 4/7: Splitting Data (70/15/15)")
     idx_tr, idx_va, idx_te = split_data(len(df_proj))
@@ -103,38 +102,34 @@ def main():
     ydd_te = y_delay_days[idx_te]
 
     # ==================================================================
-    # STEP 5  — Train models
+    # STEP 5 — Train models (with hyperparameter tuning for trees)
     # ==================================================================
     banner("Step 5/7: Training Models")
 
-    # --- Stage 1: Random Forest ---
-    print("\n  [Stage 1a] Random Forest — delay prediction ...")
-    rf = train_random_forest(Xs_tr, yd_tr, task="delay")
+    print("\n  [Stage 1a] Random Forest — delay prediction (tuning) ...")
+    rf = train_random_forest(Xs_tr, yd_tr, task="delay", tune=True)
     rf_pred_te = rf.predict(Xs_te)
     rf_prob_te = rf.predict_proba(Xs_te)[:, 1]
     rf_prob_va = rf.predict_proba(Xs_va)[:, 1]
     print("    -> trained")
 
-    # --- Stage 1: XGBoost ---
-    print("  [Stage 1b] XGBoost — delay prediction ...")
-    xgb = train_xgboost(Xs_tr, yd_tr, task="delay")
+    print("  [Stage 1b] XGBoost — delay prediction (tuning) ...")
+    xgb = train_xgboost(Xs_tr, yd_tr, task="delay", tune=True)
     xgb_pred_te = xgb.predict(Xs_te)
     xgb_prob_te = xgb.predict_proba(Xs_te)[:, 1]
     xgb_prob_va = xgb.predict_proba(Xs_va)[:, 1]
     print("    -> trained")
 
-    # --- Stage 1: Risk multiclass (RF + XGB) ---
-    print("  [Stage 1c] Random Forest — risk categorisation ...")
-    rf_risk = train_random_forest(Xs_tr, yr_tr, task="risk")
+    print("  [Stage 1c] Random Forest — risk categorisation (tuning) ...")
+    rf_risk = train_random_forest(Xs_tr, yr_tr, task="risk", tune=True)
     rf_risk_pred_te = rf_risk.predict(Xs_te)
     print("    -> trained")
 
-    print("  [Stage 1d] XGBoost — risk categorisation ...")
-    xgb_risk = train_xgboost(Xs_tr, yr_tr, task="risk")
+    print("  [Stage 1d] XGBoost — risk categorisation (tuning) ...")
+    xgb_risk = train_xgboost(Xs_tr, yr_tr, task="risk", tune=True)
     xgb_risk_pred_te = xgb_risk.predict(Xs_te)
     print("    -> trained")
 
-    # --- Stage 2: LSTM ---
     print("  [Stage 2]  LSTM — temporal delay prediction ...")
     lstm, history = train_lstm(Xt_tr, yd_tr, Xt_va, yd_va, task="delay")
     lstm_prob_te = lstm.predict(Xt_te, verbose=0).flatten()
@@ -142,7 +137,6 @@ def main():
     lstm_prob_va = lstm.predict(Xt_va, verbose=0).flatten()
     print(f"    -> trained ({len(history.history['loss'])} epochs)")
 
-    # --- Meta-ensemble ---
     print("  [Meta]     Stacking ensemble (RF + XGB + LSTM) ...")
     meta = train_meta_ensemble(rf_prob_va, xgb_prob_va, lstm_prob_va, yd_va)
     meta_pred_te, meta_prob_te = predict_meta(meta, rf_prob_te, xgb_prob_te, lstm_prob_te)
@@ -150,12 +144,13 @@ def main():
     print("    -> trained")
 
     # ==================================================================
-    # STEP 6  — Evaluation
+    # STEP 6 — Evaluation
     # ==================================================================
     banner("Step 6/7: Evaluation — Binary Delay Prediction")
 
     all_metrics = []
     roc_data = []
+    binary_delay_metrics = []
 
     for name, y_p, y_pr in [
         ("Random Forest",    rf_pred_te,    rf_prob_te),
@@ -165,6 +160,7 @@ def main():
     ]:
         m = binary_metrics(yd_te, y_p, y_pr, label=name)
         all_metrics.append(m)
+        binary_delay_metrics.append(m)
         print(f"\n  {name}:")
         for k, v in m.items():
             if k != "Model":
@@ -173,7 +169,6 @@ def main():
         fpr, tpr, _ = roc_curve(yd_te, y_pr)
         roc_data.append((fpr, tpr, m["AUC-ROC"], name))
 
-    # --- Multiclass risk metrics ---
     banner("Evaluation — Risk Categorisation (Multiclass)")
     for name, y_p in [
         ("RF Risk",  rf_risk_pred_te),
@@ -186,9 +181,7 @@ def main():
             if k != "Model":
                 print(f"    {k:18s}: {v}")
 
-    # --- Regression MAE (delay days) ---
     banner("Evaluation — Regression (Delay Days MAE)")
-    # Use RF probability * max plausible delay as a simple regression proxy
     max_delay = df_proj["delay_days"].max()
     for name, proba in [
         ("Random Forest", rf_prob_te),
@@ -202,42 +195,30 @@ def main():
         print(f"  {name:18s} MAE: {m['MAE']:.2f} days")
 
     # ==================================================================
-    # STEP 7  — Generate visualisations & report
+    # STEP 7 — Generate visualisations & report
     # ==================================================================
-    banner("Step 7/7: Generating Outputs")
+    banner("Step 7/7: Generating Outputs (Plotly)")
 
     plot_roc_curves(roc_data, "roc_curves_delay.png")
-    print("  Saved: roc_curves_delay.png")
+    print("  Saved: roc_curves_delay.png / .html")
 
-    plot_confusion_matrix(
-        yd_te, meta_pred_te, ["Not Delayed", "Delayed"],
-        "Meta-Ensemble — Delay Prediction", "cm_meta_delay.png",
-    )
-    print("  Saved: cm_meta_delay.png")
+    plot_model_comparison(binary_delay_metrics, "model_comparison.png")
+    print("  Saved: model_comparison.png / .html")
 
-    plot_confusion_matrix(
-        yd_te, rf_pred_te, ["Not Delayed", "Delayed"],
-        "Random Forest — Delay Prediction", "cm_rf_delay.png",
-    )
-    print("  Saved: cm_rf_delay.png")
+    for name, y_p, label_set, fname in [
+        ("Meta-Ensemble", meta_pred_te, ["Not Delayed", "Delayed"], "cm_meta_delay.png"),
+        ("Random Forest",  rf_pred_te,  ["Not Delayed", "Delayed"], "cm_rf_delay.png"),
+        ("XGBoost",        xgb_pred_te, ["Not Delayed", "Delayed"], "cm_xgb_delay.png"),
+    ]:
+        plot_confusion_matrix(yd_te, y_p, label_set, f"{name} — Delay Prediction", fname)
+        print(f"  Saved: {fname}")
 
-    plot_confusion_matrix(
-        yd_te, xgb_pred_te, ["Not Delayed", "Delayed"],
-        "XGBoost — Delay Prediction", "cm_xgb_delay.png",
-    )
-    print("  Saved: cm_xgb_delay.png")
-
-    plot_confusion_matrix(
-        yr_te, rf_risk_pred_te, RISK_LABELS,
-        "Random Forest — Risk Categories", "cm_rf_risk.png",
-    )
-    print("  Saved: cm_rf_risk.png")
-
-    plot_confusion_matrix(
-        yr_te, xgb_risk_pred_te, RISK_LABELS,
-        "XGBoost — Risk Categories", "cm_xgb_risk.png",
-    )
-    print("  Saved: cm_xgb_risk.png")
+    for name, y_p, fname in [
+        ("Random Forest", rf_risk_pred_te, "cm_rf_risk.png"),
+        ("XGBoost",       xgb_risk_pred_te, "cm_xgb_risk.png"),
+    ]:
+        plot_confusion_matrix(yr_te, y_p, RISK_LABELS, f"{name} — Risk Categories", fname)
+        print(f"  Saved: {fname}")
 
     plot_feature_importance(
         rf.feature_importances_, feat_names,

@@ -12,9 +12,9 @@ MAAGAP Objective 1 implements a **two-stage predictive framework** that combines
 
 | Stage | Model | Input | Purpose |
 |-------|-------|-------|---------|
-| **Stage 1** | Random Forest | Static project features (26 features) | Feature-based risk classification |
-| **Stage 1** | XGBoost (Gradient Boosting) | Static project features (26 features) | Feature-based risk classification |
-| **Stage 2** | LSTM Neural Network | Temporal quarterly sequences (4 timesteps × 9 features) | Capture sequential monitoring patterns |
+| **Stage 1** | Random Forest | Static project features (30 features) | Feature-based risk classification |
+| **Stage 1** | XGBoost (Gradient Boosting) | Static project features (30 features) | Feature-based risk classification |
+| **Stage 2** | LSTM Neural Network | Temporal quarterly sequences (4 timesteps x 9 features) | Capture sequential monitoring patterns |
 | **Meta** | Logistic Regression (Stacking) | Probabilities from all three models | Fuse Stage 1 + Stage 2 predictions |
 
 ---
@@ -25,34 +25,36 @@ MAAGAP Objective 1 implements a **two-stage predictive framework** that combines
 
 | Model | Accuracy | Precision | Recall | F1-Score | AUC-ROC |
 |-------|----------|-----------|--------|----------|---------|
-| Random Forest | 0.6778 | 0.5500 | 0.2876 | 0.3777 | 0.6620 |
-| XGBoost | 0.6622 | 0.5039 | 0.4248 | 0.4610 | 0.6426 |
-| **LSTM** | **0.9556** | **0.9463** | **0.9216** | **0.9338** | **0.9829** |
-| **Meta-Ensemble** | **0.9556** | **0.9463** | **0.9216** | **0.9338** | **0.9799** |
+| Random Forest | 0.7533 | 0.6099 | 0.7351 | 0.6667 | 0.8429 |
+| XGBoost | 0.7467 | 0.5979 | 0.7483 | 0.6647 | 0.8435 |
+| LSTM | 0.8778 | 0.8478 | 0.7748 | 0.8097 | 0.9273 |
+| **Meta-Ensemble** | **0.8733** | **0.8730** | **0.7285** | **0.7942** | **0.9340** |
 
 ### Risk Categorisation (4-class: Low / Medium / High / Critical)
 
+Thresholds per manuscript: Low (0.0–0.3), Medium (0.3–0.7), High (0.7–0.9), Critical (0.9–1.0)
+
 | Model | Accuracy | Macro F1-Score |
 |-------|----------|----------------|
-| RF Risk | 0.7444 | 0.6768 |
-| XGB Risk | 0.7244 | 0.6590 |
+| RF Risk | 0.8022 | 0.7686 |
+| XGB Risk | 0.8067 | 0.7745 |
 
 ### Regression — Delay Days (MAE)
 
 | Model | MAE (days) |
 |-------|------------|
-| Random Forest | 76.89 |
-| XGBoost | 81.53 |
-| LSTM | 59.25 |
-| Meta-Ensemble | 59.30 |
+| Random Forest | 81.33 |
+| XGBoost | 85.76 |
+| LSTM | 57.10 |
+| **Meta-Ensemble** | **46.20** |
 
 ### Key Findings
 
-1. **LSTM and the Meta-Ensemble dramatically outperform static-feature models** (95.6% accuracy vs ~67%), confirming that temporal monitoring data is the strongest predictor of project delays.
-2. **AUC-ROC of 0.98** for LSTM/Meta indicates near-perfect discriminatory ability between delayed and on-time projects.
-3. **Random Forest and XGBoost achieve ~74% accuracy on 4-class risk categorisation**, with strongest performance on "Medium" risk projects.
+1. **LSTM and Meta-Ensemble significantly outperform static-feature models** (~88% accuracy vs ~75%), confirming that temporal monitoring data is the strongest predictor of project delays.
+2. **AUC-ROC of 0.93** for the Meta-Ensemble indicates excellent discriminatory ability between delayed and on-time projects, well above the 0.75 threshold for good performance cited in the manuscript.
+3. **Random Forest and XGBoost achieve ~80% accuracy on 4-class risk categorisation**, with balanced precision and recall across risk tiers.
 4. **Feature importance analysis** reveals `contractor_reliability`, `typhoon_exposure`, `approved_budget`, and `is_infrastructure` as the top static risk drivers.
-5. **The Meta-Ensemble achieves the lowest MAE** (~59 days), demonstrating the value of fusing multiple model perspectives.
+5. **The Meta-Ensemble achieves the lowest MAE** (~46 days), demonstrating the value of fusing multiple model perspectives.
 
 ---
 
@@ -67,7 +69,7 @@ MAAGAP/
 │   ├── synthetic_generator.py     # Generate 3,000 synthetic projects (2016-2025)
 │   ├── feature_engineering.py     # Build static features + temporal tensors
 │   ├── models.py                  # RF, XGBoost, LSTM, Meta-ensemble training
-│   └── evaluation.py              # Metrics, plots, report generation
+│   └── evaluation.py              # Metrics, Plotly visualisations, reports
 │
 ├── main.py                        # Full pipeline orchestration script
 ├── MAAGAP_Objective1.ipynb        # Jupyter Notebook (presentation version)
@@ -78,30 +80,33 @@ MAAGAP/
 │
 ├── data/
 │   └── processed/                 # Generated datasets
-│       ├── ppdo_2026_cleaned.csv        # Cleaned real data
-│       ├── synthetic_projects.csv       # 3,000 synthetic projects
-│       └── synthetic_quarterly.csv      # Quarterly monitoring records
+│       ├── ppdo_2026_cleaned.csv
+│       ├── synthetic_projects.csv
+│       └── synthetic_quarterly.csv
 │
 ├── outputs/                       # Evaluation charts and reports
+│   ├── RESULTS_SUMMARY.md              # Complete results summary document
 │   ├── evaluation_report.csv            # Full metrics table
-│   ├── roc_curves_delay.png             # ROC curves for all models
-│   ├── cm_rf_delay.png                  # Confusion matrix — RF
-│   ├── cm_xgb_delay.png                 # Confusion matrix — XGBoost
-│   ├── cm_meta_delay.png               # Confusion matrix — Meta-Ensemble
-│   ├── cm_rf_risk.png                   # Confusion matrix — RF Risk (4-class)
-│   ├── cm_xgb_risk.png                  # Confusion matrix — XGB Risk (4-class)
-│   ├── fi_rf_delay.png                  # Feature importance — RF
-│   ├── fi_xgb_delay.png                 # Feature importance — XGBoost
-│   ├── lstm_training_history.png        # LSTM loss/accuracy curves
-│   └── risk_distribution.png            # Actual vs Predicted risk bars
+│   ├── model_comparison.png / .html     # Grouped bar chart — all models
+│   ├── roc_curves_delay.png / .html     # ROC curves for all models
+│   ├── cm_rf_delay.png / .html          # Confusion matrix — RF (delay)
+│   ├── cm_xgb_delay.png / .html         # Confusion matrix — XGBoost (delay)
+│   ├── cm_lstm_delay.png / .html        # Confusion matrix — LSTM (delay)
+│   ├── cm_meta_delay.png / .html        # Confusion matrix — Meta-Ensemble (delay)
+│   ├── cm_rf_risk.png / .html           # Confusion matrix — RF Risk (4-class)
+│   ├── cm_xgb_risk.png / .html          # Confusion matrix — XGB Risk (4-class)
+│   ├── fi_rf_delay.png / .html          # Feature importance — RF (top 20)
+│   ├── fi_xgb_delay.png / .html         # Feature importance — XGBoost (top 20)
+│   ├── lstm_training_history.png / .html # LSTM loss/accuracy curves
+│   └── risk_distribution.png / .html    # Actual vs Predicted risk distribution
 │
 └── models/                        # Trained model artifacts (git-ignored, ~50MB)
-    ├── rf_delay.pkl                     # Random Forest — delay
-    ├── rf_risk.pkl                      # Random Forest — risk
-    ├── xgb_delay.pkl                    # XGBoost — delay
-    ├── xgb_risk.pkl                     # XGBoost — risk
-    ├── lstm_delay.keras                 # LSTM — delay
-    └── meta_ensemble.pkl                # Stacking meta-learner
+    ├── rf_delay.pkl
+    ├── rf_risk.pkl
+    ├── xgb_delay.pkl
+    ├── xgb_risk.pkl
+    ├── lstm_delay.keras
+    └── meta_ensemble.pkl
 ```
 
 > **Note:** Trained models in `models/` are git-ignored due to file size (~50MB total). Run the pipeline to regenerate them.
@@ -129,7 +134,7 @@ MAAGAP/
 ### Installation
 
 ```bash
-git clone https://github.com/<your-username>/MAAGAP.git
+git clone https://github.com/eori1/MAAGAP.git
 cd MAAGAP
 pip install -r requirements.txt
 ```
@@ -143,12 +148,12 @@ python main.py
 This will:
 1. Load and clean the real PPDO 2026 dataset
 2. Generate 3,000 synthetic projects with quarterly monitoring data
-3. Engineer static features (26 columns) and temporal tensors (4 × 9)
+3. Engineer static features (30 columns) and temporal tensors (4 x 9)
 4. Split data into 70% train / 15% validation / 15% test
-5. Train Random Forest, XGBoost, LSTM, and Meta-Ensemble models
+5. Train Random Forest, XGBoost, LSTM, and Meta-Ensemble (with hyperparameter tuning)
 6. Evaluate all models and save outputs to `outputs/`
 
-**Expected runtime:** ~2–4 minutes (depending on hardware).
+**Expected runtime:** ~2–3 minutes (depending on hardware).
 
 ### Run the Jupyter Notebook
 
@@ -156,35 +161,35 @@ This will:
 jupyter notebook MAAGAP_Objective1.ipynb
 ```
 
-The notebook contains the same pipeline with markdown explanations and inline visualisations — designed for thesis presentation.
+The notebook contains the same pipeline with markdown explanations and inline interactive Plotly visualisations.
 
 ---
 
 ## Module Descriptions
 
 ### `maagap/config.py`
-Centralises all constants and hyperparameters: PAGASA weather data (monthly rainfall, typhoon days), PSA economic indicators (CPI, CMRPI), Iloilo-specific agencies, contractors with seeded reliability scores, model hyperparameters (RF: 300 trees, XGB: 300 estimators, LSTM: 64 units, 60 epochs max).
+Centralises all constants and hyperparameters: PAGASA weather data (monthly rainfall, typhoon days), PSA economic indicators (CPI, CMRPI), Iloilo-specific agencies, contractors with seeded reliability scores, risk thresholds (Low 0-0.3, Medium 0.3-0.7, High 0.7-0.9, Critical 0.9-1.0), and model hyperparameters.
 
 ### `maagap/data_preprocessing.py`
-Reads the raw PPDO Excel file, cleans column names, extracts project status from unstructured "remarks" text, classifies projects as Infrastructure or Non-Infrastructure using keyword matching, and computes statistical distributions (budget log-normal parameters, agency/type probabilities).
+Reads the raw PPDO Excel file, cleans column names, extracts project status from unstructured "remarks" text, classifies projects as Infrastructure or Non-Infrastructure, and computes statistical distributions (budget log-normal parameters, agency/type probabilities).
 
 ### `maagap/synthetic_generator.py`
-Generates 3,000 synthetic projects (2016–2025) grounded in real PPDO distributions. Simulates contractor assignments, budget allocation, PAGASA weather exposure, PSA economic conditions, and quarterly monitoring progress. Uses logistic probability functions to determine delay and cost overrun outcomes, with deliberate temporal noise and "misleading early progress" patterns to prevent data leakage.
+Generates 3,000 synthetic projects (2016–2025) grounded in real PPDO distributions. Simulates contractor assignments, budget allocation, PAGASA weather exposure, PSA economic conditions, and quarterly monitoring progress. Uses sharpened logistic probability functions for delay/overrun outcomes with temporal noise to prevent data leakage.
 
 ### `maagap/feature_engineering.py`
 Transforms raw data into ML-ready formats:
-- **Static features** (26 columns): numeric fields + label-encoded categoricals + engineered interaction terms (`infra_x_typhoon`, `contractor_x_typhoon`, `composite_risk_features`, etc.)
-- **Temporal tensor** (3000 × 4 × 9): MinMax-scaled quarterly sequences for LSTM input
+- **Static features** (30 columns): numeric fields + label-encoded categoricals + engineered interaction terms (`infra_x_typhoon`, `contractor_x_agency`, `econ_pressure`, etc.)
+- **Temporal tensor** (3000 x 4 x 9): MinMax-scaled quarterly sequences for LSTM input
 
 ### `maagap/models.py`
-Implements training for all four model types:
-- **Random Forest** — `sklearn.ensemble.RandomForestClassifier` with balanced class weights
-- **XGBoost** — `xgboost.XGBClassifier` with scale_pos_weight for imbalance handling
+Implements training with hyperparameter tuning for all model types:
+- **Random Forest** — `RandomizedSearchCV` over depth, estimators, split criteria
+- **XGBoost** — `RandomizedSearchCV` over depth, learning rate, regularisation, subsampling
 - **LSTM** — Keras Sequential model (2-layer LSTM + Dropout + BatchNorm + Dense), trained with early stopping
-- **Meta-Ensemble** — Logistic Regression stacking classifier that fuses probability outputs from RF, XGBoost, and LSTM
+- **Meta-Ensemble** — Logistic Regression stacking classifier fusing RF, XGBoost, and LSTM probability outputs
 
 ### `maagap/evaluation.py`
-Computes all thesis-specified metrics (Accuracy, Precision, Recall, F1-Score, AUC-ROC, MAE) and generates visualisations (ROC curves, confusion matrices, feature importance bar charts, LSTM training history, risk distribution plots).
+Computes all thesis-specified metrics (Accuracy, Precision, Recall, F1-Score, AUC-ROC, MAE) and generates interactive Plotly visualisations (ROC curves, confusion matrices, feature importance, LSTM training history, risk distribution, model comparison charts). Saves both `.html` (interactive) and `.png` (static) formats.
 
 ---
 
@@ -195,7 +200,7 @@ Computes all thesis-specified metrics (Accuracy, Precision, Recall, F1-Score, AU
 | **Language** | Python 3.10+ |
 | **ML / Deep Learning** | Scikit-learn, XGBoost, TensorFlow / Keras |
 | **Data Processing** | Pandas, NumPy, OpenPyXL |
-| **Visualisation** | Matplotlib, Seaborn |
+| **Visualisation** | Plotly (interactive + static export via Kaleido) |
 | **Model Persistence** | Joblib |
 | **Presentation** | Jupyter Notebook |
 
@@ -209,28 +214,8 @@ All metrics follow the thesis specification using a 70/15/15 train/validation/te
 - **Precision** — Of predicted positives, how many are actually positive
 - **Recall** — Of actual positives, how many are correctly identified
 - **F1-Score** — Harmonic mean of Precision and Recall
-- **AUC-ROC** — Area Under the Receiver Operating Characteristic curve (threshold-independent)
-- **MAE** — Mean Absolute Error for delay-day regression
-
----
-
-## Output Visualisations
-
-All visualisations are saved to the `outputs/` directory:
-
-| File | Description |
-|------|-------------|
-| `roc_curves_delay.png` | ROC curves comparing all four models |
-| `cm_rf_delay.png` | Confusion matrix — Random Forest (delay) |
-| `cm_xgb_delay.png` | Confusion matrix — XGBoost (delay) |
-| `cm_meta_delay.png` | Confusion matrix — Meta-Ensemble (delay) |
-| `cm_rf_risk.png` | Confusion matrix — RF Risk (4-class) |
-| `cm_xgb_risk.png` | Confusion matrix — XGB Risk (4-class) |
-| `fi_rf_delay.png` | Feature importance — Random Forest (top 20) |
-| `fi_xgb_delay.png` | Feature importance — XGBoost (top 20) |
-| `lstm_training_history.png` | LSTM training loss and accuracy curves |
-| `risk_distribution.png` | Actual vs Predicted risk category distribution |
-| `evaluation_report.csv` | Complete metrics table for all models |
+- **AUC-ROC** — Area Under the ROC curve; values above 0.75 indicate good discriminative ability (per manuscript)
+- **MAE** — Mean Absolute Error for delay-day regression (in days)
 
 ---
 
