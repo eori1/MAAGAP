@@ -47,7 +47,7 @@ _XGB_PARAM_DIST = {
 
 def train_random_forest(X_train, y_train, task="binary", tune=True):
     n_classes = len(np.unique(y_train))
-    scoring = "roc_auc" if n_classes == 2 else "f1_macro"
+    scoring = "f1" if n_classes == 2 else "f1_macro"
 
     if tune:
         base = RandomForestClassifier(
@@ -55,7 +55,7 @@ def train_random_forest(X_train, y_train, task="binary", tune=True):
         )
         search = RandomizedSearchCV(
             base, _RF_PARAM_DIST,
-            n_iter=25, cv=3, scoring=scoring,
+            n_iter=40, cv=5, scoring=scoring,
             random_state=SEED, n_jobs=-1, verbose=0,
         )
         search.fit(X_train, y_train)
@@ -74,7 +74,7 @@ def train_random_forest(X_train, y_train, task="binary", tune=True):
 
 def train_xgboost(X_train, y_train, task="binary", tune=True):
     n_classes = len(np.unique(y_train))
-    scoring = "roc_auc" if n_classes == 2 else "f1_macro"
+    scoring = "f1" if n_classes == 2 else "f1_macro"
 
     base_params = dict(
         random_state=SEED, eval_metric="logloss",
@@ -93,7 +93,7 @@ def train_xgboost(X_train, y_train, task="binary", tune=True):
         base = XGBClassifier(**base_params)
         search = RandomizedSearchCV(
             base, _XGB_PARAM_DIST,
-            n_iter=25, cv=3, scoring=scoring,
+            n_iter=40, cv=5, scoring=scoring,
             random_state=SEED, n_jobs=-1, verbose=0,
         )
         search.fit(X_train, y_train)

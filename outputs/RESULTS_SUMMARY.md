@@ -67,9 +67,31 @@ Risk thresholds per manuscript: Low (0.0–0.3), Medium (0.3–0.7), High (0.7�
 ### Risk Distribution
 - **`risk_distribution.png`** — Actual vs Predicted risk category distribution (side-by-side)
 
+### Hyperparameter Tuning Comparison
+- **`hyperparameter_tuning_comparison.png`** — Side-by-side bar chart: Default vs Tuned for RF and XGBoost
+
 ---
 
-## 5. Key Findings
+## 5. Hyperparameter Tuning Comparison
+
+Baseline models use **default sklearn/xgboost hyperparameters** (n_estimators=100, unlimited depth, no class balancing). Tuned models use `RandomizedSearchCV` (40 iterations, 5-fold CV, F1 scoring) with `class_weight="balanced"`.
+
+| Model | Accuracy | Precision | Recall | F1-Score | AUC-ROC |
+|-------|----------|-----------|--------|----------|---------|
+| RF (Default) | 0.7711 | 0.6690 | 0.6291 | 0.6485 | 0.8285 |
+| **RF (Tuned)** | **0.7533** | **0.6099** | **0.7351** | **0.6667** | **0.8429** |
+| XGB (Default) | 0.7489 | 0.6131 | 0.6821 | 0.6458 | 0.8101 |
+| **XGB (Tuned)** | **0.7467** | **0.5979** | **0.7483** | **0.6647** | **0.8435** |
+
+**Key tuned hyperparameters:**
+- RF: n_estimators=300, max_depth=10, min_samples_split=5, min_samples_leaf=4, max_features=log2
+- XGB: n_estimators=300, max_depth=8, lr=0.01, subsample=0.7, colsample_bytree=0.7
+
+**Tuning improved F1-Score, AUC-ROC, and Recall** — the metrics most critical for risk prediction — while maintaining comparable accuracy. Higher recall means the tuned models catch more genuinely at-risk projects, which is essential for government accountability.
+
+---
+
+## 6. Key Findings
 
 1. **Random Forest and XGBoost achieve ~75% accuracy and ~0.84 AUC-ROC** on static project features alone (contractor reliability, typhoon exposure, budget, agency capacity), demonstrating meaningful predictive signal for delay forecasting from project-level characteristics.
 
@@ -83,7 +105,7 @@ Risk thresholds per manuscript: Low (0.0–0.3), Medium (0.3–0.7), High (0.7�
 
 ---
 
-## 6. Data Split
+## 7. Data Split
 
 - **Train:** 2,100 samples (70%)
 - **Validation:** 450 samples (15%)
@@ -93,6 +115,6 @@ Per manuscript specification: 70/30 train-test split, with the 30% subdivided in
 
 ---
 
-## 7. Interactive Charts
+## 8. Interactive Charts
 
 All visualisations are also saved as interactive HTML files (`.html`) in the `outputs/` folder. Open them in any browser for hover tooltips and zoom.

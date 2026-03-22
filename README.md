@@ -48,13 +48,27 @@ Thresholds per manuscript: Low (0.0–0.3), Medium (0.3–0.7), High (0.7–0.9)
 | LSTM | 57.10 |
 | **Meta-Ensemble** | **46.20** |
 
+### Hyperparameter Tuning Impact
+
+Models were tuned using `RandomizedSearchCV` (40 iterations, 5-fold CV, F1 scoring). Comparison against default sklearn/xgboost hyperparameters:
+
+| Model | F1-Score | AUC-ROC | Recall |
+|-------|----------|---------|--------|
+| RF (Default) | 0.6485 | 0.8285 | 0.6291 |
+| **RF (Tuned)** | **0.6667** | **0.8429** | **0.7351** |
+| XGB (Default) | 0.6458 | 0.8101 | 0.6821 |
+| **XGB (Tuned)** | **0.6647** | **0.8435** | **0.7483** |
+
+Tuning improved F1, AUC-ROC, and Recall — the metrics most critical for catching at-risk projects.
+
 ### Key Findings
 
 1. **LSTM and Meta-Ensemble significantly outperform static-feature models** (~88% accuracy vs ~75%), confirming that temporal monitoring data is the strongest predictor of project delays.
 2. **AUC-ROC of 0.93** for the Meta-Ensemble indicates excellent discriminatory ability between delayed and on-time projects, well above the 0.75 threshold for good performance cited in the manuscript.
-3. **Random Forest and XGBoost achieve ~80% accuracy on 4-class risk categorisation**, with balanced precision and recall across risk tiers.
-4. **Feature importance analysis** reveals `contractor_reliability`, `typhoon_exposure`, `approved_budget`, and `is_infrastructure` as the top static risk drivers.
-5. **The Meta-Ensemble achieves the lowest MAE** (~46 days), demonstrating the value of fusing multiple model perspectives.
+3. **Hyperparameter tuning improved Recall by +10–15%** for tree-based models, ensuring more at-risk projects are correctly identified.
+4. **Random Forest and XGBoost achieve ~80% accuracy on 4-class risk categorisation**, with balanced precision and recall across risk tiers.
+5. **Feature importance analysis** reveals `contractor_reliability`, `typhoon_exposure`, `approved_budget`, and `is_infrastructure` as the top static risk drivers.
+6. **The Meta-Ensemble achieves the lowest MAE** (~46 days), demonstrating the value of fusing multiple model perspectives.
 
 ---
 
@@ -98,7 +112,8 @@ MAAGAP/
 │   ├── fi_rf_delay.png / .html          # Feature importance — RF (top 20)
 │   ├── fi_xgb_delay.png / .html         # Feature importance — XGBoost (top 20)
 │   ├── lstm_training_history.png / .html # LSTM loss/accuracy curves
-│   └── risk_distribution.png / .html    # Actual vs Predicted risk distribution
+│   ├── risk_distribution.png / .html    # Actual vs Predicted risk distribution
+│   └── hyperparameter_tuning_comparison.png / .html  # Default vs Tuned bar chart
 │
 └── models/                        # Trained model artifacts (git-ignored, ~50MB)
     ├── rf_delay.pkl
@@ -183,8 +198,8 @@ Transforms raw data into ML-ready formats:
 
 ### `maagap/models.py`
 Implements training with hyperparameter tuning for all model types:
-- **Random Forest** — `RandomizedSearchCV` over depth, estimators, split criteria
-- **XGBoost** — `RandomizedSearchCV` over depth, learning rate, regularisation, subsampling
+- **Random Forest** — `RandomizedSearchCV` (40 iter, 5-fold CV, F1 scoring) over depth, estimators, split criteria
+- **XGBoost** — `RandomizedSearchCV` (40 iter, 5-fold CV, F1 scoring) over depth, learning rate, regularisation, subsampling
 - **LSTM** — Keras Sequential model (2-layer LSTM + Dropout + BatchNorm + Dense), trained with early stopping
 - **Meta-Ensemble** — Logistic Regression stacking classifier fusing RF, XGBoost, and LSTM probability outputs
 

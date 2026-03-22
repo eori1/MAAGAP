@@ -40,6 +40,9 @@ Desktop.ini
 # Jupyter checkpoints
 .ipynb_checkpoints/
 
+# Temporary helper scripts
+_*.py
+
 # Environment
 .env
 venv/
