@@ -17,11 +17,13 @@ Generated from the executed pipeline using 3,000 synthetic projects grounded in 
 |-------|----------|-----------|--------|----------|---------|
 | Random Forest | 0.7533 | 0.6099 | 0.7351 | 0.6667 | 0.8429 |
 | XGBoost | 0.7467 | 0.5979 | 0.7483 | 0.6647 | 0.8435 |
-| LSTM | 0.8689 | 0.8594 | 0.7285 | 0.7885 | 0.9248 |
-| Meta-Ensemble (baseline bases) | 0.8644 | 0.8571 | 0.7152 | 0.7798 | 0.9308 |
-| **Meta-Ensemble (tuned bases)** | **0.8711** | **0.8780** | **0.7152** | **0.7883** | **0.9365** |
+| LSTM | 0.8689 | 0.8286 | 0.7682 | 0.7973 | 0.9254 |
+| Meta-Ensemble (baseline bases) | 0.8644 | 0.8571 | 0.7152 | 0.7798 | 0.9315 |
+| **Meta-Ensemble (tuned bases)** | **0.8689** | **0.8594** | **0.7285** | **0.7885** | **0.9355** |
 
-**Δ (tuned − baseline) on test:** Accuracy +0.0067, Precision +0.0209, Recall +0.0000, F1 +0.0085, AUC-ROC +0.0057.
+**Δ (tuned − baseline) on test:** Accuracy +0.0045, Precision +0.0023, Recall +0.0133, F1 +0.0087, AUC-ROC +0.0040.
+
+*Values from the last executed `MAAGAP_Objective1.ipynb` / `evaluation_report.csv` (minor differences vs `python main.py` are possible due to deep-learning non-determinism).*
 
 ---
 
@@ -42,9 +44,9 @@ Risk thresholds per manuscript: Low (0.0–0.3), Medium (0.3–0.7), High (0.7�
 |-------|------------|
 | Random Forest | 81.33 |
 | XGBoost | 85.76 |
-| LSTM | 50.67 |
-| Meta-Ensemble (baseline bases) | 46.15 |
-| **Meta-Ensemble (tuned bases)** | **45.50** |
+| LSTM | 57.07 |
+| Meta-Ensemble (baseline bases) | 47.12 |
+| **Meta-Ensemble (tuned bases)** | **44.78** |
 
 ---
 
@@ -117,7 +119,7 @@ Baseline models use **default hyperparameters** (sklearn/xgboost defaults for tr
 
 2. **LSTM achieves ~87% accuracy and ~0.92 AUC-ROC** by leveraging temporal quarterly monitoring patterns (progress slippage, expenditure ratios), confirming that sequential inspection data significantly improves prediction.
 
-3. **The Meta-Ensemble (tuned bases) achieves the best AUC-ROC (0.9365)** by fusing all three models through logistic regression stacking, with the lowest MAE at **45.50** days (vs **46.15** for meta on baseline bases).
+3. **The Meta-Ensemble (tuned bases) achieves the best AUC-ROC (~0.936)** by fusing all three models through logistic regression stacking, with the lowest MAE at **~44.8** days (vs **~47.1** for meta on baseline bases in the latest notebook run).
 
 4. **Risk categorisation models achieve ~80–82% accuracy** on the 4-class problem (Low/Medium/High/Critical), using manuscript-defined thresholds.
 

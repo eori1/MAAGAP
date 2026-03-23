@@ -29,9 +29,9 @@ The pipeline trains **two** stacking meta-learners: one on **default** base mode
 |-------|----------|-----------|--------|----------|---------|
 | Random Forest | 0.7533 | 0.6099 | 0.7351 | 0.6667 | 0.8429 |
 | XGBoost | 0.7467 | 0.5979 | 0.7483 | 0.6647 | 0.8435 |
-| LSTM | 0.8689 | 0.8594 | 0.7285 | 0.7885 | 0.9248 |
-| Meta-Ensemble (baseline bases) | 0.8644 | 0.8571 | 0.7152 | 0.7798 | 0.9308 |
-| **Meta-Ensemble (tuned bases)** | **0.8711** | **0.8780** | **0.7152** | **0.7883** | **0.9365** |
+| LSTM | 0.8689 | 0.8286 | 0.7682 | 0.7973 | 0.9254 |
+| Meta-Ensemble (baseline bases) | 0.8644 | 0.8571 | 0.7152 | 0.7798 | 0.9315 |
+| **Meta-Ensemble (tuned bases)** | **0.8689** | **0.8594** | **0.7285** | **0.7885** | **0.9355** |
 
 ### Risk Categorisation (4-class: Low / Medium / High / Critical)
 
@@ -48,9 +48,9 @@ Thresholds per manuscript: Low (0.0–0.3), Medium (0.3–0.7), High (0.7–0.9)
 |-------|------------|
 | Random Forest | 81.33 |
 | XGBoost | 85.76 |
-| LSTM | 50.67 |
-| Meta-Ensemble (baseline bases) | 46.15 |
-| **Meta-Ensemble (tuned bases)** | **45.50** |
+| LSTM | 57.07 |
+| Meta-Ensemble (baseline bases) | 47.12 |
+| **Meta-Ensemble (tuned bases)** | **44.78** |
 
 ### Hyperparameter Tuning Impact
 
@@ -74,7 +74,7 @@ Tree tuning improves recall and AUC vs defaults; LSTM default vs tuned involves 
 3. **Hyperparameter tuning improved Recall** notably for tree-based models vs defaults on the test set.
 4. **Random Forest and XGBoost achieve ~80–82% accuracy on 4-class risk categorisation**, with balanced precision and recall across risk tiers.
 5. **Feature importance analysis** reveals `contractor_reliability`, `typhoon_exposure`, `approved_budget`, and `is_infrastructure` as the top static risk drivers.
-6. **The Meta-Ensemble (tuned bases) achieves the lowest MAE** (~45.5 days vs ~46.2 for meta on baseline bases), demonstrating the value of fusing tuned base models.
+6. **The Meta-Ensemble (tuned bases) achieves the lowest MAE** (~44.8 days vs ~47.1 for meta on baseline bases in the latest notebook run), demonstrating the value of fusing tuned base models.
 
 ---
 
