@@ -115,7 +115,20 @@ def train_xgboost(X_train, y_train, task="binary", tune=True):
 # Stage 2 -- LSTM for temporal dependencies
 # ---------------------------------------------------------------------------
 
-def _build_lstm(n_features, n_classes=2):
+_LSTM_PARAM_CONFIGS = [
+    {"units_1": 128, "units_2": 64,  "dropout": 0.35, "lr": 1e-3,  "batch_size": 32},
+    {"units_1": 64,  "units_2": 32,  "dropout": 0.30, "lr": 1e-3,  "batch_size": 32},
+    {"units_1": 128, "units_2": 64,  "dropout": 0.25, "lr": 5e-4,  "batch_size": 32},
+    {"units_1": 96,  "units_2": 48,  "dropout": 0.35, "lr": 5e-4,  "batch_size": 64},
+    {"units_1": 128, "units_2": 64,  "dropout": 0.40, "lr": 2e-3,  "batch_size": 64},
+    {"units_1": 64,  "units_2": 32,  "dropout": 0.20, "lr": 1e-3,  "batch_size": 64},
+    {"units_1": 96,  "units_2": 48,  "dropout": 0.30, "lr": 1e-3,  "batch_size": 32},
+    {"units_1": 128, "units_2": 32,  "dropout": 0.35, "lr": 1e-3,  "batch_size": 32},
+]
+
+
+def _build_lstm(n_features, n_classes=2, units_1=None, units_2=None,
+                dropout=0.35, lr=1e-3):
     os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
     warnings.filterwarnings("ignore", category=DeprecationWarning)
 
@@ -127,51 +140,87 @@ def _build_lstm(n_features, n_classes=2):
     )
     from tensorflow.keras.optimizers import Adam
 
+    u1 = units_1 or LSTM_UNITS
+    u2 = units_2 or (LSTM_UNITS // 2)
+
     model = Sequential([
         Masking(mask_value=0.0, input_shape=(LSTM_MAX_TIMESTEPS, n_features)),
-        KerasLSTM(LSTM_UNITS, return_sequences=True),
-        Dropout(0.35),
-        KerasLSTM(LSTM_UNITS // 2, return_sequences=False),
-        Dropout(0.35),
+        KerasLSTM(u1, return_sequences=True),
+        Dropout(dropout),
+        KerasLSTM(u2, return_sequences=False),
+        Dropout(dropout),
         BatchNormalization(),
         Dense(32, activation="relu"),
-        Dropout(0.25),
+        Dropout(max(0.1, dropout - 0.10)),
         Dense(1, activation="sigmoid") if n_classes == 2
             else Dense(n_classes, activation="softmax"),
     ])
 
     loss = "binary_crossentropy" if n_classes == 2 else "sparse_categorical_crossentropy"
-    model.compile(optimizer=Adam(learning_rate=1e-3), loss=loss, metrics=["accuracy"])
+    model.compile(optimizer=Adam(learning_rate=lr), loss=loss, metrics=["accuracy"])
     return model
 
 
-def train_lstm(X_train, y_train, X_val, y_val, task="binary"):
+def train_lstm(X_train, y_train, X_val, y_val, task="binary", tune=True):
     n_features = X_train.shape[2]
     n_classes = len(np.unique(y_train))
-
-    model = _build_lstm(n_features, n_classes if n_classes > 2 else 2)
+    nc = n_classes if n_classes > 2 else 2
 
     from sklearn.utils.class_weight import compute_class_weight
     cw = compute_class_weight("balanced", classes=np.unique(y_train), y=y_train)
     cw_dict = dict(enumerate(cw))
 
     import tensorflow as tf
-    early_stop = tf.keras.callbacks.EarlyStopping(
-        monitor="val_loss", patience=8, restore_best_weights=True,
-    )
+    tf.get_logger().setLevel("ERROR")
 
-    history = model.fit(
-        X_train, y_train,
-        validation_data=(X_val, y_val),
-        epochs=LSTM_EPOCHS,
-        batch_size=LSTM_BATCH_SIZE,
-        class_weight=cw_dict,
-        callbacks=[early_stop],
-        verbose=0,
-    )
+    def _train_one(params, verbose_label=None):
+        if verbose_label:
+            print(f"    [{verbose_label}] units=({params['units_1']},{params['units_2']}), "
+                  f"dropout={params['dropout']}, lr={params['lr']}, "
+                  f"batch={params['batch_size']}")
+        model = _build_lstm(n_features, nc,
+                            units_1=params["units_1"], units_2=params["units_2"],
+                            dropout=params["dropout"], lr=params["lr"])
+        early_stop = tf.keras.callbacks.EarlyStopping(
+            monitor="val_loss", patience=8, restore_best_weights=True,
+        )
+        history = model.fit(
+            X_train, y_train,
+            validation_data=(X_val, y_val),
+            epochs=LSTM_EPOCHS,
+            batch_size=params["batch_size"],
+            class_weight=cw_dict,
+            callbacks=[early_stop],
+            verbose=0,
+        )
+        best_val_loss = min(history.history["val_loss"])
+        best_val_acc = max(history.history["val_accuracy"])
+        if verbose_label:
+            print(f"           val_loss={best_val_loss:.4f}, val_acc={best_val_acc:.4f}")
+        return model, history, best_val_loss
 
-    model.save(os.path.join(MODELS_DIR, f"lstm_{task}.keras"))
-    return model, history
+    if tune:
+        print(f"    LSTM hyperparameter search ({len(_LSTM_PARAM_CONFIGS)} configurations)...")
+        best_model, best_history, best_loss = None, None, float("inf")
+        best_params = None
+        for i, params in enumerate(_LSTM_PARAM_CONFIGS):
+            model, history, val_loss = _train_one(params, verbose_label=f"{i+1}/{len(_LSTM_PARAM_CONFIGS)}")
+            if val_loss < best_loss:
+                best_loss = val_loss
+                best_model, best_history = model, history
+                best_params = params
+
+        print(f"    LSTM best params: {best_params} (val_loss={best_loss:.4f})")
+        best_model.save(os.path.join(MODELS_DIR, f"lstm_{task}.keras"))
+        return best_model, best_history, best_params
+    else:
+        default_params = {
+            "units_1": LSTM_UNITS, "units_2": LSTM_UNITS // 2,
+            "dropout": 0.35, "lr": 1e-3, "batch_size": LSTM_BATCH_SIZE,
+        }
+        model, history, _ = _train_one(default_params)
+        model.save(os.path.join(MODELS_DIR, f"lstm_{task}.keras"))
+        return model, history, default_params
 
 
 # ---------------------------------------------------------------------------

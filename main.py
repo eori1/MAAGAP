@@ -130,8 +130,8 @@ def main():
     xgb_risk_pred_te = xgb_risk.predict(Xs_te)
     print("    -> trained")
 
-    print("  [Stage 2]  LSTM — temporal delay prediction ...")
-    lstm, history = train_lstm(Xt_tr, yd_tr, Xt_va, yd_va, task="delay")
+    print("  [Stage 2]  LSTM — temporal delay prediction (tuning) ...")
+    lstm, history, lstm_best_params = train_lstm(Xt_tr, yd_tr, Xt_va, yd_va, task="delay", tune=True)
     lstm_prob_te = lstm.predict(Xt_te, verbose=0).flatten()
     lstm_pred_te = (lstm_prob_te >= 0.5).astype(int)
     lstm_prob_va = lstm.predict(Xt_va, verbose=0).flatten()

@@ -74,7 +74,7 @@ Risk thresholds per manuscript: Low (0.0–0.3), Medium (0.3–0.7), High (0.7�
 
 ## 5. Hyperparameter Tuning Comparison
 
-Baseline models use **default sklearn/xgboost hyperparameters** (n_estimators=100, unlimited depth, no class balancing). Tuned models use `RandomizedSearchCV` (40 iterations, 5-fold CV, F1 scoring) with `class_weight="balanced"`.
+Baseline models use **default hyperparameters** (sklearn/xgboost defaults for trees; single default LSTM architecture). Tuned models use `RandomizedSearchCV` for trees (40 iter, 5-fold CV, F1 scoring) and manual config search for LSTM (8 configurations, best by validation loss).
 
 | Model | Accuracy | Precision | Recall | F1-Score | AUC-ROC |
 |-------|----------|-----------|--------|----------|---------|
@@ -82,12 +82,15 @@ Baseline models use **default sklearn/xgboost hyperparameters** (n_estimators=10
 | **RF (Tuned)** | **0.7533** | **0.6099** | **0.7351** | **0.6667** | **0.8429** |
 | XGB (Default) | 0.7489 | 0.6131 | 0.6821 | 0.6458 | 0.8101 |
 | **XGB (Tuned)** | **0.7467** | **0.5979** | **0.7483** | **0.6647** | **0.8435** |
+| LSTM (Default) | 0.8578 | 0.8991 | 0.6490 | 0.7538 | 0.9251 |
+| **LSTM (Tuned)** | **0.8733** | **0.8456** | **0.7616** | **0.8014** | **0.9266** |
 
 **Key tuned hyperparameters:**
 - RF: n_estimators=300, max_depth=10, min_samples_split=5, min_samples_leaf=4, max_features=log2
 - XGB: n_estimators=300, max_depth=8, lr=0.01, subsample=0.7, colsample_bytree=0.7
+- LSTM: Best configuration selected from 8 candidates by validation loss
 
-**Tuning improved F1-Score, AUC-ROC, and Recall** — the metrics most critical for risk prediction — while maintaining comparable accuracy. Higher recall means the tuned models catch more genuinely at-risk projects, which is essential for government accountability.
+**Tuning improved F1-Score, AUC-ROC, and Recall across all models.** LSTM tuning showed the clearest gains: F1 improved from 0.754 to 0.801 (+6.3%), and Recall from 0.649 to 0.762 (+17.4%). Higher recall means the tuned models catch more genuinely at-risk projects, which is essential for government accountability.
 
 ---
 

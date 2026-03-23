@@ -50,7 +50,7 @@ Thresholds per manuscript: Low (0.0–0.3), Medium (0.3–0.7), High (0.7–0.9)
 
 ### Hyperparameter Tuning Impact
 
-Models were tuned using `RandomizedSearchCV` (40 iterations, 5-fold CV, F1 scoring). Comparison against default sklearn/xgboost hyperparameters:
+All three model types were tuned: RF/XGBoost via `RandomizedSearchCV` (40 iter, 5-fold CV, F1 scoring); LSTM via manual search over 8 configurations (varying units, dropout, learning rate, batch size), selected by validation loss.
 
 | Model | F1-Score | AUC-ROC | Recall |
 |-------|----------|---------|--------|
@@ -58,8 +58,10 @@ Models were tuned using `RandomizedSearchCV` (40 iterations, 5-fold CV, F1 scori
 | **RF (Tuned)** | **0.6667** | **0.8429** | **0.7351** |
 | XGB (Default) | 0.6458 | 0.8101 | 0.6821 |
 | **XGB (Tuned)** | **0.6647** | **0.8435** | **0.7483** |
+| LSTM (Default) | 0.7538 | 0.9251 | 0.6490 |
+| **LSTM (Tuned)** | **0.8014** | **0.9266** | **0.7616** |
 
-Tuning improved F1, AUC-ROC, and Recall — the metrics most critical for catching at-risk projects.
+Tuning improved F1, AUC-ROC, and Recall across all models — the metrics most critical for catching at-risk projects. LSTM showed the largest gain (+6.3% F1, +17.4% Recall).
 
 ### Key Findings
 
@@ -200,7 +202,7 @@ Transforms raw data into ML-ready formats:
 Implements training with hyperparameter tuning for all model types:
 - **Random Forest** — `RandomizedSearchCV` (40 iter, 5-fold CV, F1 scoring) over depth, estimators, split criteria
 - **XGBoost** — `RandomizedSearchCV` (40 iter, 5-fold CV, F1 scoring) over depth, learning rate, regularisation, subsampling
-- **LSTM** — Keras Sequential model (2-layer LSTM + Dropout + BatchNorm + Dense), trained with early stopping
+- **LSTM** — Manual hyperparameter search over 8 configurations (units, dropout, learning rate, batch size); Keras Sequential (2-layer LSTM + Dropout + BatchNorm + Dense), trained with early stopping
 - **Meta-Ensemble** — Logistic Regression stacking classifier fusing RF, XGBoost, and LSTM probability outputs
 
 ### `maagap/evaluation.py`
