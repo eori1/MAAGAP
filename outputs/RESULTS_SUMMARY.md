@@ -8,12 +8,20 @@ Generated from the executed pipeline using 3,000 synthetic projects grounded in 
 
 ## 1. Binary Delay Prediction (Test Set — 450 samples)
 
+**Stacking meta-learner (two variants):** Both use logistic regression on stacked validation probabilities from RF, XGBoost, and LSTM.
+
+- **Meta (baseline bases):** Base models trained with **default** hyperparameters (`tune=False`).
+- **Meta (tuned bases):** Base models **tuned** via `RandomizedSearchCV` (RF/XGB) and LSTM search — primary artifact `models/meta_ensemble.pkl`.
+
 | Model | Accuracy | Precision | Recall | F1-Score | AUC-ROC |
 |-------|----------|-----------|--------|----------|---------|
 | Random Forest | 0.7533 | 0.6099 | 0.7351 | 0.6667 | 0.8429 |
 | XGBoost | 0.7467 | 0.5979 | 0.7483 | 0.6647 | 0.8435 |
 | LSTM | 0.8778 | 0.8478 | 0.7748 | 0.8097 | 0.9273 |
-| **Meta-Ensemble** | **0.8733** | **0.8730** | **0.7285** | **0.7942** | **0.9340** |
+| Meta-Ensemble (baseline bases) | *(run `python main.py`)* | *(printed)* | *(printed)* | *(printed)* | *(printed)* |
+| **Meta-Ensemble (tuned bases)** | **0.8733** | **0.8730** | **0.7285** | **0.7942** | **0.9340** |
+
+*Re-run `python main.py` to print both meta rows and the **Δ (tuned − baseline)** banner on the test set.*
 
 ---
 
@@ -35,23 +43,25 @@ Risk thresholds per manuscript: Low (0.0–0.3), Medium (0.3–0.7), High (0.7�
 | Random Forest | 81.33 |
 | XGBoost | 85.76 |
 | LSTM | 57.10 |
-| **Meta-Ensemble** | **46.20** |
+| Meta-Ensemble (baseline bases) | *(run `python main.py`)* |
+| **Meta-Ensemble (tuned bases)** | **46.20** |
 
 ---
 
 ## 4. Output Visualisations (PNG files in `outputs/` folder)
 
 ### ROC Curves
-- **`roc_curves_delay.png`** — ROC curves for all four models (RF, XGBoost, LSTM, Meta-Ensemble) showing AUC values
+- **`roc_curves_delay.png`** — ROC curves for RF, XGBoost, LSTM, and both Meta-Ensemble variants (baseline vs tuned bases) with AUC values
 
 ### Model Performance Comparison
-- **`model_comparison.png`** — Grouped bar chart comparing Accuracy, Precision, Recall, F1-Score, and AUC-ROC across all four models
+- **`model_comparison.png`** — Grouped bar chart comparing Accuracy, Precision, Recall, F1-Score, and AUC-ROC (includes both meta variants)
 
 ### Confusion Matrices — Binary Delay Prediction
 - **`cm_rf_delay.png`** — Random Forest: Not Delayed vs Delayed
 - **`cm_xgb_delay.png`** — XGBoost: Not Delayed vs Delayed
 - **`cm_lstm_delay.png`** — LSTM: Not Delayed vs Delayed
-- **`cm_meta_delay.png`** — Meta-Ensemble: Not Delayed vs Delayed
+- **`cm_meta_delay.png`** — Meta-Ensemble (tuned bases): Not Delayed vs Delayed
+- **`cm_meta_baseline_delay.png`** — Meta-Ensemble (baseline bases): Not Delayed vs Delayed
 
 ### Confusion Matrices — Risk Categorisation (4-class)
 - **`cm_rf_risk.png`** — Random Forest: Low / Medium / High / Critical

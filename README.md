@@ -23,12 +23,15 @@ MAAGAP Objective 1 implements a **two-stage predictive framework** that combines
 
 ### Binary Delay Prediction (Test Set)
 
+The pipeline trains **two** stacking meta-learners: one on **default** base models (`meta_ensemble_baseline.pkl`) and one on **tuned** bases (`meta_ensemble.pkl`). Compare metrics in the console (Δ tuned − baseline).
+
 | Model | Accuracy | Precision | Recall | F1-Score | AUC-ROC |
 |-------|----------|-----------|--------|----------|---------|
 | Random Forest | 0.7533 | 0.6099 | 0.7351 | 0.6667 | 0.8429 |
 | XGBoost | 0.7467 | 0.5979 | 0.7483 | 0.6647 | 0.8435 |
 | LSTM | 0.8778 | 0.8478 | 0.7748 | 0.8097 | 0.9273 |
-| **Meta-Ensemble** | **0.8733** | **0.8730** | **0.7285** | **0.7942** | **0.9340** |
+| Meta-Ensemble (baseline bases) | *run `python main.py`* | | | | |
+| **Meta-Ensemble (tuned bases)** | **0.8733** | **0.8730** | **0.7285** | **0.7942** | **0.9340** |
 
 ### Risk Categorisation (4-class: Low / Medium / High / Critical)
 
@@ -46,7 +49,8 @@ Thresholds per manuscript: Low (0.0–0.3), Medium (0.3–0.7), High (0.7–0.9)
 | Random Forest | 81.33 |
 | XGBoost | 85.76 |
 | LSTM | 57.10 |
-| **Meta-Ensemble** | **46.20** |
+| Meta-Ensemble (baseline bases) | *run `python main.py`* |
+| **Meta-Ensemble (tuned bases)** | **46.20** |
 
 ### Hyperparameter Tuning Impact
 
@@ -66,11 +70,11 @@ Tuning improved F1, AUC-ROC, and Recall across all models — the metrics most c
 ### Key Findings
 
 1. **LSTM and Meta-Ensemble significantly outperform static-feature models** (~88% accuracy vs ~75%), confirming that temporal monitoring data is the strongest predictor of project delays.
-2. **AUC-ROC of 0.93** for the Meta-Ensemble indicates excellent discriminatory ability between delayed and on-time projects, well above the 0.75 threshold for good performance cited in the manuscript.
+2. **AUC-ROC ~0.93** for the Meta-Ensemble (tuned bases) indicates excellent discriminatory ability; the pipeline also reports **Meta (baseline bases)** so you can see whether tuning the underlying RF/XGB/LSTM improves the stacked meta-learner.
 3. **Hyperparameter tuning improved Recall by +10–15%** for tree-based models, ensuring more at-risk projects are correctly identified.
 4. **Random Forest and XGBoost achieve ~80% accuracy on 4-class risk categorisation**, with balanced precision and recall across risk tiers.
 5. **Feature importance analysis** reveals `contractor_reliability`, `typhoon_exposure`, `approved_budget`, and `is_infrastructure` as the top static risk drivers.
-6. **The Meta-Ensemble achieves the lowest MAE** (~46 days), demonstrating the value of fusing multiple model perspectives.
+6. **The Meta-Ensemble (tuned bases) achieves the lowest MAE** (~46 days), demonstrating the value of fusing multiple model perspectives; compare against the baseline-meta MAE in the console.
 
 ---
 
@@ -108,7 +112,8 @@ MAAGAP/
 │   ├── cm_rf_delay.png / .html          # Confusion matrix — RF (delay)
 │   ├── cm_xgb_delay.png / .html         # Confusion matrix — XGBoost (delay)
 │   ├── cm_lstm_delay.png / .html        # Confusion matrix — LSTM (delay)
-│   ├── cm_meta_delay.png / .html        # Confusion matrix — Meta-Ensemble (delay)
+│   ├── cm_meta_delay.png / .html        # Confusion matrix — Meta (tuned bases)
+│   ├── cm_meta_baseline_delay.png / .html  # Confusion matrix — Meta (baseline bases)
 │   ├── cm_rf_risk.png / .html           # Confusion matrix — RF Risk (4-class)
 │   ├── cm_xgb_risk.png / .html          # Confusion matrix — XGB Risk (4-class)
 │   ├── fi_rf_delay.png / .html          # Feature importance — RF (top 20)
@@ -125,7 +130,8 @@ MAAGAP/
     ├── xgb_delay.pkl
     ├── xgb_risk.pkl
     ├── lstm_delay.keras
-    └── meta_ensemble.pkl
+    ├── meta_ensemble.pkl              # Meta on tuned RF/XGB/LSTM
+    └── meta_ensemble_baseline.pkl     # Meta on default-hparam bases
 ```
 
 > **Note:** Trained models in `models/` are git-ignored due to file size (~50MB total). Run the pipeline to regenerate them.
@@ -172,7 +178,7 @@ This will:
 5. Train Random Forest, XGBoost, LSTM, and Meta-Ensemble (with hyperparameter tuning)
 6. Evaluate all models and save outputs to `outputs/`
 
-**Expected runtime:** ~2–3 minutes (depending on hardware).
+**Expected runtime:** ~5–15 minutes (baseline + tuned models and two meta-learners; hardware-dependent).
 
 ### Run the Jupyter Notebook
 

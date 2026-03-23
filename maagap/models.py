@@ -227,12 +227,15 @@ def train_lstm(X_train, y_train, X_val, y_val, task="binary", tune=True):
 # Meta-ensemble -- Stacking classifier
 # ---------------------------------------------------------------------------
 
-def train_meta_ensemble(rf_proba, xgb_proba, lstm_proba, y_train):
-    """Logistic-regression meta-learner on stacked Stage 1 + Stage 2 outputs."""
+def train_meta_ensemble(rf_proba, xgb_proba, lstm_proba, y_train, artifact_name="meta_ensemble.pkl"):
+    """Logistic-regression meta-learner on stacked Stage 1 + Stage 2 outputs.
+
+    artifact_name: filename under MODELS_DIR (e.g. meta_ensemble.pkl or meta_ensemble_baseline.pkl).
+    """
     meta_X = np.column_stack([rf_proba, xgb_proba, lstm_proba])
     meta = LogisticRegression(max_iter=500, random_state=SEED)
     meta.fit(meta_X, y_train)
-    joblib.dump(meta, os.path.join(MODELS_DIR, "meta_ensemble.pkl"))
+    joblib.dump(meta, os.path.join(MODELS_DIR, artifact_name))
     return meta
 
 

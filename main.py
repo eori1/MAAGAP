@@ -103,9 +103,29 @@ def main():
     ydd_te = y_delay_days[idx_te]
 
     # ==================================================================
-    # STEP 5 — Train models (with hyperparameter tuning for trees)
+    # STEP 5 — Train models: baseline (for meta comparison) then tuned
     # ==================================================================
     banner("Step 5/7: Training Models")
+
+    print("\n  [Baseline] Delay models (no hyperparameter tuning) — for meta-ensemble comparison ...")
+    rf_b = train_random_forest(Xs_tr, yd_tr, task="delay", tune=False)
+    rf_prob_va_b = rf_b.predict_proba(Xs_va)[:, 1]
+    rf_prob_te_b = rf_b.predict_proba(Xs_te)[:, 1]
+    xgb_b = train_xgboost(Xs_tr, yd_tr, task="delay", tune=False)
+    xgb_prob_va_b = xgb_b.predict_proba(Xs_va)[:, 1]
+    xgb_prob_te_b = xgb_b.predict_proba(Xs_te)[:, 1]
+    lstm_b, _, _ = train_lstm(Xt_tr, yd_tr, Xt_va, yd_va, task="delay", tune=False)
+    lstm_prob_va_b = lstm_b.predict(Xt_va, verbose=0).flatten()
+    lstm_prob_te_b = lstm_b.predict(Xt_te, verbose=0).flatten()
+    meta_b = train_meta_ensemble(
+        rf_prob_va_b, xgb_prob_va_b, lstm_prob_va_b, yd_va,
+        artifact_name="meta_ensemble_baseline.pkl",
+    )
+    meta_b_pred_te, meta_b_prob_te = predict_meta(
+        meta_b, rf_prob_te_b, xgb_prob_te_b, lstm_prob_te_b,
+    )
+    meta_b_prob_pos = meta_b_prob_te[:, 1] if meta_b_prob_te.ndim > 1 else meta_b_prob_te
+    print("    -> meta-learner trained on BASELINE base models (saved: meta_ensemble_baseline.pkl)")
 
     print("\n  [Stage 1a] Random Forest — delay prediction (tuning) ...")
     rf = train_random_forest(Xs_tr, yd_tr, task="delay", tune=True)
@@ -138,11 +158,14 @@ def main():
     lstm_prob_va = lstm.predict(Xt_va, verbose=0).flatten()
     print(f"    -> trained ({len(history.history['loss'])} epochs)")
 
-    print("  [Meta]     Stacking ensemble (RF + XGB + LSTM) ...")
-    meta = train_meta_ensemble(rf_prob_va, xgb_prob_va, lstm_prob_va, yd_va)
+    print("  [Meta]     Stacking ensemble on TUNED bases (RF + XGB + LSTM) ...")
+    meta = train_meta_ensemble(
+        rf_prob_va, xgb_prob_va, lstm_prob_va, yd_va,
+        artifact_name="meta_ensemble.pkl",
+    )
     meta_pred_te, meta_prob_te = predict_meta(meta, rf_prob_te, xgb_prob_te, lstm_prob_te)
     meta_prob_pos = meta_prob_te[:, 1] if meta_prob_te.ndim > 1 else meta_prob_te
-    print("    -> trained")
+    print("    -> trained (saved: meta_ensemble.pkl)")
 
     # ==================================================================
     # STEP 6 — Evaluation
@@ -154,10 +177,11 @@ def main():
     binary_delay_metrics = []
 
     for name, y_p, y_pr in [
-        ("Random Forest",    rf_pred_te,    rf_prob_te),
-        ("XGBoost",          xgb_pred_te,   xgb_prob_te),
-        ("LSTM",             lstm_pred_te,  lstm_prob_te),
-        ("Meta-Ensemble",    meta_pred_te,  meta_prob_pos),
+        ("Random Forest", rf_pred_te, rf_prob_te),
+        ("XGBoost", xgb_pred_te, xgb_prob_te),
+        ("LSTM", lstm_pred_te, lstm_prob_te),
+        ("Meta-Ensemble (baseline bases)", meta_b_pred_te, meta_b_prob_pos),
+        ("Meta-Ensemble (tuned bases)", meta_pred_te, meta_prob_pos),
     ]:
         m = binary_metrics(yd_te, y_p, y_pr, label=name)
         all_metrics.append(m)
@@ -169,6 +193,13 @@ def main():
 
         fpr, tpr, _ = roc_curve(yd_te, y_pr)
         roc_data.append((fpr, tpr, m["AUC-ROC"], name))
+
+    banner("Meta-ensemble: baseline vs tuned base models (test set)")
+    mb = binary_metrics(yd_te, meta_b_pred_te, meta_b_prob_pos, label="Meta baseline")
+    mt = binary_metrics(yd_te, meta_pred_te, meta_prob_pos, label="Meta tuned")
+    for k in ["Accuracy", "Precision", "Recall", "F1-Score", "AUC-ROC"]:
+        delta = mt[k] - mb[k]
+        print(f"  {k:12s}:  baseline {mb[k]:.4f}  |  tuned {mt[k]:.4f}  |  delta {delta:+.4f}")
 
     banner("Evaluation — Risk Categorisation (Multiclass)")
     for name, y_p in [
@@ -186,9 +217,10 @@ def main():
     max_delay = df_proj["delay_days"].max()
     for name, proba in [
         ("Random Forest", rf_prob_te),
-        ("XGBoost",       xgb_prob_te),
-        ("LSTM",          lstm_prob_te),
-        ("Meta-Ensemble", meta_prob_pos),
+        ("XGBoost", xgb_prob_te),
+        ("LSTM", lstm_prob_te),
+        ("Meta-Ensemble (baseline bases)", meta_b_prob_pos),
+        ("Meta-Ensemble (tuned bases)", meta_prob_pos),
     ]:
         pred_days = proba * max_delay
         m = regression_metrics(ydd_te, pred_days, label=name)
@@ -207,9 +239,10 @@ def main():
     print("  Saved: model_comparison.png / .html")
 
     for name, y_p, label_set, fname in [
-        ("Meta-Ensemble", meta_pred_te, ["Not Delayed", "Delayed"], "cm_meta_delay.png"),
-        ("Random Forest",  rf_pred_te,  ["Not Delayed", "Delayed"], "cm_rf_delay.png"),
-        ("XGBoost",        xgb_pred_te, ["Not Delayed", "Delayed"], "cm_xgb_delay.png"),
+        ("Meta-Ensemble (tuned bases)", meta_pred_te, ["Not Delayed", "Delayed"], "cm_meta_delay.png"),
+        ("Meta-Ensemble (baseline bases)", meta_b_pred_te, ["Not Delayed", "Delayed"], "cm_meta_baseline_delay.png"),
+        ("Random Forest", rf_pred_te, ["Not Delayed", "Delayed"], "cm_rf_delay.png"),
+        ("XGBoost", xgb_pred_te, ["Not Delayed", "Delayed"], "cm_xgb_delay.png"),
     ]:
         plot_confusion_matrix(yd_te, y_p, label_set, f"{name} — Delay Prediction", fname)
         print(f"  Saved: {fname}")
@@ -259,8 +292,6 @@ def main():
     # ------------------------------------------------------------------
     banner("Hyperparameter Tuning Comparison")
 
-    from sklearn.ensemble import RandomForestClassifier as _RFC
-    from xgboost import XGBClassifier as _XGBC
     from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
     import plotly.graph_objects as go
     from plotly.subplots import make_subplots
@@ -275,19 +306,10 @@ def main():
             "AUC-ROC": roc_auc_score(y_true, y_prob),
         }
 
-    print("  Training baseline (default) models...")
-    rf_bl = _RFC(n_estimators=100, class_weight="balanced", random_state=SEED)
-    rf_bl.fit(Xs_tr, yd_tr)
-    rf_bl_p, rf_bl_pr = rf_bl.predict(Xs_te), rf_bl.predict_proba(Xs_te)[:, 1]
-
-    pos, neg = int((yd_tr == 1).sum()), int((yd_tr == 0).sum())
-    xgb_bl = _XGBC(n_estimators=100, random_state=SEED, eval_metric="logloss",
-                    use_label_encoder=False, scale_pos_weight=neg / max(pos, 1))
-    xgb_bl.fit(Xs_tr, yd_tr)
-    xgb_bl_p, xgb_bl_pr = xgb_bl.predict(Xs_te), xgb_bl.predict_proba(Xs_te)[:, 1]
-
-    lstm_bl, _, _ = train_lstm(Xt_tr, yd_tr, Xt_va, yd_va, task="delay", tune=False)
-    lstm_bl_pr = lstm_bl.predict(Xt_te, verbose=0).flatten()
+    print("  Reusing baseline delay models from Step 5 (rf_b, xgb_b, lstm_b)...")
+    rf_bl_p, rf_bl_pr = rf_b.predict(Xs_te), rf_b.predict_proba(Xs_te)[:, 1]
+    xgb_bl_p, xgb_bl_pr = xgb_b.predict(Xs_te), xgb_b.predict_proba(Xs_te)[:, 1]
+    lstm_bl_pr = lstm_b.predict(Xt_te, verbose=0).flatten()
     lstm_bl_p = (lstm_bl_pr >= 0.5).astype(int)
 
     pairs = [
