@@ -1,11 +1,13 @@
 Model,Accuracy,Precision,Recall,F1-Score,AUC-ROC,Precision (macro),Recall (macro),F1-Score (macro),MAE
 Random Forest,0.7533,0.6099,0.7351,0.6667,0.8429,,,,
 XGBoost,0.7467,0.5979,0.7483,0.6647,0.8435,,,,
-LSTM,0.8622,0.8803,0.6821,0.7687,0.9256,,,,
-Meta-Ensemble,0.8711,0.8974,0.6954,0.7836,0.9344,,,,
+LSTM,0.8689,0.8594,0.7285,0.7885,0.9248,,,,
+Meta-Ensemble (baseline bases),0.8644,0.8571,0.7152,0.7798,0.9308,,,,
+Meta-Ensemble (tuned bases),0.8711,0.878,0.7152,0.7883,0.9365,,,,
 RF Risk,0.8,,,,,0.7692,0.7632,0.7634,
 XGB Risk,0.8178,,,,,0.7989,0.7893,0.7909,
 Random Forest,,,,,,,,,81.3317
 XGBoost,,,,,,,,,85.7587
-LSTM,,,,,,,,,45.1059
-Meta-Ensemble,,,,,,,,,45.507
+LSTM,,,,,,,,,50.6653
+Meta-Ensemble (baseline bases),,,,,,,,,46.1502
+Meta-Ensemble (tuned bases),,,,,,,,,45.4987

@@ -243,6 +243,7 @@ def main():
         ("Meta-Ensemble (baseline bases)", meta_b_pred_te, ["Not Delayed", "Delayed"], "cm_meta_baseline_delay.png"),
         ("Random Forest", rf_pred_te, ["Not Delayed", "Delayed"], "cm_rf_delay.png"),
         ("XGBoost", xgb_pred_te, ["Not Delayed", "Delayed"], "cm_xgb_delay.png"),
+        ("LSTM", lstm_pred_te, ["Not Delayed", "Delayed"], "cm_lstm_delay.png"),
     ]:
         plot_confusion_matrix(yd_te, y_p, label_set, f"{name} — Delay Prediction", fname)
         print(f"  Saved: {fname}")

@@ -17,11 +17,11 @@ Generated from the executed pipeline using 3,000 synthetic projects grounded in 
 |-------|----------|-----------|--------|----------|---------|
 | Random Forest | 0.7533 | 0.6099 | 0.7351 | 0.6667 | 0.8429 |
 | XGBoost | 0.7467 | 0.5979 | 0.7483 | 0.6647 | 0.8435 |
-| LSTM | 0.8778 | 0.8478 | 0.7748 | 0.8097 | 0.9273 |
-| Meta-Ensemble (baseline bases) | *(run `python main.py`)* | *(printed)* | *(printed)* | *(printed)* | *(printed)* |
-| **Meta-Ensemble (tuned bases)** | **0.8733** | **0.8730** | **0.7285** | **0.7942** | **0.9340** |
+| LSTM | 0.8689 | 0.8594 | 0.7285 | 0.7885 | 0.9248 |
+| Meta-Ensemble (baseline bases) | 0.8644 | 0.8571 | 0.7152 | 0.7798 | 0.9308 |
+| **Meta-Ensemble (tuned bases)** | **0.8711** | **0.8780** | **0.7152** | **0.7883** | **0.9365** |
 
-*Re-run `python main.py` to print both meta rows and the **Δ (tuned − baseline)** banner on the test set.*
+**Δ (tuned − baseline) on test:** Accuracy +0.0067, Precision +0.0209, Recall +0.0000, F1 +0.0085, AUC-ROC +0.0057.
 
 ---
 
@@ -31,8 +31,8 @@ Risk thresholds per manuscript: Low (0.0–0.3), Medium (0.3–0.7), High (0.7�
 
 | Model | Accuracy | Precision (macro) | Recall (macro) | F1-Score (macro) |
 |-------|----------|-------------------|----------------|------------------|
-| RF Risk | 0.8022 | 0.7660 | 0.7770 | 0.7686 |
-| XGB Risk | 0.8067 | 0.7762 | 0.7765 | 0.7745 |
+| RF Risk | 0.8000 | 0.7692 | 0.7632 | 0.7634 |
+| XGB Risk | 0.8178 | 0.7989 | 0.7893 | 0.7909 |
 
 ---
 
@@ -42,9 +42,9 @@ Risk thresholds per manuscript: Low (0.0–0.3), Medium (0.3–0.7), High (0.7�
 |-------|------------|
 | Random Forest | 81.33 |
 | XGBoost | 85.76 |
-| LSTM | 57.10 |
-| Meta-Ensemble (baseline bases) | *(run `python main.py`)* |
-| **Meta-Ensemble (tuned bases)** | **46.20** |
+| LSTM | 50.67 |
+| Meta-Ensemble (baseline bases) | 46.15 |
+| **Meta-Ensemble (tuned bases)** | **45.50** |
 
 ---
 
@@ -95,19 +95,19 @@ Baseline models use **default hyperparameters** (sklearn/xgboost defaults for tr
 
 | Model | Accuracy | Precision | Recall | F1-Score | AUC-ROC |
 |-------|----------|-----------|--------|----------|---------|
-| RF (Default) | 0.7711 | 0.6690 | 0.6291 | 0.6485 | 0.8285 |
+| RF (Default) | 0.7711 | 0.6644 | 0.6424 | 0.6532 | 0.8330 |
 | **RF (Tuned)** | **0.7533** | **0.6099** | **0.7351** | **0.6667** | **0.8429** |
-| XGB (Default) | 0.7489 | 0.6131 | 0.6821 | 0.6458 | 0.8101 |
+| XGB (Default) | 0.7578 | 0.6329 | 0.6623 | 0.6472 | 0.8063 |
 | **XGB (Tuned)** | **0.7467** | **0.5979** | **0.7483** | **0.6647** | **0.8435** |
-| LSTM (Default) | 0.8578 | 0.8991 | 0.6490 | 0.7538 | 0.9251 |
-| **LSTM (Tuned)** | **0.8733** | **0.8456** | **0.7616** | **0.8014** | **0.9266** |
+| LSTM (Default) | 0.8622 | 0.8112 | 0.7682 | 0.7891 | 0.9252 |
+| **LSTM (Tuned)** | **0.8689** | **0.8594** | **0.7285** | **0.7885** | **0.9248** |
 
 **Key tuned hyperparameters:**
 - RF: n_estimators=300, max_depth=10, min_samples_split=5, min_samples_leaf=4, max_features=log2
 - XGB: n_estimators=300, max_depth=8, lr=0.01, subsample=0.7, colsample_bytree=0.7
-- LSTM: Best configuration selected from 8 candidates by validation loss
+- LSTM: Best configuration selected from 8 candidates by validation loss (e.g. units 128/64, dropout 0.4, lr 0.002, batch 64 in the latest run)
 
-**Tuning improved F1-Score, AUC-ROC, and Recall across all models.** LSTM tuning showed the clearest gains: F1 improved from 0.754 to 0.801 (+6.3%), and Recall from 0.649 to 0.762 (+17.4%). Higher recall means the tuned models catch more genuinely at-risk projects, which is essential for government accountability.
+**Interpretation:** Metrics above are **test-set** comparisons of default vs tuned base models. Tree tuning improves **Recall** and **AUC-ROC** vs defaults; LSTM default vs tuned trade off precision/recall (defaults had higher recall on this run). The **stacking meta-learner on tuned bases** still edges the baseline-meta on Accuracy, Precision, F1, and AUC (see §1).
 
 ---
 
@@ -115,11 +115,11 @@ Baseline models use **default hyperparameters** (sklearn/xgboost defaults for tr
 
 1. **Random Forest and XGBoost achieve ~75% accuracy and ~0.84 AUC-ROC** on static project features alone (contractor reliability, typhoon exposure, budget, agency capacity), demonstrating meaningful predictive signal for delay forecasting from project-level characteristics.
 
-2. **LSTM achieves ~88% accuracy and ~0.93 AUC-ROC** by leveraging temporal quarterly monitoring patterns (progress slippage, expenditure ratios), confirming that sequential inspection data significantly improves prediction.
+2. **LSTM achieves ~87% accuracy and ~0.92 AUC-ROC** by leveraging temporal quarterly monitoring patterns (progress slippage, expenditure ratios), confirming that sequential inspection data significantly improves prediction.
 
-3. **The Meta-Ensemble achieves the best AUC-ROC (0.934)** by fusing all three models through logistic regression stacking, with the lowest MAE at 46.20 days.
+3. **The Meta-Ensemble (tuned bases) achieves the best AUC-ROC (0.9365)** by fusing all three models through logistic regression stacking, with the lowest MAE at **45.50** days (vs **46.15** for meta on baseline bases).
 
-4. **Risk categorisation models achieve ~80% accuracy** on the 4-class problem (Low/Medium/High/Critical), using manuscript-defined thresholds.
+4. **Risk categorisation models achieve ~80–82% accuracy** on the 4-class problem (Low/Medium/High/Critical), using manuscript-defined thresholds.
 
 5. **Feature importance analysis** identifies `contractor_reliability`, `typhoon_exposure`, `is_infrastructure`, and `approved_budget` as the most influential static risk factors.
 

@@ -29,9 +29,9 @@ The pipeline trains **two** stacking meta-learners: one on **default** base mode
 |-------|----------|-----------|--------|----------|---------|
 | Random Forest | 0.7533 | 0.6099 | 0.7351 | 0.6667 | 0.8429 |
 | XGBoost | 0.7467 | 0.5979 | 0.7483 | 0.6647 | 0.8435 |
-| LSTM | 0.8778 | 0.8478 | 0.7748 | 0.8097 | 0.9273 |
-| Meta-Ensemble (baseline bases) | *run `python main.py`* | | | | |
-| **Meta-Ensemble (tuned bases)** | **0.8733** | **0.8730** | **0.7285** | **0.7942** | **0.9340** |
+| LSTM | 0.8689 | 0.8594 | 0.7285 | 0.7885 | 0.9248 |
+| Meta-Ensemble (baseline bases) | 0.8644 | 0.8571 | 0.7152 | 0.7798 | 0.9308 |
+| **Meta-Ensemble (tuned bases)** | **0.8711** | **0.8780** | **0.7152** | **0.7883** | **0.9365** |
 
 ### Risk Categorisation (4-class: Low / Medium / High / Critical)
 
@@ -39,8 +39,8 @@ Thresholds per manuscript: Low (0.0–0.3), Medium (0.3–0.7), High (0.7–0.9)
 
 | Model | Accuracy | Macro F1-Score |
 |-------|----------|----------------|
-| RF Risk | 0.8022 | 0.7686 |
-| XGB Risk | 0.8067 | 0.7745 |
+| RF Risk | 0.8000 | 0.7634 |
+| XGB Risk | 0.8178 | 0.7909 |
 
 ### Regression — Delay Days (MAE)
 
@@ -48,9 +48,9 @@ Thresholds per manuscript: Low (0.0–0.3), Medium (0.3–0.7), High (0.7–0.9)
 |-------|------------|
 | Random Forest | 81.33 |
 | XGBoost | 85.76 |
-| LSTM | 57.10 |
-| Meta-Ensemble (baseline bases) | *run `python main.py`* |
-| **Meta-Ensemble (tuned bases)** | **46.20** |
+| LSTM | 50.67 |
+| Meta-Ensemble (baseline bases) | 46.15 |
+| **Meta-Ensemble (tuned bases)** | **45.50** |
 
 ### Hyperparameter Tuning Impact
 
@@ -58,23 +58,23 @@ All three model types were tuned: RF/XGBoost via `RandomizedSearchCV` (40 iter, 
 
 | Model | F1-Score | AUC-ROC | Recall |
 |-------|----------|---------|--------|
-| RF (Default) | 0.6485 | 0.8285 | 0.6291 |
+| RF (Default) | 0.6532 | 0.8330 | 0.6424 |
 | **RF (Tuned)** | **0.6667** | **0.8429** | **0.7351** |
-| XGB (Default) | 0.6458 | 0.8101 | 0.6821 |
+| XGB (Default) | 0.6472 | 0.8063 | 0.6623 |
 | **XGB (Tuned)** | **0.6647** | **0.8435** | **0.7483** |
-| LSTM (Default) | 0.7538 | 0.9251 | 0.6490 |
-| **LSTM (Tuned)** | **0.8014** | **0.9266** | **0.7616** |
+| LSTM (Default) | 0.7891 | 0.9252 | 0.7682 |
+| **LSTM (Tuned)** | **0.7885** | **0.9248** | **0.7285** |
 
-Tuning improved F1, AUC-ROC, and Recall across all models — the metrics most critical for catching at-risk projects. LSTM showed the largest gain (+6.3% F1, +17.4% Recall).
+Tree tuning improves recall and AUC vs defaults; LSTM default vs tuned involves precision/recall trade-offs on the test split. See `outputs/RESULTS_SUMMARY.md` for full discussion.
 
 ### Key Findings
 
-1. **LSTM and Meta-Ensemble significantly outperform static-feature models** (~88% accuracy vs ~75%), confirming that temporal monitoring data is the strongest predictor of project delays.
-2. **AUC-ROC ~0.93** for the Meta-Ensemble (tuned bases) indicates excellent discriminatory ability; the pipeline also reports **Meta (baseline bases)** so you can see whether tuning the underlying RF/XGB/LSTM improves the stacked meta-learner.
-3. **Hyperparameter tuning improved Recall by +10–15%** for tree-based models, ensuring more at-risk projects are correctly identified.
-4. **Random Forest and XGBoost achieve ~80% accuracy on 4-class risk categorisation**, with balanced precision and recall across risk tiers.
+1. **LSTM and Meta-Ensemble significantly outperform static-feature models** (~87% accuracy vs ~75%), confirming that temporal monitoring data is the strongest predictor of project delays.
+2. **AUC-ROC ~0.94** for the Meta-Ensemble (tuned bases) indicates excellent discriminatory ability; the pipeline also reports **Meta (baseline bases)** and **Δ tuned − baseline** on the test set.
+3. **Hyperparameter tuning improved Recall** notably for tree-based models vs defaults on the test set.
+4. **Random Forest and XGBoost achieve ~80–82% accuracy on 4-class risk categorisation**, with balanced precision and recall across risk tiers.
 5. **Feature importance analysis** reveals `contractor_reliability`, `typhoon_exposure`, `approved_budget`, and `is_infrastructure` as the top static risk drivers.
-6. **The Meta-Ensemble (tuned bases) achieves the lowest MAE** (~46 days), demonstrating the value of fusing multiple model perspectives; compare against the baseline-meta MAE in the console.
+6. **The Meta-Ensemble (tuned bases) achieves the lowest MAE** (~45.5 days vs ~46.2 for meta on baseline bases), demonstrating the value of fusing tuned base models.
 
 ---
 
