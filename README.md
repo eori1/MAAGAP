@@ -114,7 +114,9 @@ MAAGAP/
 │   ├── fi_rf_delay.png / .html          # Feature importance — RF (top 20)
 │   ├── fi_xgb_delay.png / .html         # Feature importance — XGBoost (top 20)
 │   ├── lstm_training_history.png / .html # LSTM loss/accuracy curves
-│   ├── risk_distribution.png / .html    # Actual vs Predicted risk distribution
+│   ├── risk_distribution.png / .html    # Actual | RF | XGB risk (3 panels)
+│   ├── risk_distribution_rf.png / .html   # Actual vs RF risk only
+│   ├── risk_distribution_xgb.png / .html  # Actual vs XGB risk only
 │   └── hyperparameter_tuning_comparison.png / .html  # Default vs Tuned bar chart
 │
 └── models/                        # Trained model artifacts (git-ignored, ~50MB)

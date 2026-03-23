@@ -30,7 +30,8 @@ from maagap.models import (
 from maagap.evaluation import (
     binary_metrics, regression_metrics, multiclass_metrics,
     plot_confusion_matrix, plot_roc_curves, plot_feature_importance,
-    plot_training_history, plot_risk_distribution, plot_model_comparison,
+    plot_training_history, plot_risk_distribution, plot_risk_distribution_rf_xgb,
+    plot_model_comparison,
     generate_full_report, find_optimal_threshold,
 )
 
@@ -235,8 +236,20 @@ def main():
     plot_training_history(history, "lstm_training_history.png")
     print("  Saved: lstm_training_history.png")
 
-    plot_risk_distribution(yr_te, xgb_risk_pred_te, "risk_distribution.png")
-    print("  Saved: risk_distribution.png")
+    plot_risk_distribution(
+        yr_te, rf_risk_pred_te, "risk_distribution_rf.png",
+        title="Predicted — Random Forest (Risk)",
+    )
+    print("  Saved: risk_distribution_rf.png / .html")
+    plot_risk_distribution(
+        yr_te, xgb_risk_pred_te, "risk_distribution_xgb.png",
+        title="Predicted — XGBoost (Risk)",
+    )
+    print("  Saved: risk_distribution_xgb.png / .html")
+    plot_risk_distribution_rf_xgb(
+        yr_te, rf_risk_pred_te, xgb_risk_pred_te, "risk_distribution.png",
+    )
+    print("  Saved: risk_distribution.png / .html (Actual | RF | XGB — combined)")
 
     report_df = generate_full_report(all_metrics)
     print("  Saved: evaluation_report.csv")

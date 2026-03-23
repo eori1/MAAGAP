@@ -64,8 +64,15 @@ Risk thresholds per manuscript: Low (0.0–0.3), Medium (0.3–0.7), High (0.7�
 ### LSTM Training History
 - **`lstm_training_history.png`** — Training vs validation loss and accuracy curves over epochs
 
-### Risk Distribution
-- **`risk_distribution.png`** — Actual vs Predicted risk category distribution (side-by-side)
+### Risk Distribution (4-class: Low / Medium / High / Critical)
+
+These charts compare **class frequencies**, not per-project correctness (see confusion matrices for that).
+
+- **`risk_distribution.png`** — **Combined:** Actual | Random Forest (Risk) | XGBoost (Risk) — three panels in one figure
+- **`risk_distribution_rf.png`** — Actual vs **RF** predicted only (two panels)
+- **`risk_distribution_xgb.png`** — Actual vs **XGBoost** predicted only (two panels)
+
+**Why not the meta-ensemble?** The meta-learner fuses **RF + XGB + LSTM** for **binary delay** only. The LSTM is not trained for **4-class risk**, so there is no LSTM risk probability to stack. Risk tiers use **RF and XGB** on static features, per the manuscript.
 
 ### Hyperparameter Tuning Comparison
 - **`hyperparameter_tuning_comparison.png`** — Side-by-side bar chart: Default vs Tuned for RF and XGBoost

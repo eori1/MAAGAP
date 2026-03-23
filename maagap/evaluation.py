@@ -216,28 +216,57 @@ def plot_training_history(history, filename="lstm_training_history.png"):
     return fig
 
 
-def plot_risk_distribution(y_true, y_pred, filename="risk_distribution.png"):
+def _risk_counts_bar(data, colors):
+    """Return bar trace for a single risk label vector (0/1/2/3)."""
+    labels_idx, counts = np.unique(data, return_counts=True)
+    names = [RISK_LABELS[i] if i < len(RISK_LABELS) else str(i) for i in labels_idx]
+    bar_colors = [colors[i] if i < len(colors) else "#95a5a6" for i in labels_idx]
+    return go.Bar(
+        x=names, y=counts, marker_color=bar_colors,
+        text=counts, textposition="auto",
+        hovertemplate="%{x}: %{y}<extra></extra>",
+        showlegend=False,
+    )
+
+
+def plot_risk_distribution(y_true, y_pred, filename="risk_distribution.png", title=None):
+    """Side-by-side bar chart: actual vs predicted risk distribution."""
+    pred_title = "Predicted Risk Distribution"
+    if title:
+        pred_title = title
     fig = make_subplots(
         rows=1, cols=2,
-        subplot_titles=("Actual Risk Distribution", "Predicted Risk Distribution"),
+        subplot_titles=("Actual Risk Distribution", pred_title),
         horizontal_spacing=0.12,
     )
 
     colors = ["#2ecc71", "#f39c12", "#e74c3c", "#8e44ad"]
 
-    for col_idx, (data, subtitle) in enumerate([(y_true, "Actual"), (y_pred, "Predicted")], 1):
-        labels_idx, counts = np.unique(data, return_counts=True)
-        names = [RISK_LABELS[i] if i < len(RISK_LABELS) else str(i) for i in labels_idx]
-        bar_colors = [colors[i] if i < len(colors) else "#95a5a6" for i in labels_idx]
-        fig.add_trace(go.Bar(
-            x=names, y=counts, marker_color=bar_colors,
-            text=counts, textposition="auto",
-            hovertemplate="%{x}: %{y}<extra></extra>",
-            showlegend=False,
-        ), row=1, col=col_idx)
+    fig.add_trace(_risk_counts_bar(y_true, colors), row=1, col=1)
+    fig.add_trace(_risk_counts_bar(y_pred, colors), row=1, col=2)
 
     fig.update_yaxes(title_text="Count", row=1, col=1)
     fig.update_layout(width=900, height=450, **_PLOTLY_LAYOUT)
+    _save_fig(fig, filename)
+    return fig
+
+
+def plot_risk_distribution_rf_xgb(y_true, y_rf_pred, y_xgb_pred, filename="risk_distribution_rf_xgb.png"):
+    """One figure: Actual | RF predicted | XGBoost predicted (4-class risk)."""
+    fig = make_subplots(
+        rows=1, cols=3,
+        subplot_titles=(
+            "Actual Risk Distribution",
+            "Predicted — Random Forest (Risk)",
+            "Predicted — XGBoost (Risk)",
+        ),
+        horizontal_spacing=0.08,
+    )
+    colors = ["#2ecc71", "#f39c12", "#e74c3c", "#8e44ad"]
+    for col, data in enumerate([y_true, y_rf_pred, y_xgb_pred], 1):
+        fig.add_trace(_risk_counts_bar(data, colors), row=1, col=col)
+    fig.update_yaxes(title_text="Count", row=1, col=1)
+    fig.update_layout(width=1100, height=450, **_PLOTLY_LAYOUT)
     _save_fig(fig, filename)
     return fig
 
