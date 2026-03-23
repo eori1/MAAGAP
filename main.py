@@ -241,6 +241,85 @@ def main():
     report_df = generate_full_report(all_metrics)
     print("  Saved: evaluation_report.csv")
 
+    # ------------------------------------------------------------------
+    # Hyperparameter tuning comparison (Default vs Tuned for all models)
+    # ------------------------------------------------------------------
+    banner("Hyperparameter Tuning Comparison")
+
+    from sklearn.ensemble import RandomForestClassifier as _RFC
+    from xgboost import XGBClassifier as _XGBC
+    from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
+    import plotly.graph_objects as go
+    from plotly.subplots import make_subplots
+
+    def _calc(y_true, y_pred, y_prob, label):
+        return {
+            "Model": label,
+            "Accuracy": accuracy_score(y_true, y_pred),
+            "Precision": precision_score(y_true, y_pred, zero_division=0),
+            "Recall": recall_score(y_true, y_pred, zero_division=0),
+            "F1-Score": f1_score(y_true, y_pred, zero_division=0),
+            "AUC-ROC": roc_auc_score(y_true, y_prob),
+        }
+
+    print("  Training baseline (default) models...")
+    rf_bl = _RFC(n_estimators=100, class_weight="balanced", random_state=SEED)
+    rf_bl.fit(Xs_tr, yd_tr)
+    rf_bl_p, rf_bl_pr = rf_bl.predict(Xs_te), rf_bl.predict_proba(Xs_te)[:, 1]
+
+    pos, neg = int((yd_tr == 1).sum()), int((yd_tr == 0).sum())
+    xgb_bl = _XGBC(n_estimators=100, random_state=SEED, eval_metric="logloss",
+                    use_label_encoder=False, scale_pos_weight=neg / max(pos, 1))
+    xgb_bl.fit(Xs_tr, yd_tr)
+    xgb_bl_p, xgb_bl_pr = xgb_bl.predict(Xs_te), xgb_bl.predict_proba(Xs_te)[:, 1]
+
+    lstm_bl, _, _ = train_lstm(Xt_tr, yd_tr, Xt_va, yd_va, task="delay", tune=False)
+    lstm_bl_pr = lstm_bl.predict(Xt_te, verbose=0).flatten()
+    lstm_bl_p = (lstm_bl_pr >= 0.5).astype(int)
+
+    pairs = [
+        (_calc(yd_te, rf_bl_p, rf_bl_pr, "RF (Default)"),
+         _calc(yd_te, rf_pred_te, rf_prob_te, "RF (Tuned)"), "Random Forest"),
+        (_calc(yd_te, xgb_bl_p, xgb_bl_pr, "XGB (Default)"),
+         _calc(yd_te, xgb_pred_te, xgb_prob_te, "XGB (Tuned)"), "XGBoost"),
+        (_calc(yd_te, lstm_bl_p, lstm_bl_pr, "LSTM (Default)"),
+         _calc(yd_te, lstm_pred_te, lstm_prob_te, "LSTM (Tuned)"), "LSTM"),
+    ]
+
+    keys = ["Accuracy", "Precision", "Recall", "F1-Score", "AUC-ROC"]
+    print(f"\n  {'Model':20s} {'Acc':>8s} {'Prec':>8s} {'Rec':>8s} {'F1':>8s} {'AUC':>8s}")
+    print("  " + "-" * 54)
+    for bl, tu, _ in pairs:
+        for m in (bl, tu):
+            print(f"  {m['Model']:20s} " + " ".join(f"{m[k]:8.4f}" for k in keys))
+
+    fig = make_subplots(rows=1, cols=3,
+                        subplot_titles=("Random Forest", "XGBoost", "LSTM"),
+                        horizontal_spacing=0.08)
+    for col, (bl, tu, name) in enumerate(pairs, 1):
+        bl_vals = [bl[k] for k in keys]
+        tu_vals = [tu[k] for k in keys]
+        fig.add_trace(go.Bar(x=keys, y=bl_vals, name="Default" if col == 1 else "",
+                             marker_color="#e74c3c", opacity=0.7,
+                             text=[f"{v:.3f}" for v in bl_vals], textposition="auto",
+                             showlegend=(col == 1), legendgroup="default"), row=1, col=col)
+        fig.add_trace(go.Bar(x=keys, y=tu_vals, name="Tuned" if col == 1 else "",
+                             marker_color="#2ecc71", opacity=0.9,
+                             text=[f"{v:.3f}" for v in tu_vals], textposition="auto",
+                             showlegend=(col == 1), legendgroup="tuned"), row=1, col=col)
+
+    fig.update_layout(
+        title=dict(text="Impact of Hyperparameter Tuning on All Models", x=0.5),
+        barmode="group", template="plotly_white",
+        height=500, width=1200,
+        yaxis=dict(range=[0, 1.05]), yaxis2=dict(range=[0, 1.05]), yaxis3=dict(range=[0, 1.05]),
+        legend=dict(orientation="h", y=-0.12, x=0.5, xanchor="center"),
+        font=dict(family="Segoe UI, sans-serif", size=12),
+    )
+    from maagap.evaluation import _save_fig
+    _save_fig(fig, "hyperparameter_tuning_comparison.png")
+    print("  Saved: hyperparameter_tuning_comparison.png / .html")
+
     # ==================================================================
     # Final summary
     # ==================================================================
