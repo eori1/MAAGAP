@@ -108,7 +108,60 @@ Baseline models use **default hyperparameters** (sklearn/xgboost defaults for tr
 
 ---
 
-## 7. Data Split
+## 7. Feature Definitions (39 total: 30 static + 9 temporal)
+
+### Static Features (30) — used by Random Forest & XGBoost
+
+| # | Feature | Description |
+|---|---------|-------------|
+| 1 | `approved_budget` | Total approved budget allocation for the project in pesos |
+| 2 | `planned_duration_months` | Number of months the project is officially scheduled to take |
+| 3 | `start_month` | Calendar month (1–12) when the project began, capturing seasonality |
+| 4 | `has_contractor` | Whether the project has an assigned contractor (1) or is agency-managed (0) |
+| 5 | `contractor_reliability` | Historical performance score (0–1) of the assigned contractor based on past delivery |
+| 6 | `agency_capacity` | Capability score (0–1) of the implementing government agency |
+| 7 | `typhoon_exposure` | Number of typhoon-affected days in the project's province during its year (PAGASA) |
+| 8 | `cpi_at_start` | Consumer Price Index at the project's start year (PSA) |
+| 9 | `cmrpi_at_start` | Construction Materials Retail Price Index at the project's start year (PSA) |
+| 10 | `cpi_change` | Year-over-year percentage change in CPI, indicating inflation pressure |
+| 11 | `cmrpi_change` | Year-over-year percentage change in construction material prices |
+| 12 | `budget_log` | Log-transformed budget to reduce skewness across orders of magnitude |
+| 13 | `is_infrastructure` | Binary: 1 if infrastructure (roads, bridges, buildings), 0 if non-infrastructure |
+| 14 | `is_typhoon_start` | Binary: 1 if project starts during typhoon season (June–November) |
+| 15 | `infra_x_typhoon` | Interaction: infrastructure projects disproportionately affected by typhoon exposure |
+| 16 | `infra_x_budget` | Interaction: large-budget infrastructure projects carry compounded risk |
+| 17 | `contractor_x_typhoon` | Interaction: unreliable contractors combined with high typhoon exposure |
+| 18 | `budget_x_cpi_change` | Interaction: large budgets under high inflation face greater cost overrun pressure |
+| 19 | `low_contractor_flag` | Binary: 1 if contractor reliability is below 0.5 |
+| 20 | `high_budget_flag` | Binary: 1 if project budget exceeds the dataset median |
+| 21 | `agency_risk` | Inverse of agency capacity (1 − agency_capacity), representing institutional weakness |
+| 22 | `contractor_x_agency` | Interaction: weak contractor combined with weak agency ("double risk") |
+| 23 | `infra_x_low_contractor` | Interaction: infrastructure projects assigned to low-reliability contractors |
+| 24 | `typhoon_x_budget` | Interaction: weather exposure scaled by project size |
+| 25 | `econ_pressure` | Combined magnitude of CPI and CMRPI changes, representing overall economic stress |
+| 26 | `composite_risk_features` | Weighted composite score of infrastructure type, budget, contractor, weather, agency, and economic factors |
+| 27 | `project_type_enc` | Label-encoded project type (Infrastructure vs Non-Infrastructure) |
+| 28 | `implementing_agency_enc` | Label-encoded implementing agency (e.g., Provincial Engineering Office, PHO) |
+| 29 | `procurement_mode_enc` | Label-encoded mode of procurement (e.g., public bidding, negotiated) |
+| 30 | `funding_source_enc` | Label-encoded funding source (e.g., General Fund, Special Education Fund) |
+
+### Temporal Features (9) — used by LSTM (per quarterly monitoring period)
+
+| # | Feature | Description |
+|---|---------|-------------|
+| 1 | `planned_progress_pct` | Expected cumulative percentage of work completed by this quarter |
+| 2 | `actual_progress_pct` | Actual cumulative percentage of work completed as recorded during inspection |
+| 3 | `slippage_pct` | Gap between planned and actual progress (planned − actual), indicating schedule deviation |
+| 4 | `expenditure_ratio` | Ratio of actual spending to planned budget at this quarter |
+| 5 | `issues_count` | Number of reported issues (material shortages, permit delays, workforce problems) |
+| 6 | `rainfall_mm` | Average monthly rainfall in millimeters for the province this quarter (PAGASA) |
+| 7 | `typhoon_days` | Number of typhoon-affected days in the province this quarter (PAGASA) |
+| 8 | `cpi_quarterly` | Consumer Price Index for this quarter (PSA) |
+| 9 | `cmrpi_quarterly` | Construction Materials Retail Price Index for this quarter (PSA) |
+
+---
+
+## 8. Data Split
 
 - **Train:** 2,100 samples (70%)
 - **Validation:** 450 samples (15%)
@@ -118,6 +171,6 @@ Per manuscript specification: 70/30 train-test split, with the 30% subdivided in
 
 ---
 
-## 8. Interactive Charts
+## 9. Interactive Charts
 
 All visualisations are also saved as interactive HTML files (`.html`) in the `outputs/` folder. Open them in any browser for hover tooltips and zoom.

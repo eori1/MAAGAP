@@ -195,8 +195,62 @@ Generates 3,000 synthetic projects (2016–2025) grounded in real PPDO distribut
 
 ### `maagap/feature_engineering.py`
 Transforms raw data into ML-ready formats:
-- **Static features** (30 columns): numeric fields + label-encoded categoricals + engineered interaction terms (`infra_x_typhoon`, `contractor_x_agency`, `econ_pressure`, etc.)
+- **Static features** (30 columns): numeric fields + label-encoded categoricals + engineered interaction terms
 - **Temporal tensor** (3000 x 4 x 9): MinMax-scaled quarterly sequences for LSTM input
+
+<details>
+<summary><b>Full Feature Definitions (30 static + 9 temporal = 39 total)</b></summary>
+
+#### Static Features (30) — used by Random Forest & XGBoost
+
+| # | Feature | Description |
+|---|---------|-------------|
+| 1 | `approved_budget` | Total approved budget allocation for the project in pesos |
+| 2 | `planned_duration_months` | Number of months the project is officially scheduled to take |
+| 3 | `start_month` | Calendar month (1–12) when the project began, capturing seasonality |
+| 4 | `has_contractor` | Whether the project has an assigned contractor (1) or is agency-managed (0) |
+| 5 | `contractor_reliability` | Historical performance score (0–1) of the assigned contractor |
+| 6 | `agency_capacity` | Capability score (0–1) of the implementing government agency |
+| 7 | `typhoon_exposure` | Typhoon-affected days in the province during the project year (PAGASA) |
+| 8 | `cpi_at_start` | Consumer Price Index at the project's start year (PSA) |
+| 9 | `cmrpi_at_start` | Construction Materials Retail Price Index at the project's start year (PSA) |
+| 10 | `cpi_change` | Year-over-year % change in CPI |
+| 11 | `cmrpi_change` | Year-over-year % change in construction material prices |
+| 12 | `budget_log` | Log-transformed budget to reduce skewness |
+| 13 | `is_infrastructure` | Binary: 1 if infrastructure, 0 if non-infrastructure |
+| 14 | `is_typhoon_start` | Binary: 1 if project starts during typhoon season (Jun–Nov) |
+| 15 | `infra_x_typhoon` | Interaction: infrastructure × typhoon exposure |
+| 16 | `infra_x_budget` | Interaction: infrastructure × budget scale |
+| 17 | `contractor_x_typhoon` | Interaction: contractor unreliability × typhoon exposure |
+| 18 | `budget_x_cpi_change` | Interaction: budget × inflation pressure |
+| 19 | `low_contractor_flag` | Binary: 1 if contractor reliability < 0.5 |
+| 20 | `high_budget_flag` | Binary: 1 if budget > dataset median |
+| 21 | `agency_risk` | 1 − agency_capacity (institutional weakness) |
+| 22 | `contractor_x_agency` | Interaction: weak contractor × weak agency |
+| 23 | `infra_x_low_contractor` | Interaction: infrastructure × low-reliability contractor |
+| 24 | `typhoon_x_budget` | Interaction: weather exposure × project size |
+| 25 | `econ_pressure` | Combined CPI + CMRPI change magnitude |
+| 26 | `composite_risk_features` | Weighted composite of all key risk indicators |
+| 27 | `project_type_enc` | Label-encoded project type |
+| 28 | `implementing_agency_enc` | Label-encoded implementing agency |
+| 29 | `procurement_mode_enc` | Label-encoded mode of procurement |
+| 30 | `funding_source_enc` | Label-encoded funding source |
+
+#### Temporal Features (9) — used by LSTM (per quarterly monitoring period)
+
+| # | Feature | Description |
+|---|---------|-------------|
+| 1 | `planned_progress_pct` | Expected cumulative % of work completed by this quarter |
+| 2 | `actual_progress_pct` | Actual cumulative % of work completed (from inspection) |
+| 3 | `slippage_pct` | Planned − actual progress, indicating schedule deviation |
+| 4 | `expenditure_ratio` | Actual spending / planned budget at this quarter |
+| 5 | `issues_count` | Number of reported issues (shortages, permit delays, etc.) |
+| 6 | `rainfall_mm` | Average monthly rainfall this quarter (PAGASA) |
+| 7 | `typhoon_days` | Typhoon-affected days this quarter (PAGASA) |
+| 8 | `cpi_quarterly` | Consumer Price Index this quarter (PSA) |
+| 9 | `cmrpi_quarterly` | Construction Materials RPI this quarter (PSA) |
+
+</details>
 
 ### `maagap/models.py`
 Implements training with hyperparameter tuning for all model types:
