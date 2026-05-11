@@ -508,49 +508,49 @@ Present them **in this order** during your defense slides.
 #### 1. ROC Curves — All Delay Models
 *What to say: "This shows how well each model distinguishes delayed from non-delayed projects. AUC closer to 1.0 is better. The Meta-Ensemble (orange) achieves the highest AUC, confirming that stacking all three models outperforms any individual model."*
 
-![ROC Curves — All Delay Models](C:/Users/ASUS/.gemini/antigravity/brain/412bfb96-d735-4b76-9ffb-2ad76e0e9d74/roc_curves_delay.png)
+![ROC Curves — All Delay Models](outputs/roc_curves_delay.png)
 
 ---
 
 #### 2. Model Performance Comparison
 *What to say: "A side-by-side comparison of Accuracy, Precision, Recall, F1-Score, and AUC-ROC across all models. The Meta-Ensemble consistently achieves the highest scores on the held-out test set."*
 
-![Model Performance Comparison](C:/Users/ASUS/.gemini/antigravity/brain/412bfb96-d735-4b76-9ffb-2ad76e0e9d74/model_comparison.png)
+![Model Performance Comparison](outputs/model_comparison.png)
 
 ---
 
 #### 3. Meta-Ensemble Confusion Matrix
 *What to say: "Shows the exact prediction breakdown: True Positives (correctly flagged delayed), True Negatives, False Positives, and False Negatives. The goal is to minimize False Negatives — projects that are actually delayed but were missed."*
 
-![Meta-Ensemble Confusion Matrix](C:/Users/ASUS/.gemini/antigravity/brain/412bfb96-d735-4b76-9ffb-2ad76e0e9d74/cm_meta_delay.png)
+![Meta-Ensemble Confusion Matrix](outputs/cm_meta_delay.png)
 
 ---
 
 #### 4. Hyperparameter Tuning Comparison
 *What to say: "Demonstrates the value of tuning. Baseline (default) vs Tuned models across all metrics. The improvement validates our use of RandomizedSearchCV (15 iterations, 3-fold CV) for RF and XGBoost, and 8-configuration search for LSTM."*
 
-![Hyperparameter Tuning Comparison](C:/Users/ASUS/.gemini/antigravity/brain/412bfb96-d735-4b76-9ffb-2ad76e0e9d74/hyperparameter_tuning_comparison.png)
+![Hyperparameter Tuning Comparison](outputs/hyperparameter_tuning_comparison.png)
 
 ---
 
 #### 5. Random Forest Feature Importance
 *What to say: "The top 20 features that most influence delay prediction. This is what gives your model explainability — you can tell PPDO inspectors exactly which project characteristics are the strongest delay predictors in Iloilo Province."*
 
-![RF Feature Importance — Top 20](C:/Users/ASUS/.gemini/antigravity/brain/412bfb96-d735-4b76-9ffb-2ad76e0e9d74/fi_rf_delay.png)
+![RF Feature Importance — Top 20](outputs/fi_rf_delay.png)
 
 ---
 
 #### 6. LSTM Training History
 *What to say: "Shows training loss vs. validation loss across epochs. The early stopping point (where validation loss stops improving) is where the best model weights are saved. A well-behaved curve with converging train/val loss confirms the LSTM is not overfitting."*
 
-![LSTM Training History](C:/Users/ASUS/.gemini/antigravity/brain/412bfb96-d735-4b76-9ffb-2ad76e0e9d74/lstm_training_history.png)
+![LSTM Training History](outputs/lstm_training_history.png)
 
 ---
 
 #### 7. Risk Category Distribution — Actual vs Predicted
 *What to say: "Compares the actual risk distribution (from synthetic generation) with what RF and XGBoost predict for the same test projects. Close alignment confirms the models have learned the correct risk patterns."*
 
-![Risk Distribution — Actual vs RF vs XGB](C:/Users/ASUS/.gemini/antigravity/brain/412bfb96-d735-4b76-9ffb-2ad76e0e9d74/risk_distribution.png)
+![Risk Distribution — Actual vs RF vs XGB](outputs/risk_distribution.png)
 
 ---
 
@@ -559,21 +559,21 @@ Present them **in this order** during your defense slides.
 #### 8. Risk Score Distribution by Tier
 *What to say: "The continuous risk score for all 450 test projects, colored by assigned tier. The vertical dashed lines show the threshold boundaries from the manuscript. The separation between colors confirms the thresholds work as intended."*
 
-![Risk Score Distribution by Tier](C:/Users/ASUS/.gemini/antigravity/brain/412bfb96-d735-4b76-9ffb-2ad76e0e9d74/risk_score_distribution.png)
+![Risk Score Distribution by Tier](outputs/risk_score_distribution.png)
 
 ---
 
 #### 9. Actual vs Predicted Tier Distribution
 *What to say: "Side-by-side comparison of the ground-truth tier labels (from synthetic generation) vs the tiers assigned by the risk scoring engine. Similar bar heights confirm the engine correctly classifies the majority of projects into the right tier."*
 
-![Actual vs Predicted Tier Distribution](C:/Users/ASUS/.gemini/antigravity/brain/412bfb96-d735-4b76-9ffb-2ad76e0e9d74/risk_tier_comparison.png)
+![Actual vs Predicted Tier Distribution](outputs/risk_tier_comparison.png)
 
 ---
 
 #### 10. Logic Consistency Gauge
 *What to say: "This gauge shows 100% logic consistency — zero violations out of 450 test projects. Every single tier assignment was verified to fall within its defined threshold boundary. This directly satisfies the manuscript's requirement for logic consistency testing."*
 
-![Logic Consistency Gauge — 100%](C:/Users/ASUS/.gemini/antigravity/brain/412bfb96-d735-4b76-9ffb-2ad76e0e9d74/logic_consistency.png)
+![Logic Consistency Gauge — 100%](outputs/logic_consistency.png)
 
 ---
 
@@ -582,14 +582,14 @@ Present them **in this order** during your defense slides.
 #### 11. Baseline vs LP Efficiency + Monte Carlo Distribution
 *What to say: "Left panel: The LP optimizer achieves a 267% higher average risk score than random baseline allocation — far exceeding the 15% target. Right panel: The Monte Carlo distribution shows that across 200 simulated scenarios, 100% of runs exceeded 15% improvement, proving the result is robust and not a coincidence."*
 
-![Optimization Comparison + Monte Carlo](C:/Users/ASUS/.gemini/antigravity/brain/412bfb96-d735-4b76-9ffb-2ad76e0e9d74/optimization_comparison.png)
+![Optimization Comparison + Monte Carlo](outputs/optimization_comparison.png)
 
 ---
 
 #### 12. LP Selection Profile
 *What to say: "Each dot is one of the 450 test projects. Green stars are projects selected ONLY by LP — notice they cluster at high risk scores (top of chart). Red squares are baseline-only selections — they scatter across all risk levels including very low. This visually confirms LP is risk-intelligent while baseline is essentially random."*
 
-![LP vs Baseline Selection Profile](C:/Users/ASUS/.gemini/antigravity/brain/412bfb96-d735-4b76-9ffb-2ad76e0e9d74/lp_selection_profile.png)
+![LP vs Baseline Selection Profile](outputs/lp_selection_profile.png)
 
 ---
 
