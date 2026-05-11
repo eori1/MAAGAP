@@ -1,12 +1,24 @@
-"""MAAGAP — Objective 1 Pipeline
+"""MAAGAP — Objectives 1–4 Pipeline
 ===========================================
-Multi-stage predictive framework:
+Objective 1: Multi-stage predictive framework
   Stage 1: Random Forest + XGBoost (static features)
   Stage 2: LSTM (temporal quarterly sequences)
   Meta:    Stacking ensemble (fuses Stage 1 + Stage 2)
 
-Trains on synthetic data grounded in real PPDO 2026 distributions.
-Evaluates with: Accuracy, Precision, Recall, F1, AUC-ROC, MAE.
+Objective 2: Model evaluation
+  Metrics: Accuracy, Precision, Recall, F1-Score, AUC-ROC, MAE
+
+Objective 3: Dynamic Risk Scoring Engine
+  Translates probability outputs into actionable tiers
+  (Low / Medium / High / Critical) with logic consistency testing
+
+Objective 4: LP Resource Allocation Optimization
+  Linear programming to maximise high-risk project inspection coverage
+  Evaluated against baseline (manual/random) with >=15% improvement target
+  Validated via 200-iteration Monte Carlo simulation
+
+Data: Synthetic data grounded in real PPDO 2026 and Fund Transfer Con
+(21k+ records, 2013-2026) distributions.
 """
 
 import os, sys, warnings, time
@@ -16,8 +28,11 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 import numpy as np
 from sklearn.metrics import roc_curve
 
-from maagap.config import SEED, OUTPUTS_DIR, RISK_LABELS
-from maagap.data_preprocessing import load_and_clean_ppdo, extract_distributions
+from maagap.config import SEED, OUTPUTS_DIR, RISK_LABELS, RISK_THRESHOLDS
+from maagap.data_preprocessing import (
+    load_and_clean_ppdo, extract_distributions,
+    load_fund_transfer_con, extract_fund_transfer_distributions,
+)
 from maagap.synthetic_generator import generate_synthetic_dataset
 from maagap.feature_engineering import (
     build_static_features, build_temporal_sequences,
@@ -25,7 +40,7 @@ from maagap.feature_engineering import (
 )
 from maagap.models import (
     train_random_forest, train_xgboost,
-    train_lstm, train_meta_ensemble, predict_meta,
+    train_lstm, train_meta_ensemble, predict_meta, meta_ensemble_percent_contributions,
 )
 from maagap.evaluation import (
     binary_metrics, regression_metrics, multiclass_metrics,
@@ -33,6 +48,13 @@ from maagap.evaluation import (
     plot_training_history, plot_risk_distribution, plot_risk_distribution_rf_xgb,
     plot_model_comparison,
     generate_full_report, find_optimal_threshold,
+    # Objective 3
+    plot_risk_score_distribution, plot_risk_tier_comparison, plot_logic_consistency,
+    # Objective 4
+    plot_optimization_comparison, plot_lp_selection_profile,
+)
+from maagap.risk_scoring import (
+    compute_risk_score, risk_tiers, logic_consistency_check, RiskScoringConfig,
 )
 
 np.random.seed(SEED)
@@ -43,27 +65,76 @@ def banner(text):
     print(f"\n{DIVIDER}\n  {text}\n{DIVIDER}")
 
 
+def print_hardware_info():
+    """Print GPU/CPU info (for Chapter 4 reproducibility)."""
+    try:
+        import tensorflow as tf
+        gpus = tf.config.list_physical_devices("GPU")
+        if gpus:
+            print(f"  TensorFlow GPUs detected: {[g.name for g in gpus]}")
+        else:
+            print("  TensorFlow GPUs detected: none (CPU fallback)")
+    except Exception as e:
+        print(f"  TensorFlow hardware check failed: {e}")
+
+
 def main():
     t0 = time.time()
     banner("MAAGAP — Objective 1: Multi-Stage Predictive Framework")
+    banner("Hardware Acceleration Check (CUDA/GPU)")
+    print_hardware_info()
 
     # ==================================================================
-    # STEP 1 — Preprocess real PPDO data
+    # STEP 1 — Preprocess real PPDO data + Fund Transfer Con sheet
     # ==================================================================
-    banner("Step 1/7: Loading & Cleaning Real PPDO 2026 Data")
+    banner("Step 1/9: Loading & Cleaning Real PPDO 2026 Data")
     ppdo_df = load_and_clean_ppdo()
     distributions = extract_distributions(ppdo_df)
-    print(f"  Cleaned records : {len(ppdo_df)}")
+    print(f"  MONITORING REPORT Con — Cleaned records : {len(ppdo_df)}")
     print(f"  Budget log-mean : {distributions['budget_log_mean']:.2f}")
     print(f"  Budget log-std  : {distributions['budget_log_std']:.2f}")
     print(f"  Type distribution:")
     for k, v in distributions["type_probs"].items():
         print(f"    {k}: {v:.1%}")
 
+    # --- Fund Transfer Con supplementary data ---
+    print()
+    df_ft = load_fund_transfer_con()
+    if df_ft is not None:
+        ft_dist = extract_fund_transfer_distributions(df_ft)
+        print(f"  Fund Transfer Con — Records loaded    : {len(df_ft):,}")
+        print(f"  Fund Transfer Con — Year range        : "
+              f"{int(df_ft['year'].min())} – {int(df_ft['year'].max())}")
+        if "ft_budget_log_mean" in ft_dist:
+            print(f"  Fund Transfer Con — Budget log-mean  : {ft_dist['ft_budget_log_mean']:.2f}")
+            print(f"  Fund Transfer Con — Budget median    : "
+                  f"PHP {ft_dist.get('ft_budget_median', 0):,.0f}")
+        if "liquidation_rate" in ft_dist:
+            print(f"  Fund Transfer Con — Liquidation rate : {ft_dist['liquidation_rate']:.1%}")
+        if "unliquidated_rate" in ft_dist:
+            print(f"  Fund Transfer Con — Unliquidated rate: {ft_dist['unliquidated_rate']:.1%}")
+        if "ft_type_probs" in ft_dist:
+            print(f"  Fund Transfer Con — Project types:")
+            for k, v in ft_dist["ft_type_probs"].items():
+                print(f"    {k}: {v:.1%}")
+        if "municipality_probs" in ft_dist:
+            top_munis = sorted(
+                ft_dist["municipality_probs"].items(), key=lambda x: -x[1]
+            )[:5]
+            print(f"  Fund Transfer Con — Top municipalities:")
+            for m, p in top_munis:
+                print(f"    {m}: {p:.1%}")
+        # Merge Fund Transfer budget distribution into main distributions
+        # (larger sample = more representative log-normal parameters)
+        distributions["ft_distributions"] = ft_dist
+    else:
+        print("  Fund Transfer Con — Sheet not available (skipped)")
+        ft_dist = {}
+
     # ==================================================================
     # STEP 2 — Generate synthetic multi-year dataset
     # ==================================================================
-    banner("Step 2/7: Generating Synthetic Dataset (2016-2025)")
+    banner("Step 2/9: Generating Synthetic Dataset (2016-2025)")
     df_proj, df_qtr = generate_synthetic_dataset(distributions)
     print(f"  Projects generated  : {len(df_proj)}")
     print(f"  Quarterly records   : {len(df_qtr)}")
@@ -77,7 +148,7 @@ def main():
     # ==================================================================
     # STEP 3 — Feature engineering
     # ==================================================================
-    banner("Step 3/7: Feature Engineering")
+    banner("Step 3/9: Feature Engineering")
     X_static, feat_names, static_scaler, _ = build_static_features(df_proj)
     X_temporal, temp_feat_names, temp_scaler = build_temporal_sequences(df_proj, df_qtr)
     y_delay, y_overrun, y_risk, y_delay_days, y_overrun_pct = build_targets(df_proj)
@@ -92,7 +163,7 @@ def main():
     # ==================================================================
     # STEP 4 — Train / Val / Test split (70 / 15 / 15)
     # ==================================================================
-    banner("Step 4/7: Splitting Data (70/15/15)")
+    banner("Step 4/9: Splitting Data (70/15/15)")
     idx_tr, idx_va, idx_te = split_data(len(df_proj))
     print(f"  Train : {len(idx_tr)}  |  Val : {len(idx_va)}  |  Test : {len(idx_te)}")
 
@@ -105,7 +176,7 @@ def main():
     # ==================================================================
     # STEP 5 — Train models: baseline (for meta comparison) then tuned
     # ==================================================================
-    banner("Step 5/7: Training Models")
+    banner("Step 5/9: Training Models")
 
     print("\n  [Baseline] Delay models (no hyperparameter tuning) — for meta-ensemble comparison ...")
     rf_b = train_random_forest(Xs_tr, yd_tr, task="delay", tune=False)
@@ -121,6 +192,8 @@ def main():
         rf_prob_va_b, xgb_prob_va_b, lstm_prob_va_b, yd_va,
         artifact_name="meta_ensemble_baseline.pkl",
     )
+    meta_b_pct = meta_ensemble_percent_contributions(meta_b, rf_prob_va_b, xgb_prob_va_b, lstm_prob_va_b)
+    print(f"    Meta contribution (%): {meta_b_pct}")
     meta_b_pred_te, meta_b_prob_te = predict_meta(
         meta_b, rf_prob_te_b, xgb_prob_te_b, lstm_prob_te_b,
     )
@@ -163,14 +236,16 @@ def main():
         rf_prob_va, xgb_prob_va, lstm_prob_va, yd_va,
         artifact_name="meta_ensemble.pkl",
     )
+    meta_pct = meta_ensemble_percent_contributions(meta, rf_prob_va, xgb_prob_va, lstm_prob_va)
+    print(f"    Meta contribution (%): {meta_pct}")
     meta_pred_te, meta_prob_te = predict_meta(meta, rf_prob_te, xgb_prob_te, lstm_prob_te)
     meta_prob_pos = meta_prob_te[:, 1] if meta_prob_te.ndim > 1 else meta_prob_te
     print("    -> trained (saved: meta_ensemble.pkl)")
 
     # ==================================================================
-    # STEP 6 — Evaluation
+    # STEP 6 — Evaluation (Objective 2)
     # ==================================================================
-    banner("Step 6/7: Evaluation — Binary Delay Prediction")
+    banner("Step 6/9: Evaluation — Binary Delay Prediction")
 
     all_metrics = []
     roc_data = []
@@ -228,9 +303,156 @@ def main():
         print(f"  {name:18s} MAE: {m['MAE']:.2f} days")
 
     # ==================================================================
-    # STEP 7 — Generate visualisations & report
+    # STEP 7 — Objective 3: Dynamic Risk Scoring Engine
     # ==================================================================
-    banner("Step 7/7: Generating Outputs (Plotly)")
+    banner("Step 7/9: Objective 3 — Dynamic Risk Scoring Engine")
+
+    # Use tuned meta-ensemble delay probability + synthetic overrun probability
+    overrun_proba_te = df_proj["overrun_probability"].values[idx_te]
+    risk_cfg         = RiskScoringConfig(w_delay=0.55, w_overrun=0.45)
+    risk_scores_te   = compute_risk_score(meta_prob_pos, overrun_proba_te, cfg=risk_cfg)
+    risk_tiers_te    = risk_tiers(risk_scores_te)
+    actual_tiers_te  = np.array([RISK_LABELS[i] for i in yr_te])
+
+    # Logic consistency check
+    consistency = logic_consistency_check(risk_scores_te, risk_tiers_te)
+    print(f"  Logic consistency violations : {consistency['violations']} / {len(risk_scores_te)}")
+    print(f"  Unknown tier labels          : {consistency['unknown_tier_labels']}")
+
+    # Tier distribution
+    print("\n  Risk Tier Distribution (Test Set):")
+    for tier in RISK_LABELS:
+        mask = (risk_tiers_te == tier)
+        cnt  = mask.sum()
+        lo, hi = RISK_THRESHOLDS[tier]
+        scores_in = risk_scores_te[mask]
+        mean_s = scores_in.mean() if cnt > 0 else 0.0
+        print(f"    {tier:8s}: {cnt:4d} projects ({cnt/len(risk_tiers_te):.1%})  "
+              f"threshold [{lo:.2f}–{hi:.2f}]  mean_score={mean_s:.4f}")
+
+    # Agreement with ground-truth risk categories from synthetic generation
+    tier_match = (risk_tiers_te == actual_tiers_te)
+    print(f"\n  Tier agreement with ground truth  : "
+          f"{tier_match.sum()} / {len(tier_match)} ({tier_match.mean():.1%})")
+
+    # Per-tier agreement breakdown
+    print("\n  Per-Tier Agreement:")
+    print(f"    {'Tier':8s} {'N_pred':>8s} {'N_actual':>9s} {'Match':>8s}")
+    print("    " + "-" * 40)
+    for tier in RISK_LABELS:
+        pred_mask   = (risk_tiers_te   == tier)
+        actual_mask = (actual_tiers_te == tier)
+        match       = np.sum(pred_mask & actual_mask)
+        print(f"    {tier:8s} {pred_mask.sum():>8d} {actual_mask.sum():>9d} {match:>8d}")
+
+    # ==================================================================
+    # STEP 8 — Objective 4: LP Resource Allocation Optimization
+    # ==================================================================
+    banner("Step 8/9: Objective 4 — LP Resource Allocation Optimization")
+
+    OPT_AVAILABLE = False
+    result_lp = result_base = None
+    mc_results = None
+    improvement_pct = 0.0
+    eff_lp_val = eff_base_val = 0.0
+
+    try:
+        from maagap.optimization import (
+            OptimizationConfig,
+            optimize_inspection_allocation,
+            baseline_manual_allocation,
+            allocation_efficiency,
+            compute_efficiency_improvement,
+            monte_carlo_robustness,
+        )
+
+        # Realistic capacity: 6 inspectors × 5 inspections/period = 30 slots
+        opt_cfg = OptimizationConfig(
+            inspectors_available=6,
+            inspections_per_inspector=5,
+            seed=SEED,
+        )
+        capacity = opt_cfg.inspectors_available * opt_cfg.inspections_per_inspector
+        n_test   = len(risk_scores_te)
+
+        print(f"  Test-set projects   : {n_test}")
+        print(f"  Inspector capacity  : {opt_cfg.inspectors_available} inspectors "
+              f"× {opt_cfg.inspections_per_inspector} = {capacity} inspection slots")
+
+        # Baseline (manual/random) allocation
+        result_base  = baseline_manual_allocation(risk_scores_te, cfg=opt_cfg)
+        eff_base_res = allocation_efficiency(
+            result_base["selected_idx"], risk_scores_te, risk_tiers_te
+        )
+        eff_base_val = eff_base_res["avg_captured_risk"]
+
+        # LP optimized allocation
+        result_lp   = optimize_inspection_allocation(risk_scores_te, risk_tiers_te, cfg=opt_cfg)
+        eff_lp_res  = allocation_efficiency(
+            result_lp["selected_idx"], risk_scores_te, risk_tiers_te
+        )
+        eff_lp_val  = eff_lp_res["avg_captured_risk"]
+
+        # Efficiency improvement
+        eff_summary = compute_efficiency_improvement(
+            result_lp["selected_idx"], result_base["selected_idx"],
+            risk_scores_te, risk_tiers_te,
+        )
+        improvement_pct = eff_summary["improvement_pct"]
+
+        print(f"\n  Allocation Results:")
+        print(f"    {'Method':32s} {'Selected':>10s} {'Avg Risk Score':>16s}")
+        print("    " + "-" * 62)
+        print(f"    {'Baseline (Manual/Random)':32s} "
+              f"{result_base['selected_count']:>10d} {eff_base_val:>16.4f}")
+        print(f"    {'LP Optimized':32s} "
+              f"{result_lp['selected_count']:>10d} {eff_lp_val:>16.4f}")
+        target_label = "PASS (>= 15%)" if eff_summary["target_met"] else "FAIL (< 15%)"
+        print(f"    {'Efficiency Improvement':32s} {'':>10s} "
+              f"{improvement_pct:>15.2f}%  [{target_label}]")
+        print(f"  LP Solver Status    : {result_lp['status']}")
+
+        # Coverage by tier
+        print("\n  Coverage by Risk Tier — Inspected Projects:")
+        print(f"    {'Tier':10s} {'Total':>8s} {'Baseline':>10s} {'LP Opt':>10s} "
+              f"{'LP Recall':>12s}")
+        print("    " + "-" * 55)
+        base_sel_set = set(result_base["selected_idx"].tolist())
+        lp_sel_set   = set(result_lp["selected_idx"].tolist())
+        for tier in RISK_LABELS:
+            tier_idx  = np.where(risk_tiers_te == tier)[0]
+            n_total   = len(tier_idx)
+            n_base    = sum(1 for i in tier_idx if i in base_sel_set)
+            n_lp      = sum(1 for i in tier_idx if i in lp_sel_set)
+            lp_recall = n_lp / max(n_total, 1)
+            print(f"    {tier:10s} {n_total:>8d} {n_base:>10d} {n_lp:>10d} "
+                  f"{lp_recall:>11.1%}")
+
+        # Monte Carlo robustness
+        print("\n  Running Monte Carlo Robustness (200 iterations, noise_std=0.05)...")
+        mc_results = monte_carlo_robustness(
+            risk_scores_te, risk_tiers_te,
+            n_simulations=200, noise_std=0.05, cfg=opt_cfg,
+        )
+        print(f"    Successful runs     : {mc_results['n_successful']} / {mc_results['n_simulations']}")
+        print(f"    Mean improvement    : {mc_results['mean_improvement_pct']:.2f}%")
+        print(f"    Std dev             : {mc_results['std_improvement_pct']:.2f}%")
+        print(f"    Range               : [{mc_results['min_improvement_pct']:.2f}%, "
+              f"{mc_results['max_improvement_pct']:.2f}%]")
+        print(f"    Simulations >= 15%  : {mc_results['pct_above_15']:.1f}%")
+
+        OPT_AVAILABLE = True
+
+    except ImportError as e:
+        print(f"  [SKIP] PuLP not installed ({e}). Install with: pip install pulp")
+    except Exception as e:
+        print(f"  [ERROR] Optimization step failed: {e}")
+        import traceback; traceback.print_exc()
+
+    # ==================================================================
+    # STEP 9 — Generate visualisations & report
+    # ==================================================================
+    banner("Step 9/9: Generating Outputs (Plotly)")
 
     plot_roc_curves(roc_data, "roc_curves_delay.png")
     print("  Saved: roc_curves_delay.png / .html")
@@ -284,6 +506,31 @@ def main():
         yr_te, rf_risk_pred_te, xgb_risk_pred_te, "risk_distribution.png",
     )
     print("  Saved: risk_distribution.png / .html (Actual | RF | XGB — combined)")
+
+    # --- Objective 3 plots ---
+    plot_risk_score_distribution(risk_scores_te, risk_tiers_te, "risk_score_distribution.png")
+    print("  Saved: risk_score_distribution.png / .html")
+
+    plot_risk_tier_comparison(actual_tiers_te, risk_tiers_te, "risk_tier_comparison.png")
+    print("  Saved: risk_tier_comparison.png / .html")
+
+    plot_logic_consistency(consistency, len(risk_scores_te), "logic_consistency.png")
+    print("  Saved: logic_consistency.png / .html")
+
+    # --- Objective 4 plots ---
+    if OPT_AVAILABLE and result_lp is not None and result_base is not None:
+        plot_optimization_comparison(
+            eff_base_val, eff_lp_val, improvement_pct, mc_results,
+            "optimization_comparison.png",
+        )
+        print("  Saved: optimization_comparison.png / .html")
+
+        plot_lp_selection_profile(
+            risk_scores_te, risk_tiers_te,
+            result_lp["selected_idx"], result_base["selected_idx"],
+            "lp_selection_profile.png",
+        )
+        print("  Saved: lp_selection_profile.png / .html")
 
     report_df = generate_full_report(all_metrics)
     print("  Saved: evaluation_report.csv")

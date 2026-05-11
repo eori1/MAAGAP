@@ -15,6 +15,11 @@ models/*.keras
 # Thesis manuscript (private academic document)
 *.docx
 
+# Local source workbooks (contain real government data)
+*.xlsx
+*.xls
+*.xlsm
+
 # PPDO template forms (not used by ML pipeline)
 CNI-Template.xlsx
 FORM-TABULATED.xlsx
@@ -24,6 +29,12 @@ List-of-All-On-Going-and-To-Be-Implemented-Projects-template.xlsx
 
 # Empty staging directory
 data/raw/
+
+# Generated datasets / outputs (regenerate via `python main.py`)
+data/processed/*.csv
+outputs/
+# Exception: track key defense output images (not regenerated on every run)
+!outputs/*.png
 
 # IDE / Editor
 .vscode/
