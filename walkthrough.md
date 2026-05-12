@@ -289,20 +289,20 @@ percentage_i   = contribution_i / sum(all_contributions) × 100
 3. Multiplied by `std(feature_i)` = how much that model's probabilities actually vary across projects. A model that always outputs 0.5 (no information) gets down-weighted even if it has a high coefficient.
 4. Normalize to sum to 100%.
 
-**Example output you'll see:**
+**Actual computed output (from trained models):**
 ```
 Meta-ensemble % contributions:
-  Random Forest : 38.4%
-  XGBoost       : 45.1%
-  LSTM          : 16.5%
+  LSTM          : 69.50%   |coef|=4.8131  std(prob)=0.2952
+  Random Forest : 16.11%   |coef|=1.2540  std(prob)=0.2626
+  XGBoost       : 14.39%   |coef|=1.0921  std(prob)=0.2695
 ```
 
 **What this means for your defense:**
-- **XGBoost ~45%**: The gradient booster dominates because it's strongest at learning the complex non-linear interactions in the 30 static features
-- **RF ~38%**: Random Forest provides complementary signal — it generalizes differently from XGBoost (different bias-variance tradeoff)
-- **LSTM ~16%**: The temporal model adds value that static models can't capture (quarterly progress patterns), but since most delay signal IS in static features (budget, contractor, typhoon exposure), it contributes less in percentage — but its presence still improves the final AUC
+- **LSTM 69.50%**: The meta-learner assigned the LSTM a coefficient of 4.81 — far higher than the static models. This means the sequential quarterly monitoring patterns (slippage trajectory across Q1–Q4) are the most informative signal for the final ensemble decision. Temporal data is the primary driver of predictive accuracy.
+- **RF 16.11%**: Random Forest contributes stable feature-interaction signals from static attributes (contractor reliability, typhoon exposure, budget). It generalizes differently from XGBoost, providing complementary coverage.
+- **XGBoost 14.39%**: XGBoost provides gradient-boosted corrections that help the ensemble handle residual errors from the other models, though its coefficient (1.09) is lower than LSTM's, indicating the meta-learner trusts it least among the three.
 
-> **Defense tip:** *"The meta-ensemble doesn't simply average the three models — it learns the optimal trust level for each. XGBoost dominates because project delay is largely predictable from static project characteristics. The LSTM's 16% contribution represents information that NO static model can capture: how a project behaves over time."*
+> **Defense tip:** *"The meta-ensemble doesn't simply average the three models — it learns the optimal trust level for each. The LSTM's dominant 69.50% contribution confirms that temporal sequential monitoring data — specifically how a project's progress slippage evolves quarter by quarter — is the most powerful predictor of delay. Static features alone, captured by RF and XGBoost, account for the remaining 30%."*
 
 **Baseline vs Tuned meta-ensemble:**
 - A **baseline meta-ensemble** is first trained on untuned (default) RF/XGB/LSTM
@@ -486,7 +486,7 @@ Step 9: Save all plots + evaluation_report.csv
 > *"Each model captures a different aspect of project risk. Random Forest is robust to outliers. XGBoost learns complex non-linear interactions. LSTM detects temporal patterns in quarterly progress. The meta-ensemble learns the optimal weight for each — if XGBoost is consistently more reliable, it gets a higher coefficient automatically. This typically improves AUC by 2–5% over the best single model."*
 
 **Q: What do the meta-ensemble percentages mean?**
-> *"They represent each base model's standardized contribution to the final prediction. XGBoost contributing ~45% means the meta-learner trusts it most — it has both a high learned coefficient AND high variance in its outputs (it's giving informative, varied predictions). LSTM's ~16% represents genuinely unique temporal information that no static model can provide."*
+> *"They represent each base model's standardized contribution to the final prediction, computed as the product of the absolute logistic regression coefficient and the standard deviation of that model's probability outputs. The LSTM contributes 69.50% — the meta-learner assigned it the highest coefficient (4.81) because temporal sequential monitoring data, specifically how project slippage evolves quarter by quarter, is the most informative signal for delay prediction. Random Forest contributes 16.11% and XGBoost 14.39%, providing complementary static feature signals that ground the ensemble in project-level characteristics."*
 
 **Q: Why is the LP improvement so high (267%)?**
 > *"The test set has 74% Low-risk projects. Random allocation picks from the full pool, so most selected projects are Low-risk. The LP exclusively targets High and Critical projects because they have higher utility scores. This stark contrast drives the large improvement. The 15% target is the minimum acceptable improvement — we far exceed it, which is a strength, not a problem."*
