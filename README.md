@@ -20,13 +20,13 @@ MAAGAP implements a comprehensive pipeline addressing the first four objectives 
 
 ### 1. Meta-Ensemble Dominance
 The three-model stacking architecture consistently outperforms any individual base model. The Logistic Regression meta-learner assigned the following contributions (based on learned coefficients and output variance):
-- **LSTM (69.50%):** The primary driver of predictive accuracy, proving that temporal sequential monitoring data (quarter-by-quarter slippage) is highly predictive.
-- **Random Forest (16.11%) & XGBoost (14.39%):** Provide complementary stability and feature-interaction signals from static project attributes (budget, contractor reliability, typhoon exposure).
+- **LSTM (72.51%):** The primary driver of predictive accuracy, proving that temporal sequential monitoring data (quarter-by-quarter slippage) is highly predictive.
+- **Random Forest (14.74%) & XGBoost (12.75%):** Provide complementary stability and feature-interaction signals from static project attributes (budget, contractor reliability, typhoon exposure).
 
 **Binary Delay Prediction (Test Set):**
-- **Accuracy:** ~86.89%
-- **F1-Score:** ~0.7885
-- **AUC-ROC:** ~0.9355
+- **Accuracy:** ~89.11%
+- **F1-Score:** ~0.6260
+- **AUC-ROC:** ~0.9023
 
 ### 2. Risk Categorisation & Logic Consistency
 The pipeline successfully classifies projects into 4 tiers: Low, Medium, High, and Critical. 

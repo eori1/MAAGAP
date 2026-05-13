@@ -213,13 +213,13 @@ The relative contribution of each base model to the Meta-Ensemble's final predic
 
 | Base Model | Contribution |
 |------------|-------------|
-| LSTM | 69.50% |
-| Random Forest | 16.11% |
-| XGBoost | 14.39% |
+| LSTM | 72.51% |
+| Random Forest | 14.74% |
+| XGBoost | 12.75% |
 
 *Table 4.11. Meta-Ensemble Base Model Contribution Percentages*
 
-The LSTM contributed the largest share of approximately 69.50%, as the meta-learner assigned it the highest logistic regression coefficient (4.81), substantially higher than those of the static models. This indicates that the Logistic Regression meta-learner learned to rely most heavily on the LSTM's sequential quarterly monitoring patterns, which capture the temporal trajectory of project slippage in a way that neither Random Forest nor XGBoost can replicate from static features alone. Random Forest contributed approximately 16.11% and XGBoost approximately 14.39%, providing complementary feature-interaction signals from the static project attributes — particularly contractor reliability, typhoon exposure, and budget-related features — that grounded the ensemble's predictions in project-level characteristics. Together, the three-model stacking architecture consistently outperformed any individual model across all reported metrics, with the LSTM's dominant weight confirming that temporal sequential monitoring data is the primary driver of prediction quality in the MAAGAP pipeline.
+The LSTM contributed the largest share of approximately 72.51%, reflecting that the Logistic Regression meta-learner assigned it the highest coefficient weight (4.64) — indicating that the sequential quarterly monitoring patterns captured by the LSTM are the most informative signal for the final ensemble decision. This temporal data, which tracks project slippage across monitoring periods, captures emerging delay risk trajectories that neither static model can derive from project attributes alone. Random Forest followed with approximately 14.74%, contributing stable feature-interaction signals from static project attributes such as contractor reliability, typhoon exposure, and approved budget. XGBoost contributed approximately 12.75%, providing complementary gradient-boosted predictions that, while slightly lower in weight, help the ensemble correct residual errors from the other base models. Together, the three-model stacking architecture consistently outperformed any individual model across all reported metrics, with the LSTM's dominant contribution confirming that temporal monitoring data is the primary driver of predictive accuracy in the MAAGAP pipeline.
 
 ---
 

@@ -292,17 +292,17 @@ percentage_i   = contribution_i / sum(all_contributions) × 100
 **Actual computed output (from trained models):**
 ```
 Meta-ensemble % contributions:
-  LSTM          : 69.50%   |coef|=4.8131  std(prob)=0.2952
-  Random Forest : 16.11%   |coef|=1.2540  std(prob)=0.2626
-  XGBoost       : 14.39%   |coef|=1.0921  std(prob)=0.2695
+  LSTM          : 72.51%   |coef|=4.6407  std(prob)=0.3177
+  Random Forest : 14.74%   |coef|=1.1412  std(prob)=0.2626
+  XGBoost       : 12.75%   |coef|=0.9618  std(prob)=0.2695
 ```
 
 **What this means for your defense:**
-- **LSTM 69.50%**: The meta-learner assigned the LSTM a coefficient of 4.81 — far higher than the static models. This means the sequential quarterly monitoring patterns (slippage trajectory across Q1–Q4) are the most informative signal for the final ensemble decision. Temporal data is the primary driver of predictive accuracy.
-- **RF 16.11%**: Random Forest contributes stable feature-interaction signals from static attributes (contractor reliability, typhoon exposure, budget). It generalizes differently from XGBoost, providing complementary coverage.
-- **XGBoost 14.39%**: XGBoost provides gradient-boosted corrections that help the ensemble handle residual errors from the other models, though its coefficient (1.09) is lower than LSTM's, indicating the meta-learner trusts it least among the three.
+- **LSTM 72.51%**: The meta-learner assigned the LSTM a coefficient of 4.64 — far higher than the static models. This means the sequential quarterly monitoring patterns (slippage trajectory across Q1–Q4) are the most informative signal for the final ensemble decision. Temporal data is the primary driver of predictive accuracy.
+- **RF 14.74%**: Random Forest contributes stable feature-interaction signals from static attributes (contractor reliability, typhoon exposure, budget). It generalizes differently from XGBoost, providing complementary coverage.
+- **XGBoost 12.75%**: XGBoost provides gradient-boosted corrections that help the ensemble handle residual errors from the other models, though its coefficient (0.96) is lower than LSTM's, indicating the meta-learner trusts it least among the three.
 
-> **Defense tip:** *"The meta-ensemble doesn't simply average the three models — it learns the optimal trust level for each. The LSTM's dominant 69.50% contribution confirms that temporal sequential monitoring data — specifically how a project's progress slippage evolves quarter by quarter — is the most powerful predictor of delay. Static features alone, captured by RF and XGBoost, account for the remaining 30%."*
+> **Defense tip:** *"The meta-ensemble doesn't simply average the three models — it learns the optimal trust level for each. The LSTM's dominant 72.51% contribution confirms that temporal sequential monitoring data — specifically how a project's progress slippage evolves quarter by quarter — is the most powerful predictor of delay. Static features alone, captured by RF and XGBoost, account for the remaining 27%."*
 
 **Baseline vs Tuned meta-ensemble:**
 - A **baseline meta-ensemble** is first trained on untuned (default) RF/XGB/LSTM
@@ -486,7 +486,7 @@ Step 9: Save all plots + evaluation_report.csv
 > *"Each model captures a different aspect of project risk. Random Forest is robust to outliers. XGBoost learns complex non-linear interactions. LSTM detects temporal patterns in quarterly progress. The meta-ensemble learns the optimal weight for each — if XGBoost is consistently more reliable, it gets a higher coefficient automatically. This typically improves AUC by 2–5% over the best single model."*
 
 **Q: What do the meta-ensemble percentages mean?**
-> *"They represent each base model's standardized contribution to the final prediction, computed as the product of the absolute logistic regression coefficient and the standard deviation of that model's probability outputs. The LSTM contributes 69.50% — the meta-learner assigned it the highest coefficient (4.81) because temporal sequential monitoring data, specifically how project slippage evolves quarter by quarter, is the most informative signal for delay prediction. Random Forest contributes 16.11% and XGBoost 14.39%, providing complementary static feature signals that ground the ensemble in project-level characteristics."*
+> *"They represent each base model's standardized contribution to the final prediction, computed as the product of the absolute logistic regression coefficient and the standard deviation of that model's probability outputs. The LSTM contributes 72.51% — the meta-learner assigned it the highest coefficient (4.64) because temporal sequential monitoring data, specifically how project slippage evolves quarter by quarter, is the most informative signal for delay prediction. Random Forest contributes 14.74% and XGBoost 12.75%, providing complementary static feature signals that ground the ensemble in project-level characteristics."*
 
 **Q: Why is the LP improvement so high (267%)?**
 > *"The test set has 74% Low-risk projects. Random allocation picks from the full pool, so most selected projects are Low-risk. The LP exclusively targets High and Critical projects because they have higher utility scores. This stark contrast drives the large improvement. The 15% target is the minimum acceptable improvement — we far exceed it, which is a strength, not a problem."*
@@ -498,7 +498,7 @@ Step 9: Save all plots + evaluation_report.csv
 > *"Yes. If we calculated Mean Absolute Error (MAE) for delay days across all projects, including the 60–70% of projects that were perfectly on time (0 days delay), the error would look artificially low. To prevent this metric smoothing, our code uses a strict filter: we only calculate MAE on the subset of projects that were either historically delayed or flagged by our models as delayed. This ensures our reported error reflects the true variance in predicting actual delays."*
 
 **Q: How do you prove the Meta-Ensemble is actually necessary? (The Ensemble Benchmark)**
-> *"By rigorously baselining our models. We compute Accuracy, Precision, Recall, F1, and AUC-ROC for the Static models (Random Forest, XGBoost) and the Temporal model (LSTM) completely independently. We then compare these baseline scores against the Meta-Ensemble's final score. Because the Meta-Ensemble achieves ~86.89% accuracy and ~0.93 AUC-ROC — which strictly outperforms the ~75% accuracy of the static models — we empirically prove that the stacking architecture provides measurable predictive gain over any single model."*
+> *"By rigorously baselining our models. We compute Accuracy, Precision, Recall, F1, and AUC-ROC for the Static models (Random Forest, XGBoost) and the Temporal model (LSTM) completely independently. We then compare these baseline scores against the Meta-Ensemble's final score. Because the Meta-Ensemble achieves ~89.11% accuracy and ~0.90 AUC-ROC — which strictly outperforms the ~84% accuracy of the static models — we empirically prove that the stacking architecture provides measurable predictive gain over any single model."*
 
 ---
 
