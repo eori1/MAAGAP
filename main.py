@@ -297,10 +297,18 @@ def main():
         ("Meta-Ensemble (baseline bases)", meta_b_prob_pos),
         ("Meta-Ensemble (tuned bases)", meta_prob_pos),
     ]:
-        pred_days = proba * max_delay
-        m = regression_metrics(ydd_te, pred_days, label=name)
-        all_metrics.append(m)
-        print(f"  {name:18s} MAE: {m['MAE']:.2f} days")
+        # Fix MAE Denominator Trap: Only evaluate on projects predicted or known to be delayed
+        mask = (yd_te == 1) | (proba >= 0.5)
+        if mask.sum() > 0:
+            pred_days = proba[mask] * max_delay
+            m = regression_metrics(ydd_te[mask], pred_days, label=name)
+            all_metrics.append(m)
+            print(f"  {name:30s} MAE: {m['MAE']:.2f} days (evaluated on {mask.sum()} delayed/flagged projects)")
+        else:
+            pred_days = proba * max_delay
+            m = regression_metrics(ydd_te, pred_days, label=name)
+            all_metrics.append(m)
+            print(f"  {name:30s} MAE: {m['MAE']:.2f} days")
 
     # ==================================================================
     # STEP 7 — Objective 3: Dynamic Risk Scoring Engine

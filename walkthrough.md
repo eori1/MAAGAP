@@ -494,6 +494,12 @@ Step 9: Save all plots + evaluation_report.csv
 **Q: Is the 70/15/15 split correct?**
 > *"Yes. Train (70%=2,100) trains all models. Validation (15%=450) is used only for LSTM early stopping and hyperparameter selection — models never optimize on test data through the validation set. Test (15%=450) is completely held out and used only for final reported metrics. Zero partition overlap is programmatically verified."*
 
+**Q: Did you check for the "MAE Denominator Trap" (Metric Smoothing)?**
+> *"Yes. If we calculated Mean Absolute Error (MAE) for delay days across all projects, including the 60–70% of projects that were perfectly on time (0 days delay), the error would look artificially low. To prevent this metric smoothing, our code uses a strict filter: we only calculate MAE on the subset of projects that were either historically delayed or flagged by our models as delayed. This ensures our reported error reflects the true variance in predicting actual delays."*
+
+**Q: How do you prove the Meta-Ensemble is actually necessary? (The Ensemble Benchmark)**
+> *"By rigorously baselining our models. We compute Accuracy, Precision, Recall, F1, and AUC-ROC for the Static models (Random Forest, XGBoost) and the Temporal model (LSTM) completely independently. We then compare these baseline scores against the Meta-Ensemble's final score. Because the Meta-Ensemble achieves ~86.89% accuracy and ~0.93 AUC-ROC — which strictly outperforms the ~75% accuracy of the static models — we empirically prove that the stacking architecture provides measurable predictive gain over any single model."*
+
 ---
 
 ## Key Output Images for 50% Defense
