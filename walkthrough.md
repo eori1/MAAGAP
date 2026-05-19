@@ -479,8 +479,8 @@ Step 9: Save all plots + evaluation_report.csv
 
 ## Common Defense Questions & Answers
 
-**Q: Why synthetic data instead of real data?**
-> *"The real PPDO dataset has approximately 8,600 records — insufficient for training deep learning models like LSTM. We generated 3,000 synthetic projects using statistical distributions extracted from real data, ensuring our synthetic projects mirror real budget distributions, agency characteristics, contractor reliability, and Iloilo weather patterns. The synthetic generator was validated against Fund Transfer Con data (21,083 records)."*
+**Q: You have 8,600 real records. Why did you still generate 3,000 synthetic projects instead of just using the real ones?**
+> *"While we have 8,600 real project records, they act as single 'snapshots' in time (e.g., an inspection report on a specific date). To train the LSTM model, we strictly required **sequential time-series data** — tracking exactly how a project progressed across Quarter 1, 2, 3, and 4. The raw government data does not have this perfect 4-quarter historical tracking for every project. Furthermore, real records often have missing variables (like exact contractor assignments or cleanly labeled final outcomes). By extracting the statistical probabilities from the 8,600 real records, we generated 3,000 perfectly clean, complete sequential timelines required to train our machine learning architecture without the algorithms failing due to null values."*
 
 **Q: Why use a meta-ensemble instead of just the best single model?**
 > *"Each model captures a different aspect of project risk. Random Forest is robust to outliers. XGBoost learns complex non-linear interactions. LSTM detects temporal patterns in quarterly progress. The meta-ensemble learns the optimal weight for each — if XGBoost is consistently more reliable, it gets a higher coefficient automatically. This typically improves AUC by 2–5% over the best single model."*
