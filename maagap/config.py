@@ -9,7 +9,20 @@ DATA_RAW_DIR = os.path.join(BASE_DIR, "data", "raw")
 DATA_PROCESSED_DIR = os.path.join(BASE_DIR, "data", "processed")
 MODELS_DIR = os.path.join(BASE_DIR, "models")
 OUTPUTS_DIR = os.path.join(BASE_DIR, "outputs")
-REAL_DATA_FILE = os.path.join(BASE_DIR, "LIST-OF-ALL-ONGOING-PPAS-2026.xlsx")
+# Real PPDO source workbook used to parameterize synthetic generation.
+# Prefer the latest consolidated workbook if present, otherwise fall back to the
+# original thesis workbook name.
+_PREFERRED_REAL_FILES = [
+    "Copy of 2022 conso Fund Transfer worksheet (2).xlsx",
+    "LIST-OF-ALL-ONGOING-PPAS-2026.xlsx",
+]
+for _name in _PREFERRED_REAL_FILES:
+    _candidate = os.path.join(DATA_RAW_DIR, _name)
+    if os.path.exists(_candidate):
+        REAL_DATA_FILE = _candidate
+        break
+else:
+    REAL_DATA_FILE = os.path.join(DATA_RAW_DIR, _PREFERRED_REAL_FILES[0])
 
 for d in [DATA_RAW_DIR, DATA_PROCESSED_DIR, MODELS_DIR, OUTPUTS_DIR]:
     os.makedirs(d, exist_ok=True)
@@ -121,6 +134,17 @@ RF_MAX_DEPTH = 15
 XGB_N_ESTIMATORS = 300
 XGB_MAX_DEPTH = 10
 XGB_LEARNING_RATE = 0.08
+
+# --- Hardware acceleration ---
+# If CUDA is available, TensorFlow will use it automatically for the LSTM.
+# XGBoost can optionally use CUDA via tree_method="gpu_hist" when the installed
+# xgboost build supports it; we try and gracefully fall back if not.
+USE_CUDA_IF_AVAILABLE = True
+XGB_TRY_GPU = True
+
+# Tuning runtime controls (keeps retraining practical on laptops).
+RANDOM_SEARCH_N_ITER = 15
+RANDOM_SEARCH_CV = 3
 
 SYNTHETIC_NUM_PROJECTS = 3000
 SYNTHETIC_YEARS = list(range(2016, 2026))
