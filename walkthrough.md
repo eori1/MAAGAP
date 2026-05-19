@@ -451,7 +451,7 @@ Instead of using 0.5 as the classification threshold, this finds the threshold t
 ## The Full Pipeline Flow
 
 ```
-Step 1: Load PPDO (800 records) + Fund Transfer Con (21,083 records)
+Step 1: Load PPDO (8,600 records) + Fund Transfer Con (21,083 records)
            ↓ extract distributions
 Step 2: Generate 3,000 synthetic projects + quarterly records
            ↓ grounded in real PPDO distributions
@@ -480,7 +480,7 @@ Step 9: Save all plots + evaluation_report.csv
 ## Common Defense Questions & Answers
 
 **Q: Why synthetic data instead of real data?**
-> *"The real PPDO dataset has approximately 800 records — insufficient for training deep learning models like LSTM. We generated 3,000 synthetic projects using statistical distributions extracted from real data, ensuring our synthetic projects mirror real budget distributions, agency characteristics, contractor reliability, and Iloilo weather patterns. The synthetic generator was validated against Fund Transfer Con data (21,083 records)."*
+> *"The real PPDO dataset has approximately 8,600 records — insufficient for training deep learning models like LSTM. We generated 3,000 synthetic projects using statistical distributions extracted from real data, ensuring our synthetic projects mirror real budget distributions, agency characteristics, contractor reliability, and Iloilo weather patterns. The synthetic generator was validated against Fund Transfer Con data (21,083 records)."*
 
 **Q: Why use a meta-ensemble instead of just the best single model?**
 > *"Each model captures a different aspect of project risk. Random Forest is robust to outliers. XGBoost learns complex non-linear interactions. LSTM detects temporal patterns in quarterly progress. The meta-ensemble learns the optimal weight for each — if XGBoost is consistently more reliable, it gets a higher coefficient automatically. This typically improves AUC by 2–5% over the best single model."*

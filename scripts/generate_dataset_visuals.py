@@ -6,7 +6,7 @@ os.makedirs('outputs', exist_ok=True)
 
 # 1. Dataset Shape Summary Diagram
 shapes_data = [
-    ['Real PPDO Monitoring (2026)', '800 records', 'Extracted: budget distributions, infra/non-infra ratio'],
+    ['Real PPDO Monitoring (2026)', '8,600 records', 'Extracted: budget distributions, infra/non-infra ratio'],
     ['Real Fund Transfer (2013-2026)', '21,083 records', 'Extracted: municipality distribution, funding source, 95% liquidation rate'],
     ['Synthetic Projects (Static)', '3,000 rows × 30 columns', 'Features: budget, agency capacity, contractor reliability, typhoon exposure, etc.'],
     ['Synthetic Quarterly (Temporal)', '3,000 projects × 4 quarters × 9 features', 'Features: planned vs actual progress, slippage, expenditure ratio, etc.'],
