@@ -1,0 +1,355 @@
+/* ── Shell ───────────────────────────────────────────── */
+.shell {
+  display: block;
+  height: 100vh;
+  background: #f0f4f9;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.main {
+  margin-left: 210px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #f0f4f9;
+}
+
+/* ── Top Bar ─────────────────────────────────────────── */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 1.5rem;
+  flex-shrink: 0;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: #7a8fa6;
+}
+.sep { color: #b0bec8; }
+.breadActive { color: #1b3a5e; font-weight: 600; }
+
+.topbarRight {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dateBadge {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 50px;
+  border: 1.5px solid #dde4f0;
+  background: #fff;
+  font-size: 0.76rem;
+  color: #1b3a5e;
+  font-weight: 500;
+}
+
+.iconBtn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1.5px solid #dde4f0;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1b3a5e;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.iconBtn:hover { background: #e8f0fb; }
+
+/* ── Main White Card ─────────────────────────────────── */
+.card {
+  flex: 1;
+  margin: 0 1.5rem 1.4rem;
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #e8edf5;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ── Card Header ─────────────────────────────────────── */
+.cardHeader {
+  padding: 1.1rem 1.5rem 0.75rem;
+  flex-shrink: 0;
+}
+
+.cardTitle {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #1b3a5e;
+  margin: 0 0 0.2rem;
+  letter-spacing: -0.02em;
+}
+
+.accent { color: #2756c5; }
+
+.cardSub {
+  font-size: 0.76rem;
+  color: #7a8fa6;
+  margin: 0;
+}
+
+.divider {
+  height: 1px;
+  background: #eaeff6;
+  flex-shrink: 0;
+}
+
+/* ── Filters Row ─────────────────────────────────────── */
+.filtersRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.9rem;
+  padding: 0.85rem 1.5rem 0.65rem;
+  flex-shrink: 0;
+}
+
+.filterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.filterLabel {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #4a5a6a;
+  letter-spacing: 0.01em;
+}
+
+/* Search */
+.searchWrap {
+  position: relative;
+  width: 240px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 0.7rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 0.5rem 0.8rem 0.5rem 2rem;
+  border: 1.5px solid #bdd0f0;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  color: #1b3a5e;
+  outline: none;
+  font-family: inherit;
+  background: #fff;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  box-sizing: border-box;
+}
+
+.searchInput:focus {
+  border-color: #2756c5;
+  box-shadow: 0 0 0 3px rgba(39,86,197,0.1);
+}
+
+.searchInput::placeholder { color: #94a3b8; }
+
+/* Selects */
+.selectWrap {
+  position: relative;
+  width: 180px;
+}
+
+.select {
+  width: 100%;
+  padding: 0.5rem 2rem 0.5rem 0.85rem;
+  border: 1.5px solid #dde4f0;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  color: #1b3a5e;
+  background: #fff;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  font-family: inherit;
+  transition: border-color 0.15s;
+  box-sizing: border-box;
+}
+
+.select:focus { border-color: #2756c5; }
+
+.selectChevron {
+  position: absolute;
+  right: 0.65rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.clearBtn {
+  padding: 0.5rem 0.9rem;
+  font-size: 0.76rem;
+  font-weight: 500;
+  color: #7a8fa6;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: color 0.15s;
+  white-space: nowrap;
+  align-self: flex-end;
+}
+.clearBtn:hover { color: #e74c3c; }
+
+/* ── Sort + Count Row ────────────────────────────────── */
+.sortRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.4rem 1.5rem 0.5rem;
+  flex-shrink: 0;
+}
+
+.sortControls {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.sortLabel {
+  font-size: 0.72rem;
+  color: #7a8fa6;
+}
+
+.sortSelect {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #2756c5;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  outline: none;
+  font-family: inherit;
+  padding: 0;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.countBadge {
+  background: #1b3a5e;
+  color: #fff;
+  padding: 0.3rem 0.9rem;
+  border-radius: 50px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+/* ── Table ───────────────────────────────────────────── */
+.tableWrap {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.tableWrap::-webkit-scrollbar { width: 4px; }
+.tableWrap::-webkit-scrollbar-track { background: transparent; }
+.tableWrap::-webkit-scrollbar-thumb { background: #dde4f0; border-radius: 4px; }
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.th {
+  padding: 0.55rem 1rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #94a3b8;
+  text-align: left;
+  background: #f8fafb;
+  border-bottom: 1px solid #eaeff6;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  white-space: nowrap;
+}
+
+.row {
+  border-bottom: 1px solid #f0f4f9;
+  transition: background 0.1s;
+  cursor: pointer;
+}
+.row:hover { background: #f7faff; }
+.row:last-child { border-bottom: none; }
+
+.td {
+  padding: 0.75rem 1rem;
+  font-size: 0.79rem;
+  color: #1b3a5e;
+  vertical-align: middle;
+}
+
+.tdCenter { text-align: center; }
+
+/* ── Project cell ────────────────────────────────────── */
+.projectName {
+  font-weight: 600;
+  color: #1b3a5e;
+  margin-bottom: 0.1rem;
+  font-size: 0.8rem;
+}
+
+.projectId {
+  font-size: 0.67rem;
+  color: #94a3b8;
+  margin-bottom: 0.35rem;
+}
+
+.progressBarBg {
+  width: 100%;
+  max-width: 220px;
+  height: 4px;
+  background: #e8f0fb;
+  border-radius: 50px;
+  overflow: hidden;
+}
+
+.progressBar {
+  height: 100%;
+  background: linear-gradient(90deg, #2756c5, #1a6ed8);
+  border-radius: 50px;
+  transition: width 0.4s ease;
+}
+
+/* ── Status Badge ────────────────────────────────────── */
+.statusBadge {
+  display: inline-block;
+  padding: 0.25rem 0.8rem;
+  border-radius: 50px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* ── Empty state ─────────────────────────────────────── */
+.emptyRow {
+  padding: 3rem;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.82rem;
+}

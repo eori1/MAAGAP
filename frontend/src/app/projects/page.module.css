@@ -1,40 +1,44 @@
 /* =====================================================
    Projects Page — projects.module.css
+   Pixel-perfect match to reference UI
    ===================================================== */
 
 .layout {
   display: flex;
   height: 100vh;
-  background: #f4f6fb;
+  background: #f0f2f7;
   overflow: hidden;
 }
 
 .main {
-  margin-left: 190px;
+  margin-left: 210px;
   flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
-/* TOP BAR */
+/* ── TOP BAR ─────────────────────────────────────── */
 .topBar {
-  height: 60px;
-  background: #ffffff;
-  border-bottom: 1px solid #e8edf2;
+  height: 58px;
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 1.5rem;
+  padding: 0 1.8rem;
   flex-shrink: 0;
 }
 
 .breadcrumb {
-  font-size: 0.75rem;
+  font-size: 0.78rem;
   color: #8a9ab0;
+  font-weight: 400;
 }
 
-.breadcrumb span { color: #1264ae; font-weight: 600; }
+.breadcrumb span {
+  color: #1b3a5e;
+  font-weight: 600;
+}
 
 .topRight {
   display: flex;
@@ -45,20 +49,22 @@
 .datePill {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  border: 1px solid #dce4ef;
+  gap: 0.45rem;
+  border: 1.5px solid #d0daea;
   border-radius: 50px;
-  padding: 0.4rem 0.85rem;
+  padding: 0.42rem 1rem;
   font-size: 0.8rem;
-  color: #444;
+  color: #333;
   background: #fff;
+  cursor: pointer;
+  white-space: nowrap;
 }
 
 .iconBtn {
-  width: 36px;
-  height: 36px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
-  border: 1px solid #dce4ef;
+  border: 1.5px solid #d0daea;
   background: #fff;
   display: flex;
   align-items: center;
@@ -69,38 +75,63 @@
 }
 .iconBtn:hover { background: #f0f5fb; }
 
-/* BODY */
+/* Settings — dark navy filled */
+.iconBtnFilled {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: none;
+  background: #1a3557;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #ffffff;
+  transition: background 0.15s;
+}
+.iconBtnFilled:hover { background: #0e2236; }
+
+/* ── BODY ────────────────────────────────────────── */
 .body {
   flex: 1;
   overflow-y: auto;
-  padding: 1.4rem 1.5rem;
+  padding: 0.5rem 1.5rem 1.5rem;
 }
 
-/* ---- MAP MODE BODY (no scroll, fixed height) ---- */
 .bodyMap {
   flex: 1;
   overflow: hidden;
-  padding: 1rem 1.5rem 1.5rem;
+  padding: 0.5rem 1.5rem 1.5rem;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
-/* PAGE HEADER */
+/* ── WHITE CONTENT CARD ──────────────────────────── */
+.contentCard {
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 1.5rem 1.6rem 1.8rem;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  border: 1px solid #e8edf4;
+}
+
+/* ── PAGE HEADER ─────────────────────────────────── */
 .pageHeader {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 1.2rem;
+  margin-bottom: 1.4rem;
 }
 
 .pageTitleGroup {}
 
 .pageTitle {
-  font-size: 1.5rem;
+  font-size: 1.55rem;
   font-weight: 800;
   color: #1b3a5e;
   line-height: 1.2;
-  margin-bottom: 0.2rem;
+  margin: 0 0 0.25rem;
 }
 
 .pageTitleBlue { color: #1264ae; }
@@ -109,8 +140,10 @@
 .pageSub {
   font-size: 0.75rem;
   color: #9aaabb;
+  margin: 0;
 }
 
+/* ── ACTION BUTTONS ──────────────────────────────── */
 .actionBtns {
   display: flex;
   gap: 0.65rem;
@@ -118,61 +151,71 @@
   flex-shrink: 0;
 }
 
+/* Pill-shaped outlined button */
 .btnAction {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  font-size: 0.8rem;
+  gap: 0.45rem;
+  padding: 0.48rem 1.1rem;
+  border-radius: 50px;
+  font-size: 0.78rem;
   font-weight: 600;
   cursor: pointer;
   font-family: inherit;
   transition: all 0.15s ease;
-  border: 1.5px solid #dce4ef;
+  border: 1.5px solid #c8d6e8;
   background: #ffffff;
   color: #1b3a5e;
+  white-space: nowrap;
 }
+.btnAction:hover { background: #f0f5fb; border-color: #1264ae; color: #1264ae; }
 
-.btnAction:hover { background: #f0f5fb; border-color: #1264ae; }
-
+/* Dark navy filled pill — Import Data */
 .btnActionPrimary {
-  background: #1264ae;
+  background: #1a3557;
   color: #ffffff;
-  border-color: #1264ae;
+  border-color: #1a3557;
 }
-.btnActionPrimary:hover { background: #0e4f8e; }
+.btnActionPrimary:hover { background: #0e2236; border-color: #0e2236; }
 
-/* FILTERS */
+/* ── FILTERS ─────────────────────────────────────── */
 .filterRow {
   display: flex;
   align-items: flex-end;
-  gap: 0.9rem;
-  margin-bottom: 0.8rem;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
   flex-wrap: wrap;
 }
 
-.filterGroup { display: flex; flex-direction: column; gap: 0.3rem; flex: 1; min-width: 160px; }
+.filterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  flex: 1;
+  min-width: 160px;
+}
 
 .filterLabel {
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   font-weight: 600;
-  color: #6b7a8d;
+  color: #1264ae;   /* blue label like the reference */
 }
 
 .filterInput {
-  padding: 0.55rem 0.9rem;
-  border: 1.5px solid #dce4ef;
+  padding: 0.52rem 0.9rem;
+  border: 1.5px solid #c8d6e8;
   border-radius: 8px;
   font-size: 0.8rem;
   color: #333;
   outline: none;
   font-family: inherit;
   background: #ffffff;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
-
-.filterInput:focus { border-color: #1264ae; box-shadow: 0 0 0 2px rgba(18,100,174,0.1); }
+.filterInput:focus {
+  border-color: #1264ae;
+  box-shadow: 0 0 0 3px rgba(18,100,174,0.1);
+}
 .filterInput::placeholder { color: #c0ccd8; }
 
 .clearBtn {
@@ -182,23 +225,32 @@
   color: #6b7a8d;
   cursor: pointer;
   font-family: inherit;
-  padding: 0.55rem 0;
+  padding: 0.52rem 0;
   white-space: nowrap;
   transition: color 0.15s;
+  align-self: flex-end;
 }
 .clearBtn:hover { color: #e74c3c; }
 
-/* SORT / COUNT ROW */
+.divider {
+  height: 1.5px;
+  background: #eaeff6;
+  margin-top: 0.5rem;
+  margin-bottom: 1.2rem;
+  width: 100%;
+}
+
+/* ── SORT / COUNT ROW ────────────────────────────── */
 .sortRow {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.9rem;
 }
 
 .sortLeft {
   display: flex;
-  gap: 0.65rem;
+  gap: 1rem;
   align-items: center;
 }
 
@@ -207,13 +259,14 @@
   align-items: center;
   gap: 0.3rem;
   font-size: 0.75rem;
-  color: #6b7a8d;
+  color: #8a9ab0;
   background: none;
   border: none;
   cursor: pointer;
   font-family: inherit;
-  font-weight: 500;
+  font-weight: 400;
 }
+.sortBtn strong { color: #1264ae; font-weight: 600; }
 .sortBtn:hover { color: #1264ae; }
 
 .countBadge {
@@ -221,17 +274,15 @@
   color: #ffffff;
   font-size: 0.72rem;
   font-weight: 700;
-  padding: 0.3rem 0.85rem;
+  padding: 0.32rem 1rem;
   border-radius: 50px;
 }
 
-/* TABLE CARD */
-.tableCard {
-  background: #ffffff;
-  border-radius: 12px;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
-  border: 1px solid #edf1f7;
+/* ── TABLE ───────────────────────────────────────── */
+.tableWrap {
   overflow: hidden;
+  border-radius: 10px;
+  border: 1px solid #eaeff6;
 }
 
 .table {
@@ -239,120 +290,128 @@
   border-collapse: collapse;
 }
 
+/* Header row — gray bg, centered, pipe dividers */
 .thead tr {
-  background: #f7f9fc;
-  border-bottom: 1px solid #edf1f7;
+  background: #f5f7fa;
 }
 
 .th {
-  text-align: left;
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: #9aaabb;
-  padding: 0.75rem 1rem;
-  border-right: 1px solid #edf1f7;
+  text-align: center;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: #8a9ab0;
+  padding: 0.7rem 0.9rem;
+  position: relative;
 }
-.th:last-child { border-right: none; }
+
+/* Vertical pipe divider between headers */
+.th + .th::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 20%;
+  height: 60%;
+  width: 1px;
+  background: #d8e2ee;
+}
+
+/* First column left-aligned */
+.th:first-child {
+  text-align: left;
+  padding-left: 1.2rem;
+}
 
 .tr {
-  border-bottom: 1px solid #f0f4f8;
+  border-bottom: 1px solid #edf1f7;
   cursor: pointer;
-  transition: background 0.12s;
+  transition: background 0.1s;
 }
-
-.tr:hover { background: #f7fafd; }
+.tr:hover { background: #f8fafd; }
 .tr:last-child { border-bottom: none; }
 
 .td {
-  padding: 0.75rem 1rem;
+  padding: 0.85rem 0.9rem;
   font-size: 0.8rem;
-  color: #2c3e50;
-  border-right: 1px solid #f0f4f8;
-  vertical-align: top;
+  color: #3a4a5c;
+  vertical-align: middle;
+  text-align: center;
 }
-.td:last-child { border-right: none; }
 
-/* PROJECT NAME CELL */
+/* Project name cell — left aligned */
+.td:first-child {
+  text-align: left;
+  padding-left: 1.2rem;
+}
+
+/* ── PROJECT NAME CELL ───────────────────────────── */
 .projName {
   font-weight: 600;
   color: #1b3a5e;
-  font-size: 0.82rem;
+  font-size: 0.83rem;
   line-height: 1.3;
 }
 
 .projId {
   font-size: 0.62rem;
-  color: #aabbcc;
+  color: #b0bdc8;
   margin-top: 0.1rem;
   margin-bottom: 0.45rem;
+  letter-spacing: 0.02em;
 }
 
-/* PROGRESS BAR */
+/* ── PROGRESS BAR (under project name) ──────────── */
 .progressBar {
-  height: 5px;
+  height: 4px;
   border-radius: 50px;
   background: #edf1f7;
   overflow: hidden;
-  width: 120px;
+  width: 140px;
 }
 
 .progressFill {
   height: 100%;
   border-radius: 50px;
-  transition: width 0.4s ease;
+  transition: width 0.5s ease;
 }
 
-.progressRed    { background: #e74c3c; }
-.progressAmber  { background: #f39c12; }
-.progressGreen  { background: #27ae60; }
+.progressRed   { background: #e74c3c; }
+.progressAmber { background: #f39c12; }
+.progressGreen { background: #27ae60; }
 
-/* RISK BADGE */
+/* ── RISK BADGE ──────────────────────────────────── */
 .badge {
   display: inline-block;
-  padding: 0.22rem 0.7rem;
+  padding: 0.25rem 0.75rem;
   border-radius: 50px;
-  font-size: 0.68rem;
+  font-size: 0.7rem;
   font-weight: 700;
+  min-width: 58px;
+  text-align: center;
 }
 .badgeHigh     { background: #e74c3c; color: #fff; }
 .badgeMedium   { background: #f39c12; color: #fff; }
 .badgeLow      { background: #27ae60; color: #fff; }
-.badgeCritical { background: #922b21; color: #fff; }
+.badgeCritical { background: #8b1a1a; color: #fff; }
 
-/* PROGRESS TD */
-.progressCell {
-  display: flex;
-  flex-direction: column;
-  gap: 0.2rem;
-}
-.progressPct {
-  font-size: 0.78rem;
-  color: #2c3e50;
-  font-weight: 500;
-}
-
-/* ═══════════════════════════════════════════
+/* ══════════════════════════════════════════════════
    MAP VIEW STYLES
-   ═══════════════════════════════════════════ */
+   ══════════════════════════════════════════════════ */
 
-/* Map container fills remaining space */
 .mapArea {
   flex: 1;
   display: flex;
-  background: #ffffff;
-  border-radius: 14px;
-  border: 1px solid #edf1f7;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-  overflow: hidden;
+  gap: 1.5rem; /* Gap between list and map */
   min-height: 0;
 }
 
-/* LEFT SCROLLABLE LIST */
+/* Left scrollable panel */
 .mapList {
-  width: 300px;
-  min-width: 300px;
+  width: 270px;
+  min-width: 270px;
   background: #ffffff;
-  border-right: 1px solid #edf1f7;
+  border: 1.5px solid #eaeff6;
+  border-radius: 20px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.04);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -361,35 +420,44 @@
 .mapListHeader {
   display: flex;
   align-items: center;
-  gap: 0.55rem;
-  padding: 0.85rem 1rem;
-  border-bottom: 1px solid #edf1f7;
-  background: #f7f9fc;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 0.75rem 1rem;
+  background: #2781d5;      /* bright blue pill matching reference */
+  margin: 1rem 1rem 0.5rem;
+  border-radius: 50px;
   flex-shrink: 0;
 }
 
 .mapListHeaderIcon {
-  width: 26px;
-  height: 26px;
-  background: #1264ae;
-  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
 }
 
 .mapListHeaderTitle {
-  font-size: 0.82rem;
+  font-size: 0.85rem;
   font-weight: 700;
-  color: #1b3a5e;
+  color: #ffffff;   /* white text on blue bg */
 }
 
-.mapListScroll {
+/* Right: Leaflet map fills remaining space */
+.mapContainer {
   flex: 1;
-  overflow-y: auto;
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 20px;
+  border: 1.5px solid #eaeff6;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.04);
 }
 
+.mapListScroll { 
+  flex: 1; 
+  overflow-y: auto; 
+  padding-bottom: 1rem;
+}
 .mapListScroll::-webkit-scrollbar { width: 4px; }
 .mapListScroll::-webkit-scrollbar-track { background: transparent; }
 .mapListScroll::-webkit-scrollbar-thumb { background: #dce4ef; border-radius: 4px; }
@@ -400,7 +468,6 @@
   cursor: pointer;
   transition: background 0.12s ease;
 }
-
 .mapListItem:hover { background: #f4f8fd; }
 .mapListItemActive { background: #eaf3fb; }
 
@@ -426,20 +493,19 @@
   color: #9aaabb;
 }
 
-/* Status badges */
 .statusBadge {
   display: inline-block;
-  padding: 0.15rem 0.55rem;
+  padding: 0.18rem 0.6rem;
   border-radius: 50px;
   font-size: 0.62rem;
   font-weight: 700;
+  white-space: nowrap;
 }
-.statusDelayed    { background: #fde8e8; color: #c0392b; }
-.statusOnSchedule { background: #d5f5e3; color: #1a7a45; }
-.statusCompleted  { background: #d5eef9; color: #1264ae; }
-.statusInProgress { background: #e8f0fe; color: #2756c5; }
+.statusDelayed    { background: #e74c3c; color: #fff; }
+.statusOnSchedule { background: #f39c12; color: #fff; }
+.statusCompleted  { background: #27ae60; color: #fff; }
+.statusInProgress { background: #2756c5; color: #fff; }
 
-/* RIGHT MAP PLACEHOLDER */
 .mapPlaceholder {
   flex: 1;
   background: linear-gradient(155deg, #cde8f7 0%, #a8d4ef 50%, #78b8e8 100%);
@@ -458,8 +524,7 @@
 
 .mapCenterLabel {
   position: absolute;
-  top: 50%;
-  left: 50%;
+  top: 50%; left: 50%;
   transform: translate(-50%, -50%);
   z-index: 2;
   background: rgba(255,255,255,0.85);
@@ -471,32 +536,18 @@
   border: 1px solid rgba(255,255,255,0.6);
 }
 
-.mapCenterLabelTitle {
-  font-size: 1rem;
-  font-weight: 700;
-  color: #1264ae;
-  margin-bottom: 0.3rem;
-}
+.mapCenterLabelTitle { font-size: 1rem; font-weight: 700; color: #1264ae; margin-bottom: 0.3rem; }
+.mapCenterLabelSub   { font-size: 0.72rem; color: #6b7a8d; line-height: 1.5; }
 
-.mapCenterLabelSub {
-  font-size: 0.72rem;
-  color: #6b7a8d;
-  line-height: 1.5;
-}
-
-/* PINS */
-.mapPins {
-  position: absolute;
-  inset: 0;
-  z-index: 3;
-  pointer-events: none;
-}
+.mapPins { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
 
 .mapPin {
   position: absolute;
   transform: translate(-50%, -100%);
   filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25));
   animation: pinDrop 0.4s ease-out both;
+  pointer-events: all;
+  cursor: pointer;
 }
 
 @keyframes pinDrop {
@@ -504,32 +555,24 @@
   to   { transform: translate(-50%, -100%); opacity: 1; }
 }
 
-/* ZOOM CONTROLS */
 .zoomControls {
   position: absolute;
-  right: 1rem;
-  bottom: 1.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-  z-index: 10;
+  right: 1rem; bottom: 1.5rem;
+  display: flex; flex-direction: column;
+  gap: 0.3rem; z-index: 10;
 }
 
 .zoomBtn {
-  width: 34px;
-  height: 34px;
+  width: 34px; height: 34px;
   background: #ffffff;
   border: 1px solid #dce4ef;
   border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: flex; align-items: center; justify-content: center;
   cursor: pointer;
   color: #5a6a7a;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
   transition: background 0.15s, color 0.15s;
-  font-size: 1.1rem;
-  font-weight: 700;
+  font-size: 1.1rem; font-weight: 700;
   pointer-events: all;
 }
 .zoomBtn:hover { background: #f0f5fb; color: #1264ae; }

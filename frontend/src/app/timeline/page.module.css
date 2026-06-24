@@ -1,0 +1,433 @@
+/* ── Shell ───────────────────────────────────────────── */
+.shell {
+  display: block;
+  height: 100vh;
+  background: #f0f4f9;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.main {
+  margin-left: 210px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #f0f4f9;
+}
+
+/* ── Top Bar ─────────────────────────────────────────── */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 1.5rem;
+  flex-shrink: 0;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: #7a8fa6;
+}
+.sep { color: #b0bec8; }
+.breadActive { color: #1b3a5e; font-weight: 600; }
+
+.topbarRight {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.dateBadge {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 50px;
+  border: 1.5px solid #dde4f0;
+  background: #fff;
+  font-size: 0.76rem;
+  color: #1b3a5e;
+  font-weight: 500;
+}
+
+.iconBtn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1.5px solid #dde4f0;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1b3a5e;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.iconBtn:hover { background: #e8f0fb; }
+
+/* ── Main White Card ─────────────────────────────────── */
+.card {
+  flex: 1;
+  margin: 0 1.5rem 1.4rem;
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #e8edf5;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ── Card Header ─────────────────────────────────────── */
+.cardHeader {
+  padding: 1.1rem 1.5rem 0.75rem;
+  flex-shrink: 0;
+}
+
+.cardTitle {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #1b3a5e;
+  margin: 0 0 0.2rem;
+  letter-spacing: -0.02em;
+}
+
+.accent { color: #2ea2e6; }
+
+.cardSub {
+  font-size: 0.76rem;
+  color: #7a8fa6;
+  margin: 0;
+}
+
+.divider {
+  height: 1px;
+  background: #eaeff6;
+  flex-shrink: 0;
+}
+
+/* ── Filters Row ─────────────────────────────────────── */
+.filtersRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.9rem;
+  padding: 0.85rem 1.5rem 0.65rem;
+  flex-shrink: 0;
+}
+
+.filterGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.filterLabel {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #4a5a6a;
+  letter-spacing: 0.01em;
+}
+
+.searchWrap {
+  position: relative;
+  width: 240px;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 0.7rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.searchInput {
+  width: 100%;
+  padding: 0.5rem 0.8rem 0.5rem 2rem;
+  border: 1.5px solid #bdd0f0;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  color: #1b3a5e;
+  outline: none;
+  font-family: inherit;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.searchInput:focus {
+  border-color: #2756c5;
+}
+
+.searchInput::placeholder { color: #94a3b8; }
+
+.selectWrap {
+  position: relative;
+  width: 180px;
+}
+
+.select {
+  width: 100%;
+  padding: 0.5rem 2rem 0.5rem 0.85rem;
+  border: 1.5px solid #dde4f0;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  color: #1b3a5e;
+  background: #fff;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  font-family: inherit;
+  box-sizing: border-box;
+}
+
+.selectChevron {
+  position: absolute;
+  right: 0.65rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.clearBtn {
+  padding: 0.5rem 0.9rem;
+  font-size: 0.76rem;
+  font-weight: 500;
+  color: #7a8fa6;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  align-self: flex-end;
+}
+
+/* ── Sort & Legend Row ───────────────────────────────── */
+.sortRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.4rem 1.5rem 0.5rem;
+  flex-shrink: 0;
+}
+
+.sortControls {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.sortLabel {
+  font-size: 0.72rem;
+  color: #7a8fa6;
+}
+
+.sortSelect {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #2756c5;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  outline: none;
+  font-family: inherit;
+  padding: 0;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 1.2rem;
+}
+
+.legendLabel {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #1b3a5e;
+  margin-right: 0.2rem;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  color: #4a5a6a;
+}
+
+.legendColor {
+  width: 24px;
+  height: 10px;
+  border-radius: 50px;
+}
+
+.legendColorOutline {
+  width: 24px;
+  height: 10px;
+  border-radius: 50px;
+  border: 1.5px solid;
+  background: #fff;
+}
+
+/* ── Gantt Chart Area ────────────────────────────────── */
+.ganttContainer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin: 0.5rem 1.5rem 1rem;
+}
+
+/* Gantt Header */
+.ganttHeaderRow {
+  display: flex;
+  align-items: stretch;
+  border-bottom: 1px solid #eaeff6;
+  flex-shrink: 0;
+}
+
+.ganttLeftHeader {
+  width: 260px;
+  min-width: 260px;
+  padding: 0.75rem 1rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #7a8fa6;
+  background: #f8fafb;
+  border-radius: 8px 0 0 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-right: 1px solid transparent;
+}
+
+.ganttGridHeader {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 0.5rem;
+  padding: 0 0.5rem;
+  align-items: center;
+}
+
+.ganttMonthBadge {
+  background: #e2eaf6;
+  color: #1a6ed8;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-align: center;
+  padding: 0.6rem 0;
+  border-radius: 8px;
+}
+
+/* Gantt Body */
+.ganttBody {
+  flex: 1;
+  position: relative;
+  overflow-y: auto;
+  padding-bottom: 1rem;
+}
+
+.ganttBody::-webkit-scrollbar { width: 4px; }
+.ganttBody::-webkit-scrollbar-track { background: transparent; }
+.ganttBody::-webkit-scrollbar-thumb { background: #dde4f0; border-radius: 4px; }
+
+/* Grid Lines */
+.ganttBgGrid {
+  position: absolute;
+  top: 0; bottom: 0; left: 260px; right: 0;
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.ganttGridCol {
+  border-right: 1px solid #eaeff6;
+}
+
+/* Gantt Rows */
+.ganttRow {
+  display: flex;
+  align-items: center;
+  border-bottom: 1px solid transparent; /* Using alternating background instead of border usually, but matching image */
+  position: relative;
+  z-index: 1;
+  min-height: 52px;
+}
+
+.ganttRow:nth-child(even) {
+  background: #fcfcfd;
+}
+
+.ganttLeftCol {
+  width: 260px;
+  min-width: 260px;
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.ganttProjName {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #4a5a6a;
+  margin-bottom: 0.1rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ganttProjId {
+  font-size: 0.65rem;
+  color: #94a3b8;
+}
+
+.ganttGridColWrapper {
+  flex: 1;
+  position: relative;
+  height: 24px;
+}
+
+.ganttBarContainer {
+  position: absolute;
+  top: 0; bottom: 0; left: 0; right: 0;
+}
+
+/* Pills */
+.ganttBarSolid {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 50px;
+  z-index: 2;
+}
+
+.ganttBarLight {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-top-right-radius: 50px;
+  border-bottom-right-radius: 50px;
+  border: 1px solid;
+  border-left: none; /* Join seamlessly with solid part */
+  z-index: 1;
+  box-sizing: border-box;
+}
+
+.emptyState {
+  padding: 3rem;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.82rem;
+  position: relative;
+  z-index: 2;
+}
