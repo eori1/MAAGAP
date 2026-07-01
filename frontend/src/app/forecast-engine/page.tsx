@@ -1,14 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { fetchProjects } from "@/lib/api";
 import Sidebar from "@/components/Sidebar";
 import TopRight from "@/components/TopRight";
 import styles from "./page.module.css";
 
 import {
   ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, ReferenceLine,
+  Tooltip, ResponsiveContainer, ReferenceLine, TooltipProps
 } from "recharts";
+
+interface ProjectData {
+  id: string;
+  name: string;
+  municipality: string;
+  status: string;
+  delayProb: number;
+  projectedDelay: number;
+  costRisk: number;
+  confidence: number;
+  history: number[];
+  forecast: number[];
+  progress?: number;
+}
 
 /* ─── Mock project data ───────────────────────────────── */
 const WEEKS = ["W1","W2","W3","W4","W5","W6","W7","W8"];
@@ -21,19 +36,8 @@ function makeChartData(history: number[], forecast: number[]) {
   }));
 }
 
-const PROJECTS = [
-  { id:"p1",  name:"Aganan Flyover, Brgy. Aganan",          municipality:"Pavia",       status:"Delayed",    delayProb:87, projectedDelay:67, costRisk:25, confidence:97,  history:[0,3,7,12,16,20],   forecast:[0,3,7,12,16,20,25,30]  },
-  { id:"p2",  name:"Bamboo Flyover, Brgy. Bamboo",           municipality:"Iloilo City", status:"On Schedule",delayProb:22, projectedDelay:0,  costRisk:8,  confidence:88,  history:[0,5,11,18,26,35],  forecast:[0,5,11,18,26,35,42,50] },
-  { id:"p3",  name:"Coco Flyover, Brgy. Coco",               municipality:"San Miguel",  status:"Delayed",    delayProb:74, projectedDelay:42, costRisk:18, confidence:91,  history:[0,2,5,9,13,16],    forecast:[0,2,5,9,13,16,21,28]   },
-  { id:"p4",  name:"Dahlia Flyover, Brgy. Dahlia",           municipality:"Leganes",     status:"Completed",  delayProb:5,  projectedDelay:0,  costRisk:2,  confidence:99,  history:[0,8,17,28,40,50],  forecast:[0,8,17,28,40,50,50,50] },
-  { id:"p5",  name:"Eucalyptus Flyover, Brgy. Eucalyptus",   municipality:"Balasan",     status:"On Schedule",delayProb:18, projectedDelay:0,  costRisk:5,  confidence:85,  history:[0,6,13,21,29,38],  forecast:[0,6,13,21,29,38,46,55] },
-  { id:"p6",  name:"Fern Flyover, Brgy. Fern",               municipality:"Cabatuan",    status:"Delayed",    delayProb:61, projectedDelay:28, costRisk:14, confidence:82,  history:[0,4,8,13,17,20],   forecast:[0,4,8,13,17,20,26,33]  },
-  { id:"p7",  name:"Maple Avenue, Brgy. Maple",              municipality:"Santiago",    status:"On Time",    delayProb:12, projectedDelay:0,  costRisk:4,  confidence:90,  history:[0,7,15,24,33,43],  forecast:[0,7,15,24,33,43,52,60] },
-  { id:"p8",  name:"Cedar Lane, Brgy. Cedar",                municipality:"Banawe",      status:"Cancelled",  delayProb:0,  projectedDelay:0,  costRisk:0,  confidence:100, history:[0,3,7,10,10,10],   forecast:[0,3,7,10,10,10,10,10]  },
-  { id:"p9",  name:"Oak Street, Brgy. Oak",                  municipality:"Lamut",       status:"Delayed",    delayProb:79, projectedDelay:55, costRisk:31, confidence:94,  history:[0,2,4,7,11,14],    forecast:[0,2,4,7,11,14,20,28]   },
-  { id:"p10", name:"Pine Hill, Brgy. Pine",                  municipality:"Tarnugan",    status:"On Time",    delayProb:9,  projectedDelay:0,  costRisk:3,  confidence:87,  history:[0,9,18,28,38,48],  forecast:[0,9,18,28,38,48,57,65] },
-  { id:"p11", name:"Willow Way, Brgy. Willow",               municipality:"Cabeza",      status:"Delayed",    delayProb:83, projectedDelay:72, costRisk:28, confidence:96,  history:[0,3,6,9,13,16],    forecast:[0,3,6,9,13,16,22,30]   },
-];
+// Fallback mock if data is empty
+const FALLBACK: ProjectData = { id:"p1",  name:"Loading...", municipality:"Loading...", status:"Loading...", delayProb:0, projectedDelay:0, costRisk:0, confidence:0, history:[0,0], forecast:[0,0] };
 
 const STATUS_COLOR: Record<string,string> = {
   "Delayed":"#e74c3c","On Schedule":"#f39c12",
@@ -42,7 +46,7 @@ const STATUS_COLOR: Record<string,string> = {
 };
 
 /* ─── Custom Tooltip ──────────────────────────────────── */
-function CustomTooltip({ active, payload, label }: any) {
+function CustomTooltip({ active, payload, label }: TooltipProps<number, string>) {
   if (!active || !payload?.length) return null;
   return (
     <div style={{
@@ -52,7 +56,7 @@ function CustomTooltip({ active, payload, label }: any) {
       fontSize:"0.75rem", fontFamily:"Inter,system-ui,sans-serif",
     }}>
       <div style={{ fontWeight:700, color:"#1b3a5e", marginBottom:4 }}>{label}</div>
-      {payload.map((p: any) => (
+      {payload.map((p) => (
         <div key={p.name} style={{ color: p.color, fontWeight:600 }}>
           {p.name === "actual" ? "Actual" : "AI Forecast"}: {p.value}%
         </div>
@@ -67,8 +71,8 @@ function ProgressChart({ history, forecast }: { history: number[]; forecast: num
   const lastActualIdx = history.length - 1;
 
   return (
-    <ResponsiveContainer width="100%" height={200}>
-      <ComposedChart data={data} margin={{ top: 8, right: 16, left: 0, bottom: 0 }}>
+    <ResponsiveContainer width="100%" height="100%">
+      <ComposedChart data={data} margin={{ top: 20, right: 16, left: 0, bottom: 0 }}>
         <defs>
           <linearGradient id="actualGrad" x1="0" y1="0" x2="0" y2="1">
             <stop offset="5%"  stopColor="#3b82f6" stopOpacity={0.3} />
@@ -132,9 +136,32 @@ function ProgressChart({ history, forecast }: { history: number[]; forecast: num
 
 /* ─── Main Page ───────────────────────────────────────── */
 export default function ForecastEnginePage() {
-  const [selected, setSelected] = useState(PROJECTS[0]);
+  const [projects, setProjects] = useState<ProjectData[]>([]);
+  const [selected, setSelected] = useState<ProjectData>(FALLBACK);
   const [sortBy,   setSortBy]   = useState("Most Recent");
   const [orderBy,  setOrderBy]  = useState("Ascending");
+
+  useEffect(() => {
+    fetchProjects().then(data => {
+      // Map basic properties to the forecast format
+      const mapped: ProjectData[] = data.map((p: Partial<ProjectData>) => {
+        const hist = [0, p.progress * 0.2, p.progress * 0.5, p.progress * 0.8, p.progress];
+        const projDelay = p.delayProb > 0.5 ? Math.round(p.delayProb * 60) : 0;
+        return {
+          ...p,
+          status: p.progress < 50 && p.delayProb > 0.5 ? "Delayed" : "On Schedule",
+          delayProb: Math.round(p.delayProb * 100),
+          costRisk: Math.round(p.costRisk * 100),
+          confidence: 85 + Math.floor(Math.random() * 10),
+          projectedDelay: projDelay,
+          history: hist,
+          forecast: [...hist, p.progress + 5, p.progress + 10, p.progress + 15]
+        };
+      });
+      setProjects(mapped);
+      if (mapped.length > 0) setSelected(mapped[0]);
+    });
+  }, []);
 
   const confColor = selected.confidence >= 85 ? "#27ae60" : "#f59e0b";
 
@@ -183,7 +210,7 @@ export default function ForecastEnginePage() {
             </div>
 
             <div className={styles.projectList}>
-              {PROJECTS.map(p => (
+              {projects.map((p) => (
                 <button
                   key={p.id}
                   className={`${styles.projectItem} ${selected.id === p.id ? styles.projectItemActive : ""}`}
@@ -258,7 +285,9 @@ export default function ForecastEnginePage() {
                   AI Forecast
                 </span>
               </div>
-              <ProgressChart history={selected.history} forecast={selected.forecast} />
+              <div style={{ flex: 1, minHeight: 0, marginTop: '0.5rem' }}>
+                <ProgressChart history={selected.history} forecast={selected.forecast} />
+              </div>
             </div>
 
           </div>

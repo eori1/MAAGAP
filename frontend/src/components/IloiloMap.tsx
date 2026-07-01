@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 /* ── Types ─────────────────────────────────────────── */
 export interface ProjectPin {
@@ -22,136 +22,35 @@ interface IloiloMapProps {
 /* ── Status → pin color ────────────────────────────── */
 const STATUS_COLOR: Record<string, string> = {
   "Delayed":     "#e74c3c",
-  "On Schedule": "#f39c12",
+  "On Schedule": "#2756c5",
   "Completed":   "#27ae60",
   "In Progress": "#f59e0b",
 };
 
 /* ── SVG pin factory ───────────────────────────────── */
 function makePinSvg(color: string, active: boolean): string {
-  const scale = active ? 1.4 : 1;
-  const W     = Math.round(36 * scale);
-  const H     = Math.round(48 * scale);
-  const glow  = active
-    ? `drop-shadow(0 0 8px ${color}88) drop-shadow(0 4px 12px rgba(0,0,0,0.5))`
-    : "drop-shadow(0 3px 6px rgba(0,0,0,0.35))";
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 36 48" style="filter:${glow}">
-    <path d="M18 1C10.268 1 4 7.268 4 15c0 11 14 32 14 32S32 26 32 15C32 7.268 25.732 1 18 1z"
-          fill="${color}" stroke="white" stroke-width="2.5"/>
-    <circle cx="18" cy="15" r="7" fill="white" fill-opacity="0.95"/>
-    <circle cx="18" cy="15" r="3.5" fill="${color}"/>
+  const scale = active ? 1.3 : 1;
+  const W     = Math.round(32 * scale);
+  const H     = Math.round(44 * scale);
+  const shadow = active 
+    ? `drop-shadow(0 6px 12px ${color}88)`
+    : `drop-shadow(0 3px 6px rgba(0,0,0,0.3))`;
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 32 44" style="filter:${shadow}">
+    <path d="M16 1C7.716 1 1 7.716 1 16c0 10.5 15 27 15 27s15-16.5 15-27c0-8.284-6.716-15-15-15z" fill="${color}" stroke="white" stroke-width="2"/>
+    <circle cx="16" cy="16" r="6" fill="white"/>
   </svg>`;
 }
 
-/* ── Map ID (stable, module-level) ─────────────────── */
-const MAP_ID = "maagap-iloilo-map";
-
-/* ─────────────────────────────────────────────────────
-   CSS injected once into <head>.
-   Targets ONLY the tile pane inside our specific map div
-   → markers (.leaflet-marker-pane) are NOT affected.
-
-   Why sepia first?
-   sepia(1) converts near-white (#F5F5F5 land) to warm
-   yellow (#FFD580-ish) which actually has a hue to rotate.
-   hue-rotate(185°) then shifts yellow(60°) → blue(245°).
-   ───────────────────────────────────────────────────── */
-const BLUE_TILE_CSS = `
-  #${MAP_ID} .leaflet-tile-pane {
-    filter: invert(1) hue-rotate(200deg) saturate(0.6) brightness(1.1);
-  }
-`;
-
-function injectStyle() {
-  if (typeof document === "undefined") return;
-  if (document.getElementById("maagap-map-style")) return;
-  const el = document.createElement("style");
-  el.id = "maagap-map-style";
-  el.textContent = BLUE_TILE_CSS;
-  document.head.appendChild(el);
-}
-
 export default function IloiloMap({ projects, activeId, onPinClick }: IloiloMapProps) {
+  const [mapReady, setMapReady] = useState(false);
   const mapRef       = useRef<HTMLDivElement>(null);
   const leafletMap   = useRef<import("leaflet").Map | null>(null);
   const markersRef   = useRef<Map<string, import("leaflet").Marker>>(new Map());
-  const initingRef   = useRef(false);   // prevents async race in Strict Mode
-
-  /* ── Inject blue-tile CSS once ──────────────────── */
-  useEffect(() => { injectStyle(); }, []);
-
-  /* ── Init map once ──────────────────────────────── */
-  useEffect(() => {
-    if (!mapRef.current || leafletMap.current || initingRef.current) return;
-    initingRef.current = true;
-
-    (async () => {
-      try {
-        const L = (await import("leaflet")).default;
-        await import("leaflet/dist/leaflet.css");
-
-        /* Safety: cleanup may have run while we awaited */
-        if (!mapRef.current || leafletMap.current) return;
-
-        /* Clear any stale _leaflet_id (React Strict Mode / HMR) */
-        const el = mapRef.current as HTMLElement & { _leaflet_id?: number };
-        if (el._leaflet_id) delete el._leaflet_id;
-
-        const map = L.map(el, {
-          center:             [10.75, 122.56],
-          zoom:               10,
-          zoomControl:        false,
-          attributionControl: false,
-        });
-
-        leafletMap.current = map;
-
-        /* CartoDB Dark Matter + invert(1) = proven blue map trick:
-           Dark Matter is black/dark-navy tiles.
-           invert(1) flips black→white, white→black, giving
-           a light-gray map with inverted colors.
-           hue-rotate(200°) then tints everything to blue.
-           Result: light-blue land, slightly-darker-blue water,
-           white roads — matching the reference design exactly. */
-        L.tileLayer(
-          "https://{s}.basemaps.cartocdn.com/dark_matter_nolabels/{z}/{x}/{y}{r}.png",
-          { maxZoom: 19, subdomains: "abcd" }
-        ).addTo(map);
-
-        /* Labels layer on top — not filtered, stays readable */
-        L.tileLayer(
-          "https://{s}.basemaps.cartocdn.com/dark_matter_only_labels/{z}/{x}/{y}{r}.png",
-          { maxZoom: 19, subdomains: "abcd", opacity: 0.6 }
-        ).addTo(map);
-
-        /* Zoom controls */
-        L.control.zoom({ position: "bottomright" }).addTo(map);
-
-        /* Project markers */
-        projects.forEach(p => addMarker(L, map, p, false));
-      } finally {
-        initingRef.current = false;
-      }
-    })();
-
-    return () => {
-      initingRef.current = false;
-      if (leafletMap.current) {
-        leafletMap.current.remove();
-        leafletMap.current = null;
-        markersRef.current.clear();
-      }
-      if (mapRef.current) {
-        const el = mapRef.current as HTMLElement & { _leaflet_id?: number };
-        delete el._leaflet_id;
-      }
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   /* ── Add a single marker ────────────────────────── */
   function addMarker(
-    L:      typeof import("leaflet").default,
+    L:      typeof import("leaflet"),
     map:    import("leaflet").Map,
     p:      ProjectPin,
     active: boolean
@@ -161,8 +60,8 @@ export default function IloiloMap({ projects, activeId, onPinClick }: IloiloMapP
     const icon   = L.divIcon({
       html:        makePinSvg(color, active),
       className:   "",
-      iconSize:    [size, Math.round(size * 1.33)],
-      iconAnchor:  [size / 2, Math.round(size * 1.33)],
+      iconSize:    [size, Math.round(size * 1.375)],
+      iconAnchor:  [size / 2, Math.round(size * 1.375)],
       popupAnchor: [0, -Math.round(size * 1.4)],
     });
 
@@ -182,9 +81,92 @@ export default function IloiloMap({ projects, activeId, onPinClick }: IloiloMapP
     markersRef.current.set(p.id, marker);
   }
 
+  /* ── Init map once ──────────────────────────────── */
+  useEffect(() => {
+    if (!mapRef.current) return;
+    
+    let isMounted = true;
+
+    (async () => {
+      try {
+        const L = (await import("leaflet")).default;
+        await import("leaflet/dist/leaflet.css");
+        if (!isMounted) return;
+
+        const el = mapRef.current as HTMLElement & { _leaflet_id?: null | string | number };
+        if (el._leaflet_id) {
+          el._leaflet_id = null;
+          el.innerHTML = "";
+        }
+
+        const map = L.map(el, {
+          center:             [10.95, 122.65],
+          zoom:               10,
+          minZoom:            8,
+          maxBounds:          [[9.8, 121.0], [12.2, 124.0]],
+          maxBoundsViscosity: 1.0,
+          zoomControl:        false,
+          attributionControl: true,
+        });
+
+        leafletMap.current = map;
+        setMapReady(true);
+
+        /* Standard bright map (CartoDB Voyager) */
+        L.tileLayer(
+          "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+          { maxZoom: 19, subdomains: "abcd", attribution: '&copy; OpenStreetMap &copy; CARTO' }
+        ).addTo(map);
+
+        /* Zoom controls */
+        L.control.zoom({ position: "bottomright" }).addTo(map);
+
+      } catch (err) {
+        console.error("Leaflet init error:", err);
+      }
+    })();
+
+    const activeMarkers = markersRef.current;
+    return () => {
+      isMounted = false;
+      if (leafletMap.current) {
+        leafletMap.current.remove();
+        leafletMap.current = null;
+        activeMarkers.clear();
+      }
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+
+
+  /* ── Sync markers when filtered projects change ── */
+  useEffect(() => {
+    if (!mapReady || !leafletMap.current) return;
+    (async () => {
+      const L = (await import("leaflet")).default;
+      const map = leafletMap.current;
+      if (!map) return;
+
+      const projectIds = new Set(projects.map(p => p.id));
+      for (const [id, marker] of markersRef.current.entries()) {
+        if (!projectIds.has(id)) {
+          marker.remove();
+          markersRef.current.delete(id);
+        }
+      }
+
+      projects.forEach(p => {
+        if (!markersRef.current.has(p.id)) {
+          addMarker(L, map, p, activeId === p.id);
+        }
+      });
+    })();
+  }, [projects, activeId, mapReady]);
+
   /* ── Update pins on activeId change ────────────── */
   useEffect(() => {
-    if (!leafletMap.current) return;
+    if (!mapReady || !leafletMap.current) return;
     (async () => {
       const L   = (await import("leaflet")).default;
       const map = leafletMap.current;
@@ -199,8 +181,8 @@ export default function IloiloMap({ projects, activeId, onPinClick }: IloiloMapP
         marker.setIcon(L.divIcon({
           html:        makePinSvg(color, active),
           className:   "",
-          iconSize:    [size, Math.round(size * 1.33)],
-          iconAnchor:  [size / 2, Math.round(size * 1.33)],
+          iconSize:    [size, Math.round(size * 1.375)],
+          iconAnchor:  [size / 2, Math.round(size * 1.375)],
           popupAnchor: [0, -Math.round(size * 1.4)],
         }));
         if (active) {
@@ -209,13 +191,13 @@ export default function IloiloMap({ projects, activeId, onPinClick }: IloiloMapP
         }
       });
     })();
-  }, [activeId, projects]);
+  }, [activeId, projects, mapReady]);
 
   /* ── Render ─────────────────────────────────────── */
   return (
     <div style={{ position: "relative", width: "100%", height: "100%", minHeight: 0 }}>
-      {/* The actual Leaflet map — ID must match MAP_ID constant above */}
-      <div id={MAP_ID} ref={mapRef} style={{ width: "100%", height: "100%" }} />
+      {/* The actual Leaflet map */}
+      <div ref={mapRef} style={{ width: "100%", height: "100%" }} />
 
       {/* Legend — bottom left, outside the filtered tile pane */}
       <div style={{
@@ -228,7 +210,7 @@ export default function IloiloMap({ projects, activeId, onPinClick }: IloiloMapP
       }}>
         {([
           ["Delayed",     "#e74c3c"],
-          ["On Schedule", "#f39c12"],
+          ["On Schedule", "#2756c5"],
           ["Completed",   "#27ae60"],
           ["In Progress", "#f59e0b"],
         ] as [string, string][]).map(([label, color]) => (

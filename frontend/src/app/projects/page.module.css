@@ -94,8 +94,10 @@
 /* ── BODY ────────────────────────────────────────── */
 .body {
   flex: 1;
-  overflow-y: auto;
+  overflow: hidden;
   padding: 0.5rem 1.5rem 1.5rem;
+  display: flex;
+  flex-direction: column;
 }
 
 .bodyMap {
@@ -114,6 +116,10 @@
   padding: 1.5rem 1.6rem 1.8rem;
   box-shadow: 0 2px 12px rgba(0,0,0,0.06);
   border: 1px solid #e8edf4;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 
 /* ── PAGE HEADER ─────────────────────────────────── */
@@ -218,6 +224,35 @@
 }
 .filterInput::placeholder { color: #c0ccd8; }
 
+.statusPills {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.statusPill {
+  padding: 0.45rem 0.8rem;
+  border-radius: 50px;
+  border: 1.5px solid #c8d6e8;
+  background: #ffffff;
+  color: #6b7a8d;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+.statusPill:hover {
+  background: #f4f8fd;
+  color: #1b3a5e;
+  border-color: #1264ae;
+}
+.statusPillActive {
+  background: #1264ae;
+  color: #ffffff;
+  border-color: #1264ae;
+}
+
 .clearBtn {
   background: none;
   border: none;
@@ -280,9 +315,11 @@
 
 /* ── TABLE ───────────────────────────────────────── */
 .tableWrap {
-  overflow: hidden;
+  overflow-y: auto;
   border-radius: 10px;
   border: 1px solid #eaeff6;
+  flex: 1;
+  min-height: 0;
 }
 
 .table {
@@ -293,6 +330,9 @@
 /* Header row — gray bg, centered, pipe dividers */
 .thead tr {
   background: #f5f7fa;
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 .th {
@@ -502,9 +542,9 @@
   white-space: nowrap;
 }
 .statusDelayed    { background: #e74c3c; color: #fff; }
-.statusOnSchedule { background: #f39c12; color: #fff; }
+.statusOnSchedule { background: #2756c5; color: #fff; }
 .statusCompleted  { background: #27ae60; color: #fff; }
-.statusInProgress { background: #2756c5; color: #fff; }
+.statusInProgress { background: #f59e0b; color: #fff; }
 
 .mapPlaceholder {
   flex: 1;

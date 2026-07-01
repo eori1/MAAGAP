@@ -2,6 +2,7 @@
 
 import styles from "./page.module.css";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 /* ─── SVG Icons ─────────────────────────────────── */
 const EmailIcon = () => (
@@ -35,7 +36,15 @@ const EyeOffIcon = () => (
 
 /* ─── Page ───────────────────────────────────────── */
 export default function LoginPage() {
+  const router = useRouter();
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("admin@iloilo.gov.ph");
+  const [password, setPassword] = useState("maagap2026");
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    router.push("/dashboard");
+  };
 
   return (
     <main className={styles.container}>
@@ -89,7 +98,7 @@ export default function LoginPage() {
               Access real-time governance insights and predictive project analytics.
             </p>
 
-            <form onSubmit={(e) => e.preventDefault()}>
+            <form onSubmit={handleLogin}>
               {/* Email */}
               <div className={styles.formGroup}>
                 <label htmlFor="email" className={styles.formLabel}>Email Address</label>
@@ -101,6 +110,8 @@ export default function LoginPage() {
                     className={styles.input}
                     placeholder="emailexample@iloilo.gov.ph"
                     autoComplete="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                   />
                 </div>
               </div>
@@ -116,6 +127,8 @@ export default function LoginPage() {
                     className={styles.input}
                     placeholder="••••••••••••••"
                     autoComplete="current-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
                   />
                   <button
                     type="button"

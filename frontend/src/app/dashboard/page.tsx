@@ -6,12 +6,8 @@ import TopRight from "@/components/TopRight";
 import styles from "./page.module.css";
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, ResponsiveContainer } from "recharts";
 
-/* ─── Mock Data ──────────────────────────────────────── */
-const PROJECTS = [
-  { id: "PPS-124", name: "Aganan Flyover, Brgy. Aganan",  municipality: "Pavia",     progress: 30, budget: "440,000,000", risk: "High",   inspector: "Engr. Rico Cruz"  },
-  { id: "PPS-125", name: "Buntat Road, Brgy. Buntat",     municipality: "San Miguel", progress: 45, budget: "320,000,000", risk: "Medium", inspector: "Engr. Maria Lopez" },
-  { id: "PPS-126", name: "Carmen Bridge, Brgy. Carmen",   municipality: "Carmen",     progress: 60, budget: "550,000,000", risk: "High",   inspector: "Engr. Jose Ramos"  },
-];
+import { useState, useEffect } from "react";
+import { fetchProjects } from "@/lib/api";
 
 const ALERTS = [
   { name: "Aganan Flyover",               desc: "Likely delayed by 35 days", conf: "95 % conf.", severity: "high"  },
@@ -77,8 +73,32 @@ function riskClass(risk: string, s: typeof styles) {
   return `${s.badge} ${s.badgeLow}`;
 }
 
+interface ProjectData {
+  id: string;
+  name: string;
+  municipality: string;
+  progress: number;
+  budget: string;
+  risk: string;
+  status: string;
+  inspector: string;
+  lat: number;
+  lng: number;
+}
+
 /* ─── Dashboard Page ──────────────────────────────── */
 export default function DashboardPage() {
+  const [projects, setProjects] = useState<ProjectData[]>([]);
+
+  useEffect(() => {
+    fetchProjects().then(data => setProjects(data));
+  }, []);
+
+  const totalProjects = projects.length;
+  const completedProjects = projects.filter(p => p.status === "Completed").length;
+  const ongoingProjects = projects.filter(p => p.status === "In Progress" || p.status === "On Schedule").length;
+  const criticalCount = projects.filter(p => p.risk === "Critical").length;
+  const highRiskCount = projects.filter(p => p.risk === "High").length;
   return (
     <div className={styles.layout}>
       <Sidebar />
@@ -109,8 +129,8 @@ export default function DashboardPage() {
             <div className={styles.bannerTitle}>Good Morning, Ricardo!</div>
             <div className={styles.bannerSub}>
               As of <strong>Friday, May 15, 2026</strong>, we are tracking{" "}
-              <strong>5 Critical projects</strong> and{" "}
-              <strong>28 High-Risk</strong> projects across Iloilo Province.
+              <strong>{criticalCount} Critical projects</strong> and{" "}
+              <strong>{highRiskCount} High-Risk</strong> projects across Iloilo Province.
             </div>
           </div>
 
@@ -122,7 +142,7 @@ export default function DashboardPage() {
                   Total Projects
                   <span className={`${styles.statBadge} ${styles.statBadgeGreen}`}>+5.3%</span>
                 </div>
-                <div className={`${styles.statValue} ${styles.statValueBlue}`}>643</div>
+                <div className={`${styles.statValue} ${styles.statValueBlue}`}>{totalProjects}</div>
               </div>
               <FolderIcon className={styles.statIcon} />
             </div>
@@ -133,7 +153,7 @@ export default function DashboardPage() {
                   Completed Projects
                   <span className={`${styles.statBadge} ${styles.statBadgeGreen}`}>+5.3%</span>
                 </div>
-                <div className={`${styles.statValue} ${styles.statValueGreen}`}>45</div>
+                <div className={`${styles.statValue} ${styles.statValueGreen}`}>{completedProjects}</div>
               </div>
               <CheckIcon className={styles.statIcon} />
             </div>
@@ -144,7 +164,7 @@ export default function DashboardPage() {
                   Ongoing Projects
                   <span className={`${styles.statBadge} ${styles.statBadgeGreen}`}>+5.3%</span>
                 </div>
-                <div className={`${styles.statValue} ${styles.statValueBlue}`}>267</div>
+                <div className={`${styles.statValue} ${styles.statValueBlue}`}>{ongoingProjects}</div>
               </div>
               <SyncIcon className={styles.statIcon} />
             </div>
@@ -155,7 +175,7 @@ export default function DashboardPage() {
                   Critical Projects
                   <span className={`${styles.statBadge} ${styles.statBadgeRed}`}>+5.3%</span>
                 </div>
-                <div className={`${styles.statValue} ${styles.statValueRed}`}>15</div>
+                <div className={`${styles.statValue} ${styles.statValueRed}`}>{criticalCount}</div>
               </div>
               <AlertIcon className={styles.statIcon} />
             </div>
@@ -225,7 +245,7 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody>
-                {PROJECTS.map(p => (
+                {projects.slice(0, 5).map(p => (
                   <tr key={p.id} className={styles.tr}>
                     <td className={styles.td}>
                       <div className={styles.projName}>{p.name}</div>

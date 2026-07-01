@@ -152,7 +152,7 @@ export default function ReportsPage() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map((r, i) => {
+                {filtered.map((r) => {
                   const st = STATUS_STYLE[r.status] ?? { bg:"#94a3b8", color:"#fff" };
                   return (
                     <tr key={r.id} className={styles.row}>

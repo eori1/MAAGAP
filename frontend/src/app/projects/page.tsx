@@ -22,30 +22,8 @@ const IloiloMap = dynamic(() => import("@/components/IloiloMap"), {
   ),
 });
 
-/* ── Real Iloilo municipality coordinates ─────────── */
-const ALL_PROJECTS = [
-  { id:"PPS-124", name:"Aganan Flyover, Brgy. Aganan",              municipality:"Pavia",        progress:30,  budget:"440,000,000",   risk:"High",     status:"Delayed",     inspector:"Engr. Rico Cruz",     lat:10.7839, lng:122.5625 },
-  { id:"PPS-125", name:"Bamboo Flyover, Brgy. Bamboo",              municipality:"Iloilo City",  progress:65,  budget:"550,000,000",   risk:"Medium",   status:"On Schedule", inspector:"Engr. Maria Santos",  lat:10.6970, lng:122.5644 },
-  { id:"PPS-126", name:"Coco Flyover, Brgy. Coco",                  municipality:"San Miguel",   progress:20,  budget:"320,000,000",   risk:"High",     status:"Delayed",     inspector:"Engr. Juan Dela Cruz", lat:10.9217, lng:122.7028 },
-  { id:"PPS-127", name:"Dahlia Flyover, Brgy. Dahlia",              municipality:"Leganes",      progress:100, budget:"600,000,000",   risk:"Low",      status:"Completed",   inspector:"Engr. Liza Tan",      lat:10.7997, lng:122.5353 },
-  { id:"PPS-128", name:"Eucalyptus Flyover, Brgy. Eucalyptus",      municipality:"Balasan",      progress:55,  budget:"700,000,000",   risk:"Medium",   status:"On Schedule", inspector:"Engr. Mark Velasco",  lat:11.4937, lng:123.0046 },
-  { id:"PPS-129", name:"Fern Flyover, Brgy. Fern",                  municipality:"Cabatuan",     progress:15,  budget:"280,000,000",   risk:"High",     status:"Delayed",     inspector:"Engr. Ana Reyes",     lat:10.8895, lng:122.5131 },
-  { id:"PPS-130", name:"Ginkgo Flyover, Brgy. Ginkgo",              municipality:"Jordan",       progress:100, budget:"380,000,000",   risk:"Low",      status:"Completed",   inspector:"Engr. Carlo Basa",    lat:10.6617, lng:121.9078 },
-  { id:"PPS-131", name:"Maple Bridge, Brgy. Maple",                 municipality:"Oton",         progress:40,  budget:"820,000,000",   risk:"Critical", status:"In Progress", inspector:"Engr. Rey Osorio",    lat:10.6945, lng:122.4783 },
-  { id:"PPS-132", name:"Oak Avenue, Brgy. Oak",                     municipality:"Iloilo City",  progress:55,  budget:"1,200,000,000", risk:"Medium",   status:"On Schedule", inspector:"Engr. Petra Quinto",  lat:10.7203, lng:122.5621 },
-  { id:"PPS-133", name:"Pine Road, Brgy. Pine",                     municipality:"Sta. Barbara", progress:78,  budget:"460,000,000",   risk:"Low",      status:"On Schedule", inspector:"Engr. Joel Mira",     lat:10.8217, lng:122.5328 },
-  { id:"PPS-134", name:"Quince Bridge, Brgy. Quince",               municipality:"Pototan",      progress:35,  budget:"520,000,000",   risk:"High",     status:"Delayed",     inspector:"Engr. Susan Go",      lat:10.9480, lng:122.6357 },
-  { id:"PPS-135", name:"Rose Bridge, Brgy. Rose",                   municipality:"Tigbauan",     progress:88,  budget:"340,000,000",   risk:"Low",      status:"Completed",   inspector:"Engr. Paul Dy",       lat:10.6753, lng:122.3784 },
-  { id:"PPS-136", name:"Cedar Rd Improvement, Brgy. Cedar",         municipality:"Miagao",       progress:22,  budget:"490,000,000",   risk:"High",     status:"Delayed",     inspector:"Engr. Jane Flores",   lat:10.6419, lng:122.2364 },
-  { id:"PPS-137", name:"Banate Sea Wall",                           municipality:"Banate",        progress:70,  budget:"310,000,000",   risk:"Low",      status:"Completed",   inspector:"Engr. Chris Ang",     lat:11.0050, lng:122.9253 },
-  { id:"PPS-138", name:"Sara Flood Control",                        municipality:"Sara",          progress:48,  budget:"670,000,000",   risk:"Medium",   status:"On Schedule", inspector:"Engr. May Lim",       lat:11.2575, lng:123.0175 },
-  { id:"PPS-139", name:"Dueñas Bridge",                             municipality:"Dueñas",        progress:33,  budget:"280,000,000",   risk:"High",     status:"Delayed",     inspector:"Engr. Ken Cruz",      lat:11.0703, lng:122.7625 },
-  { id:"PPS-140", name:"Calinog Diversion Rd",                      municipality:"Calinog",       progress:90,  budget:"520,000,000",   risk:"Low",      status:"Completed",   inspector:"Engr. Nina Reyes",    lat:11.1317, lng:122.5019 },
-  { id:"PPS-141", name:"Lambunao Market Rd",                        municipality:"Lambunao",      progress:41,  budget:"380,000,000",   risk:"Medium",   status:"In Progress", inspector:"Engr. Tom Santos",    lat:11.0608, lng:122.4317 },
-  { id:"PPS-142", name:"Janiuay River Bridge",                      municipality:"Janiuay",       progress:58,  budget:"610,000,000",   risk:"Medium",   status:"On Schedule", inspector:"Engr. Luz Garcia",    lat:10.9614, lng:122.5019 },
-  { id:"PPS-143", name:"Guimbal Coastal Road",                      municipality:"Guimbal",       progress:80,  budget:"290,000,000",   risk:"Low",      status:"Completed",   inspector:"Engr. Rod Tan",       lat:10.6833, lng:122.3000 },
-];
-
+import { useEffect } from "react";
+import { fetchProjects } from "@/lib/api";
 /* ── Badge helpers ────────────────────────────────── */
 function riskBarClass(risk: string, s: typeof styles) {
   if (risk === "High" || risk === "Critical") return `${s.progressFill} ${s.progressRed}`;
@@ -77,19 +55,37 @@ function TopBar({ mapMode }: { mapMode: boolean }) {
   );
 }
 
+interface ProjectData {
+  id: string;
+  name: string;
+  municipality: string;
+  progress: number;
+  budget: string;
+  risk: string;
+  status: string;
+  inspector: string;
+  lat: number;
+  lng: number;
+}
+
 /* ── Page ──────────────────────────────────────────── */
 export default function ProjectsPage() {
+  const [projects,   setProjects]   = useState<ProjectData[]>([]);
   const [mapMode,    setMapMode]    = useState(false);
   const [search,     setSearch]     = useState("");
-  const [status,     setStatus]     = useState("");
+  const [status,     setStatus]     = useState("All");
   const [municipality, setMun]      = useState("");
   const [activePin,  setActivePin]  = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
-  const filtered = ALL_PROJECTS.filter(p => {
+  useEffect(() => {
+    fetchProjects().then(data => setProjects(data));
+  }, []);
+
+  const filtered = projects.filter(p => {
     const q = search.toLowerCase();
     const matchSearch = !search || p.name.toLowerCase().includes(q) || p.id.toLowerCase().includes(q);
-    const matchStatus = !status || p.status.toLowerCase().includes(status.toLowerCase()) || p.risk.toLowerCase().includes(status.toLowerCase());
+    const matchStatus = status === "All" || !status || p.status.toLowerCase().includes(status.toLowerCase()) || p.risk.toLowerCase().includes(status.toLowerCase());
     const matchMun    = !municipality || p.municipality.toLowerCase().includes(municipality.toLowerCase());
     return matchSearch && matchStatus && matchMun;
   });
@@ -104,7 +100,7 @@ export default function ProjectsPage() {
   }
 
   /* ── Shared header + filters ─────────────────── */
-  const PageHeader = () => (
+  const renderPageHeader = () => (
     <div className={styles.pageHeader}>
       <div className={styles.pageTitleGroup}>
         <h1 className={styles.pageTitle}>
@@ -148,15 +144,25 @@ export default function ProjectsPage() {
     </div>
   );
 
-  const Filters = () => (
+  const renderFilters = () => (
     <div className={styles.filterRow}>
       <div className={styles.filterGroup}>
         <label className={styles.filterLabel}>Search</label>
         <input className={styles.filterInput} placeholder="Search Projects ..." value={search} onChange={e => setSearch(e.target.value)} />
       </div>
-      <div className={styles.filterGroup}>
+      <div className={styles.filterGroup} style={{ flex: 1.5 }}>
         <label className={styles.filterLabel}>Status</label>
-        <input className={styles.filterInput} placeholder="Search Projects ..." value={status} onChange={e => setStatus(e.target.value)} />
+        <div className={styles.statusPills}>
+          {["All", "In Progress", "On Schedule", "Completed", "Delayed"].map(s => (
+            <button
+              key={s}
+              className={`${styles.statusPill} ${status === s ? styles.statusPillActive : ""}`}
+              onClick={() => setStatus(s)}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
       </div>
       <div className={styles.filterGroup}>
         <label className={styles.filterLabel}>Municipality</label>
@@ -176,8 +182,8 @@ export default function ProjectsPage() {
         <TopBar mapMode={false} />
         <div className={styles.body}>
           <div className={styles.contentCard}>
-            <PageHeader />
-            <Filters />
+            {renderPageHeader()}
+            {renderFilters()}
             <div className={styles.sortRow}>
               <div className={styles.sortLeft}>
                 <button className={styles.sortBtn}>Sort by: <strong>Most Recent</strong> ▾</button>
@@ -233,8 +239,8 @@ export default function ProjectsPage() {
         <TopBar mapMode={true} />
         <div className={styles.bodyMap}>
           <div className={styles.contentCard} style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
-            <PageHeader />
-            <Filters />
+            {renderPageHeader()}
+            {renderFilters()}
             <div className={styles.divider} />
 
             {/* ── Map area ──────────────────────── */}
