@@ -26,38 +26,44 @@ interface ProjectData {
 }
 
 /* ─── Mock project data ───────────────────────────────── */
-const WEEKS = ["W1","W2","W3","W4","W5","W6","W7","W8"];
+const WEEKS = ["W1", "W2", "W3", "W4", "W5", "W6", "W7", "W8"];
 
 function makeChartData(history: number[], forecast: number[]) {
   return WEEKS.map((week, i) => ({
     week,
-    actual:   history[i]  ?? null,
+    actual: history[i] ?? null,
     forecast: forecast[i] ?? null,
   }));
 }
 
 // Fallback mock if data is empty
-const FALLBACK: ProjectData = { id:"p1",  name:"Loading...", municipality:"Loading...", status:"Loading...", delayProb:0, projectedDelay:0, costRisk:0, confidence:0, history:[0,0], forecast:[0,0] };
+const FALLBACK: ProjectData = { id: "p1", name: "Loading...", municipality: "Loading...", status: "Loading...", delayProb: 0, projectedDelay: 0, costRisk: 0, confidence: 0, history: [0, 0], forecast: [0, 0] };
 
-const STATUS_COLOR: Record<string,string> = {
-  "Delayed":"#e74c3c","On Schedule":"#f39c12",
-  "On Time":"#27ae60","Completed":"#27ae60",
-  "Cancelled":"#95a5a6","In Progress":"#2756c5",
+const STATUS_COLOR: Record<string, string> = {
+  "Delayed": "#e74c3c", "On Schedule": "#f39c12",
+  "On Time": "#27ae60", "Completed": "#27ae60",
+  "Cancelled": "#95a5a6", "In Progress": "#2756c5",
 };
 
 /* ─── Custom Tooltip ──────────────────────────────────── */
-function CustomTooltip({ active, payload, label }: TooltipProps<any, any>) {
+interface CustomTooltipProps {
+  active?: boolean;
+  payload?: any[];
+  label?: string;
+}
+
+function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
   if (!active || !payload?.length) return null;
   return (
     <div style={{
-      background:"#fff", border:"1px solid #dde4f0",
-      borderRadius:8, padding:"0.5rem 0.75rem",
-      boxShadow:"0 4px 14px rgba(0,0,0,0.12)",
-      fontSize:"0.75rem", fontFamily:"Inter,system-ui,sans-serif",
+      background: "#fff", border: "1px solid #dde4f0",
+      borderRadius: 8, padding: "0.5rem 0.75rem",
+      boxShadow: "0 4px 14px rgba(0,0,0,0.12)",
+      fontSize: "0.75rem", fontFamily: "Inter,system-ui,sans-serif",
     }}>
-      <div style={{ fontWeight:700, color:"#1b3a5e", marginBottom:4 }}>{label}</div>
-      {payload.map((p) => (
-        <div key={p.name} style={{ color: p.color, fontWeight:600 }}>
+      <div style={{ fontWeight: 700, color: "#1b3a5e", marginBottom: 4 }}>{label}</div>
+      {payload.map((p: any) => (
+        <div key={p.name} style={{ color: p.color, fontWeight: 600 }}>
           {p.name === "actual" ? "Actual" : "AI Forecast"}: {p.value}%
         </div>
       ))}
@@ -75,8 +81,8 @@ function ProgressChart({ history, forecast }: { history: number[]; forecast: num
       <ComposedChart data={data} margin={{ top: 20, right: 16, left: 0, bottom: 0 }}>
         <defs>
           <linearGradient id="actualGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%"  stopColor="#3b82f6" stopOpacity={0.3} />
-            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}   />
+            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
           </linearGradient>
         </defs>
 
@@ -84,11 +90,11 @@ function ProgressChart({ history, forecast }: { history: number[]; forecast: num
 
         <XAxis
           dataKey="week"
-          tick={{ fontSize: 11, fill: "#94a3b8", fontFamily:"Inter,system-ui" }}
+          tick={{ fontSize: 11, fill: "#94a3b8", fontFamily: "Inter,system-ui" }}
           axisLine={false} tickLine={false}
         />
         <YAxis
-          tick={{ fontSize: 11, fill: "#94a3b8", fontFamily:"Inter,system-ui" }}
+          tick={{ fontSize: 11, fill: "#94a3b8", fontFamily: "Inter,system-ui" }}
           axisLine={false} tickLine={false}
           tickFormatter={(v) => `${v}`}
           width={32}
@@ -101,7 +107,7 @@ function ProgressChart({ history, forecast }: { history: number[]; forecast: num
           x={WEEKS[lastActualIdx]}
           stroke="#cbd5e1"
           strokeDasharray="4 3"
-          label={{ value:"Now", position:"top", fontSize:10, fill:"#94a3b8" }}
+          label={{ value: "Now", position: "top", fontSize: 10, fill: "#94a3b8" }}
         />
 
         {/* Area under actual */}
@@ -112,7 +118,7 @@ function ProgressChart({ history, forecast }: { history: number[]; forecast: num
           stroke="#3b82f6"
           strokeWidth={2.5}
           fill="url(#actualGrad)"
-          dot={{ r: 4, fill:"#fff", stroke:"#3b82f6", strokeWidth:2 }}
+          dot={{ r: 4, fill: "#fff", stroke: "#3b82f6", strokeWidth: 2 }}
           activeDot={{ r: 6 }}
           connectNulls={false}
         />
@@ -126,7 +132,7 @@ function ProgressChart({ history, forecast }: { history: number[]; forecast: num
           strokeWidth={2.5}
           strokeDasharray="6 4"
           dot={false}
-          activeDot={{ r: 5, fill:"#f59e0b" }}
+          activeDot={{ r: 5, fill: "#f59e0b" }}
           connectNulls={false}
         />
       </ComposedChart>
@@ -138,25 +144,29 @@ function ProgressChart({ history, forecast }: { history: number[]; forecast: num
 export default function ForecastEnginePage() {
   const [projects, setProjects] = useState<ProjectData[]>([]);
   const [selected, setSelected] = useState<ProjectData>(FALLBACK);
-  const [sortBy,   setSortBy]   = useState("Most Recent");
-  const [orderBy,  setOrderBy]  = useState("Ascending");
+  const [sortBy, setSortBy] = useState("Most Recent");
+  const [orderBy, setOrderBy] = useState("Ascending");
 
   useEffect(() => {
     fetchProjects().then(data => {
       // Map basic properties to the forecast format
       const mapped: ProjectData[] = data.map((p: Partial<ProjectData>) => {
-        const hist = [0, p.progress * 0.2, p.progress * 0.5, p.progress * 0.8, p.progress];
-        const projDelay = p.delayProb > 0.5 ? Math.round(p.delayProb * 60) : 0;
+        const progress = p.progress ?? 0;
+        const delayProb = p.delayProb ?? 0;
+        const costRisk = p.costRisk ?? 0;
+
+        const hist = [0, progress * 0.2, progress * 0.5, progress * 0.8, progress];
+        const projDelay = delayProb > 0.5 ? Math.round(delayProb * 60) : 0;
         return {
           ...p,
-          status: p.progress < 50 && p.delayProb > 0.5 ? "Delayed" : "On Schedule",
-          delayProb: Math.round(p.delayProb * 100),
-          costRisk: Math.round(p.costRisk * 100),
+          status: progress < 50 && delayProb > 0.5 ? "Delayed" : "On Schedule",
+          delayProb: Math.round(delayProb * 100),
+          costRisk: Math.round(costRisk * 100),
           confidence: 85 + Math.floor(Math.random() * 10),
           projectedDelay: projDelay,
           history: hist,
-          forecast: [...hist, p.progress + 5, p.progress + 10, p.progress + 15]
-        };
+          forecast: [...hist, progress + 5, progress + 10, progress + 15]
+        } as ProjectData;
       });
       setProjects(mapped);
       if (mapped.length > 0) setSelected(mapped[0]);
@@ -219,7 +229,7 @@ export default function ForecastEnginePage() {
                   <div className={styles.projectItemName}>{p.name}</div>
                   <div className={styles.projectItemBottom}>
                     <span className={styles.projectItemMuni}>
-                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 21s-8-7.3-8-13a8 8 0 1 1 16 0c0 5.7-8 13-8 13z"/><circle cx="12" cy="8" r="3"/></svg>
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 21s-8-7.3-8-13a8 8 0 1 1 16 0c0 5.7-8 13-8 13z" /><circle cx="12" cy="8" r="3" /></svg>
                       {p.municipality}
                     </span>
                     <span className={styles.badge} style={{ background: STATUS_COLOR[p.status] ?? "#999" }}>
@@ -253,7 +263,7 @@ export default function ForecastEnginePage() {
               </div>
               {selected.projectedDelay > 0 && (
                 <div className={styles.warningBanner}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
                   Project is already delayed for {Math.round(selected.projectedDelay * 0.22)} days and likely will be delayed by {Math.round(selected.projectedDelay * 0.1)} more days.&nbsp;({selected.delayProb}% Confidence)
                 </div>
               )}
@@ -263,7 +273,7 @@ export default function ForecastEnginePage() {
             <div className={styles.statsRow}>
               <div className={styles.statCard}>
                 <div className={styles.statLabel}>Cost Overrun Risk</div>
-                <div className={styles.statValue} style={{ color:"#e74c3c" }}>{selected.costRisk}%</div>
+                <div className={styles.statValue} style={{ color: "#e74c3c" }}>{selected.costRisk}%</div>
               </div>
               <div className={styles.statCard}>
                 <div className={styles.statLabel}>Confidence</div>
@@ -277,11 +287,11 @@ export default function ForecastEnginePage() {
               <div className={styles.chartSub}>Actual vs. AI Projected Trajectory</div>
               <div className={styles.chartLegend}>
                 <span className={styles.legendItem}>
-                  <span className={styles.legendDot} style={{ background:"#3b82f6" }} />
+                  <span className={styles.legendDot} style={{ background: "#3b82f6" }} />
                   Actual Progress
                 </span>
                 <span className={styles.legendItem}>
-                  <span style={{ display:"inline-block", width:16, borderTop:"2.5px dashed #f59e0b", marginRight:4 }} />
+                  <span style={{ display: "inline-block", width: 16, borderTop: "2.5px dashed #f59e0b", marginRight: 4 }} />
                   AI Forecast
                 </span>
               </div>
