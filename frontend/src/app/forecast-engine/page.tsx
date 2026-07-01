@@ -46,7 +46,7 @@ const STATUS_COLOR: Record<string,string> = {
 };
 
 /* ─── Custom Tooltip ──────────────────────────────────── */
-function CustomTooltip({ active, payload, label }: TooltipProps<number, string>) {
+function CustomTooltip({ active, payload, label }: TooltipProps<any, any>) {
   if (!active || !payload?.length) return null;
   return (
     <div style={{
