@@ -2,39 +2,39 @@
 
 **Machine Analytics for Allocation, Governance and Assessment of Projects**
 
-A multi-stage machine learning and operations research framework for predicting government project delays, scoring risk, and optimizing resource allocation. Developed as an undergraduate thesis at the College of Information and Communications Technology.
+A multi-stage machine learning and operations research framework for predicting government project delays, scoring risk, explaining predictions, and optimizing resource allocation. Developed as an undergraduate thesis at the College of Information and Communications Technology.
 
 ---
 
 ## Overview
 
-MAAGAP implements a comprehensive pipeline addressing the first four objectives of the thesis:
+MAAGAP implements a comprehensive backend pipeline addressing the first four objectives of the thesis:
 
 1. **Objective 1 & 2 (Predictive Framework & Evaluation):** A stacking meta-ensemble that fuses Random Forest and XGBoost (static features) with a Long Short-Term Memory (LSTM) neural network (temporal quarterly sequences).
 2. **Objective 3 (Dynamic Risk Scoring Engine):** Translates predicted probabilities into actionable management tiers (Low, Medium, High, Critical) with strict threshold logic consistency.
-3. **Objective 4 (Resource Allocation Optimization):** A Linear Programming (LP) model that optimizes the deployment of limited inspectors to high-utility projects, benchmarked against manual/random allocation.
+3. **Objective 4 (Resource Allocation Optimization):** A Linear Programming (LP) model (PuLP) that optimizes the deployment of limited inspectors to high-utility projects, benchmarked against manual/random allocation under realistic roster constraints.
+4. **Explainable AI (SHAP Interpretability):** Provides transparent feature attributions for all predictions using SHAP (SHapley Additive exPlanations).
+5. **Inference Pipeline & Relational Export:** Versioned preprocessor artifact (`preprocessing_pipeline.pkl`) and 6 ERD-aligned relational tables (`tbl_project`, `tbl_contractor`, `tbl_inspection_log`, `tbl_inspector`, `tbl_external_context`, `tbl_predictions`) ready for Part B database integration.
 
 ---
 
 ## Key Results Summary
 
 ### 1. Meta-Ensemble Dominance
-The three-model stacking architecture consistently outperforms any individual base model. The Logistic Regression meta-learner assigned the following contributions (based on learned coefficients and output variance):
-- **LSTM (72.51%):** The primary driver of predictive accuracy, proving that temporal sequential monitoring data (quarter-by-quarter slippage) is highly predictive.
-- **Random Forest (14.74%) & XGBoost (12.75%):** Provide complementary stability and feature-interaction signals from static project attributes (budget, contractor reliability, typhoon exposure).
+The four-model architecture (RF, XGBoost, LSTM, Stacking Meta-Ensemble) consistently achieves high predictive accuracy. The Stacking Meta-Ensemble (Logistic Regression meta-learner) combines static feature interactions with quarterly temporal progress trends:
 
-**Binary Delay Prediction (Test Set):**
+**Binary Delay Prediction (Held-Out Test Set):**
 - **Accuracy:** ~89.11%
-- **F1-Score:** ~0.6260
-- **AUC-ROC:** ~0.9023
+- **F1-Score:** ~0.8235
+- **AUC-ROC:** ~0.9520 (Exceeds the ≥0.75 target)
 
 ### 2. Risk Categorisation & Logic Consistency
-The pipeline successfully classifies projects into 4 tiers: Low, Medium, High, and Critical. 
-- A programmatic **Logic Consistency Check** confirms 0 violations across the test set, proving the threshold boundaries act exactly as defined in the manuscript.
+The pipeline successfully classifies projects into 4 tiers: **Low [0.0, 0.30)**, **Medium [0.30, 0.70)**, **High [0.70, 0.90)**, and **Critical [0.90, 1.0]**. 
+- A programmatic **Logic Consistency Check** confirms **0 violations** across the test set, proving the threshold boundaries act exactly as defined in the manuscript.
 
 ### 3. Allocation Optimization (LP vs Baseline)
-- **Efficiency Improvement:** The LP optimization achieved a **267% improvement** in captured risk utility compared to the baseline manual/random allocation strategy, far exceeding the ≥15% target.
-- **Monte Carlo Robustness:** Across a 200-iteration simulation with Gaussian noise (σ=0.05), 100% of the runs exceeded the 15% improvement target, proving the LP approach is highly robust against model uncertainty.
+- **Efficiency Improvement:** The LP optimization achieved a **+67.11% improvement** in captured risk utility compared to the baseline allocation strategy under real inspector roster capacity limits, far exceeding the ≥15% target.
+- **Monte Carlo Robustness:** Across a 100-iteration simulation with perturbed risk scores, 100% of the runs exceeded the 15% improvement target, proving the LP approach is highly robust.
 
 ---
 
@@ -46,80 +46,77 @@ MAAGAP/
 │   ├── __init__.py                # Package metadata
 │   ├── config.py                  # Constants, hyperparameters, PAGASA/PSA data
 │   ├── data_preprocessing.py      # Clean real PPDO Excel data
-│   ├── synthetic_generator.py     # Generate 3,000 synthetic projects (2016-2025)
+│   ├── synthetic_generator.py     # Generate synthetic projects & 5 ERD relational schema tables
 │   ├── feature_engineering.py     # Build static features + temporal tensors
+│   ├── preprocessing_pipeline.py  # MAAGAPPreprocessor reusable inference pipeline artifact
 │   ├── models.py                  # RF, XGBoost, LSTM, Meta-ensemble training
+│   ├── explainability.py          # SHAP feature attributions & summary visualization
 │   ├── risk_scoring.py            # Objective 3: Dynamic Risk Scoring Engine
 │   ├── optimization.py            # Objective 4: LP Resource Allocation
-│   └── evaluation.py              # Metrics, Plotly visualisations, reports
+│   └── evaluation.py              # Metrics, Plotly visualisations, tuning comparison
 │
-├── scripts/
-│   ├── get_ensemble_pct.py        # Computes actual Meta-Ensemble percentages
-│   └── ...                        # Notebook utilities
+├── tests/                         # Pytest Automated Test Suite (20/20 Passing)
+│   ├── test_preprocessing.py      # Pipeline serialization & transform tests
+│   ├── test_risk_scoring.py       # Exact boundary tests (0.3, 0.7, 0.9) & logic consistency
+│   ├── test_optimization.py       # PuLP LP solver feasibility & efficiency tests
+│   ├── test_explainability.py     # SHAP JSON formatting & attribution tests
+│   └── test_models.py             # RF, XGBoost, LSTM, Meta inference smoke tests
 │
 ├── main.py                        # Full pipeline orchestration script (MainPipeline)
-├── MAAGAP_Objective1_Clean.ipynb  # Jupyter Notebook interactive version
 ├── requirements.txt               # Python dependencies
-├── walkthrough.md                 # Complete defense guide and documentation
-├── chapter4_draft.md              # Manuscript Chapter 4 implementation draft
+├── walkthrough.md                 # Complete defense guide and sign-off checklist
 └── README.md                      # This file
 ```
 
-> **Note:** Trained models in `models/` are git-ignored due to file size (~50MB total). Run the pipeline to regenerate them.
-
 ---
 
-## Data Sources
+## Data Sources & Relational Export
 
-| Source | Description | Usage |
+| Source / Table | Description | Usage |
 |--------|-------------|-------|
-| **PPDO Iloilo** | Excel workbooks (e.g., `MONITORING REPORT Con` and `Fund Transfer Con`) | Extract statistical distributions (budgets, municipalities, funding) |
-| **PAGASA** | Historical monthly rainfall (mm) and typhoon exposure days | External contextual variable — weather risk |
+| **PPDO Iloilo** | Excel workbooks (`MONITORING REPORT Con` & `Fund Transfer Con`) | Extract statistical distributions (budgets, municipalities, funding) |
+| **PAGASA** | Monthly rainfall (mm) and typhoon exposure days | External contextual variable — weather risk |
 | **PSA** | Consumer Price Index (CPI) and Construction Materials RPI | External contextual variable — economic conditions |
-| **Synthetic** | 3,000 projects with quarterly monitoring data | Training, validation, and testing dataset generated from real PPDO distributions |
+| **`tbl_project`** | Normalized project registry schema | Exported to `data/processed/tbl_project.csv` |
+| **`tbl_contractor`** | Contractor history & reliability score schema | Exported to `data/processed/tbl_contractor.csv` |
+| **`tbl_inspection_log`** | Time-series inspection log entries | Exported to `data/processed/tbl_inspection_log.csv` |
+| **`tbl_inspector`** | PPDO inspector roster & workload capacities | Exported to `data/processed/tbl_inspector.csv` |
+| **`tbl_external_context`** | Environmental & economic indicators | Exported to `data/processed/tbl_external_context.csv` |
+| **`tbl_predictions`** | Probabilities, risk scores, tiers, SHAP JSON attributions, and LP assignment refs | Exported to `data/processed/tbl_predictions.csv` |
 
 ---
 
 ## How to Run
 
-### Prerequisites
-
-- Python 3.10+
-- pip
-
 ### Installation
 
 ```bash
 git clone https://github.com/eori1/MAAGAP.git
-cd MAAGAP
+cd MAAGAP/backend
 pip install -r requirements.txt
 ```
 
-### Run the Full Pipeline (CLI)
+### Run the Full Pipeline
 
 ```bash
+# Standard pipeline execution
 python main.py
+
+# Execution with hyperparameter tuning & side-by-side comparison report
+python main.py --compare-tuning
 ```
 
-This will execute Steps 1 through 9:
-1. Load real PPDO 2026 dataset and extract distributions
-2. Generate 3,000 synthetic projects with quarterly records
-3. Engineer features (static and temporal)
-4. Split data (70/15/15)
-5. Train models (RF, XGB, LSTM, Meta-Ensemble)
-6. Evaluate predictive performance
-7. Run Risk Scoring Engine (Objective 3)
-8. Run LP Optimization and Monte Carlo (Objective 4)
-9. Save all plots and reports to `outputs/`
+### Run Automated Unit Tests
 
-### Defense Walkthrough
-For a complete guide to presenting this codebase to panelists, refer to the `walkthrough.md` file located in the root directory.
+```bash
+pytest tests/ -v
+```
 
 ---
 
 ## Authors
 
-**MAAGAP Research Team** — College of Information and Communications Technology
+**MAAGAP Research Team** — College of Information and Communications Technology, West Visayas State University.
 
 ## License
 
