@@ -1,0 +1,7 @@
+inspector_id,inspector_name,availability_status,current_workload,vehicle_access
+INSP-001,Engr. Juan Dela Cruz,Available,2,True
+INSP-002,Engr. Maria Santos,Available,3,True
+INSP-003,Engr. Antonio Reyes,Available,1,False
+INSP-004,Engr. Elena Gomez,Available,4,True
+INSP-005,Engr. Roberto Garcia,Busy,5,True
+INSP-006,Engr. Teresa Aquino,Available,2,False

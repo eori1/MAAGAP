@@ -33,15 +33,22 @@ def get_risk_tier(score: float) -> str:
     return "Low"
 
 
-def compute_all_risk_scores(rf_probs: np.ndarray, xgb_probs: np.ndarray, lstm_probs: np.ndarray, weights: Optional[Tuple[float, float, float]] = None) -> np.ndarray:
+def compute_all_risk_scores(rf_probs: np.ndarray, xgb_probs: Optional[np.ndarray] = None, lstm_probs: Optional[np.ndarray] = None, weights: Optional[Tuple[float, ...]] = None) -> np.ndarray:
     """Vectorised computation of risk scores for an entire dataset."""
-    w_rf, w_xgb, w_lstm = weights if weights else (0.35, 0.35, 0.30)
-    scores = (
-        np.asarray(rf_probs) * w_rf
-        + np.asarray(xgb_probs) * w_xgb
-        + np.asarray(lstm_probs) * w_lstm
-    )
-    return np.clip(scores, 0.0, 1.0)
+    rf_arr = np.asarray(rf_probs, dtype=float)
+    if xgb_probs is None and lstm_probs is None:
+        return np.clip(rf_arr, 0.0, 1.0)
+    elif lstm_probs is None:
+        xgb_arr = np.asarray(xgb_probs, dtype=float)
+        w_rf, w_xgb = weights if (weights and len(weights) == 2) else (0.5, 0.5)
+        return np.clip(rf_arr * w_rf + xgb_arr * w_xgb, 0.0, 1.0)
+    else:
+        xgb_arr = np.asarray(xgb_probs, dtype=float)
+        lstm_arr = np.asarray(lstm_probs, dtype=float)
+        w_rf, w_xgb, w_lstm = weights if (weights and len(weights) == 3) else (0.35, 0.35, 0.30)
+        scores = rf_arr * w_rf + xgb_arr * w_xgb + lstm_arr * w_lstm
+        return np.clip(scores, 0.0, 1.0)
+
 
 
 def check_logic_consistency(risk_scores: np.ndarray, assigned_tiers: np.ndarray) -> Dict[str, Any]:

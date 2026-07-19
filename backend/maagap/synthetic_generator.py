@@ -281,16 +281,80 @@ class SyntheticDataGenerator:
         df_projects = pd.DataFrame(projects)
         df_quarterly = pd.DataFrame(quarterly_records)
 
+        df_projects = pd.DataFrame(projects)
+        df_quarterly = pd.DataFrame(quarterly_records)
+
         proj_path = os.path.join(DATA_PROCESSED_DIR, "synthetic_projects.csv")
         qtr_path = os.path.join(DATA_PROCESSED_DIR, "synthetic_quarterly.csv")
         df_projects.to_csv(proj_path, index=False)
         df_quarterly.to_csv(qtr_path, index=False)
-        
-        logger.info(f"Saved synthetic projects to {proj_path}")
-        logger.info(f"Saved synthetic quarterly records to {qtr_path}")
 
+        # ---------------------------------------------------------
+        # ERD RELATIONAL SCHEMA TABLES EXPORT
+        # ---------------------------------------------------------
+        # 1. CONTRACTOR Table
+        contractor_list = []
+        for cid, cname in enumerate(CONTRACTORS, start=1):
+            rel = CONTRACTOR_RELIABILITY.get(cname, 0.5)
+            past_projects = self.rng.randint(5, 30)
+            past_delays = int(past_projects * (1.0 - rel) * self.rng.uniform(0.6, 1.0))
+            contractor_list.append({
+                "contractor_id": f"CONT-{cid:03d}",
+                "contractor_name": cname,
+                "past_project_count": past_projects,
+                "past_delay_count": past_delays,
+                "past_average_slippage": round((1.0 - rel) * 15.0, 2),
+                "reliability_score": rel,
+            })
+        df_contractors = pd.DataFrame(contractor_list)
+        df_contractors.to_csv(os.path.join(DATA_PROCESSED_DIR, "tbl_contractor.csv"), index=False)
+
+        # 2. PPDO_INSPECTOR Table (6 inspectors per delimitation)
+        inspectors = [
+            {"inspector_id": "INSP-001", "inspector_name": "Engr. Juan Dela Cruz", "availability_status": "Available", "current_workload": 2, "vehicle_access": True},
+            {"inspector_id": "INSP-002", "inspector_name": "Engr. Maria Santos", "availability_status": "Available", "current_workload": 3, "vehicle_access": True},
+            {"inspector_id": "INSP-003", "inspector_name": "Engr. Antonio Reyes", "availability_status": "Available", "current_workload": 1, "vehicle_access": False},
+            {"inspector_id": "INSP-004", "inspector_name": "Engr. Elena Gomez", "availability_status": "Available", "current_workload": 4, "vehicle_access": True},
+            {"inspector_id": "INSP-005", "inspector_name": "Engr. Roberto Garcia", "availability_status": "Busy", "current_workload": 5, "vehicle_access": True},
+            {"inspector_id": "INSP-006", "inspector_name": "Engr. Teresa Aquino", "availability_status": "Available", "current_workload": 2, "vehicle_access": False},
+        ]
+        df_inspectors = pd.DataFrame(inspectors)
+        df_inspectors.to_csv(os.path.join(DATA_PROCESSED_DIR, "tbl_inspector.csv"), index=False)
+
+        # 3. PROJECT Table
+        df_tbl_proj = df_projects[[
+            "project_id", "project_type", "implementing_agency", "location", 
+            "approved_budget", "planned_duration_months", "start_date", "planned_end_date", "funding_source"
+        ]].copy()
+        df_tbl_proj.rename(columns={
+            "approved_budget": "budget_allocated",
+            "implementing_agency": "category",
+        }, inplace=True)
+        df_tbl_proj["status"] = "Active"
+        df_tbl_proj.to_csv(os.path.join(DATA_PROCESSED_DIR, "tbl_project.csv"), index=False)
+
+        # 4. INSPECTION_LOG Table
+        df_tbl_log = df_quarterly.copy()
+        df_tbl_log["log_id"] = [f"LOG-{idx+1:06d}" for idx in range(len(df_tbl_log))]
+        df_tbl_log["inspector_id"] = [inspectors[idx % 6]["inspector_id"] for idx in range(len(df_tbl_log))]
+        df_tbl_log.rename(columns={
+            "planned_progress_pct": "target_physical_pct",
+            "actual_progress_pct": "actual_physical_pct",
+            "planned_expenditure": "target_financial_accomplishment",
+            "actual_expenditure": "actual_financial_accomplishment",
+            "issues_count": "issues_noted",
+        }, inplace=True)
+        df_tbl_log.to_csv(os.path.join(DATA_PROCESSED_DIR, "tbl_inspection_log.csv"), index=False)
+
+        # 5. EXTERNAL_CONTEXT Table
+        df_tbl_ext = df_quarterly[["quarter", "rainfall_mm", "typhoon_days", "cpi_quarterly", "cmrpi_quarterly"]].drop_duplicates().copy()
+        df_tbl_ext["context_id"] = [f"CTX-{idx+1:04d}" for idx in range(len(df_tbl_ext))]
+        df_tbl_ext.to_csv(os.path.join(DATA_PROCESSED_DIR, "tbl_external_context.csv"), index=False)
+        
+        logger.info(f"Exported 5 ERD relational schema tables to {DATA_PROCESSED_DIR}")
         return df_projects, df_quarterly
 
 # Provide backward-compatibility wrapper
 def generate_synthetic_dataset(distributions: Optional[Dict[str, Any]] = None, n_projects: Optional[int] = None) -> Tuple[pd.DataFrame, pd.DataFrame]:
     return SyntheticDataGenerator().generate_synthetic_dataset(distributions, n_projects)
+

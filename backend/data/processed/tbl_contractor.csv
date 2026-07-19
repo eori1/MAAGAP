@@ -1,0 +1,21 @@
+contractor_id,contractor_name,past_project_count,past_delay_count,past_average_slippage,reliability_score
+CONT-001,Juantong Agri-Ventures Trading,29,10,6.45,0.57
+CONT-002,3rd Dragon Builders Innovation,12,0,1.2,0.92
+CONT-003,Conquest Construction Supply,26,4,3.15,0.79
+CONT-004,CEBU ERNBRI IMPORT INC.,19,3,4.35,0.71
+CONT-005,Iloilo New Agri-Industrial Marketing,26,12,8.4,0.44
+CONT-006,RS AGRO INDUSTRIAL Corporation,8,2,8.4,0.44
+CONT-007,Red Hammer International Builders,11,4,9.3,0.38
+CONT-008,RMKP Construction,13,1,1.95,0.87
+CONT-009,A. Maquiling Construction and Supply,10,1,4.35,0.71
+CONT-010,Orchard Valley Enterprises,29,4,3.45,0.77
+CONT-011,Dreamer's Valley Construction,11,5,9.6,0.36
+CONT-012,PACEMCO Construction,28,1,1.05,0.93
+CONT-013,PCC Construction Corp,8,0,2.25,0.85
+CONT-014,JV Pacific Builders,9,3,7.8,0.48
+CONT-015,Metro Iloilo Construction,11,3,8.1,0.46
+CONT-016,Western Visayas Builders Inc.,16,6,8.1,0.46
+CONT-017,Panay Construction Services,18,5,7.05,0.53
+CONT-018,Golden West Engineering,29,9,5.1,0.66
+CONT-019,Island Builders Corporation,5,1,5.85,0.61
+CONT-020,Visayan Construction Group,27,12,7.2,0.52

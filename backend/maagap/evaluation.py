@@ -87,6 +87,29 @@ class Evaluator:
         df.to_csv(os.path.join(OUTPUTS_DIR, filename), index=False)
         return df
 
+    @staticmethod
+    def compare_tuning_impact(baseline_metrics: List[Dict[str, Any]], tuned_metrics: List[Dict[str, Any]]) -> pd.DataFrame:
+        """Combine baseline (untuned) and tuned metrics into side-by-side comparison DataFrame with Δ improvements."""
+        df_base = pd.DataFrame(baseline_metrics).copy()
+        df_tuned = pd.DataFrame(tuned_metrics).copy()
+        
+        df_base.rename(columns={col: f"{col} (Untuned)" for col in df_base.columns if col != "Model"}, inplace=True)
+        df_tuned.rename(columns={col: f"{col} (Tuned)" for col in df_tuned.columns if col != "Model"}, inplace=True)
+
+        df_merged = pd.merge(df_base, df_tuned, on="Model", how="outer")
+        
+        for col in ["Accuracy", "Precision", "Recall", "F1-Score", "AUC-ROC"]:
+            u_col = f"{col} (Untuned)"
+            t_col = f"{col} (Tuned)"
+            if u_col in df_merged.columns and t_col in df_merged.columns:
+                df_merged[f"{col} Δ"] = round(df_merged[t_col] - df_merged[u_col], 4)
+                
+        out_path = os.path.join(OUTPUTS_DIR, "tuning_comparison_report.csv")
+        df_merged.to_csv(out_path, index=False)
+        logger.info(f"Saved hyperparameter tuning comparison report to {out_path}")
+        return df_merged
+
+
 
 class Visualizer:
     """Generates and saves Plotly visualizations."""
@@ -590,6 +613,62 @@ class Visualizer:
             width=1100, height=500,
             **cls._PLOTLY_LAYOUT,
         )
+        cls._save_fig(fig, filename)
+        return fig
+
+    @classmethod
+    def plot_tuning_comparison(cls, comparison_df: pd.DataFrame, metric: str = "AUC-ROC", filename: str = "tuning_comparison_chart.png") -> go.Figure:
+        """Grouped bar chart comparing untuned vs tuned model performance."""
+        fig = go.Figure()
+        
+        models = comparison_df["Model"].values
+        u_col = f"{metric} (Untuned)"
+        t_col = f"{metric} (Tuned)"
+        
+        if u_col in comparison_df.columns:
+            fig.add_trace(go.Bar(
+                x=models, y=comparison_df[u_col].values, name="Untuned (Default Params)",
+                marker_color="#95a5a6", text=comparison_df[u_col].values, textposition="auto"
+            ))
+        if t_col in comparison_df.columns:
+            fig.add_trace(go.Bar(
+                x=models, y=comparison_df[t_col].values, name="Tuned (RandomizedSearchCV)",
+                marker_color="#2ecc71", text=comparison_df[t_col].values, textposition="auto"
+            ))
+
+        fig.update_layout(
+            title=dict(text=f"Untuned vs. Tuned Model Comparison ({metric})", x=0.5),
+            xaxis_title="Model Architecture",
+            yaxis_title=metric,
+            barmode="group",
+            legend=dict(x=0.01, y=0.99),
+            **cls._PLOTLY_LAYOUT,
+        )
+        cls._save_fig(fig, filename)
+        return fig
+
+    @classmethod
+    def plot_training_curves_overlay(cls, history_untuned: dict, history_tuned: dict, model_name: str = "LSTM", filename: str = "training_history_comparison.png") -> go.Figure:
+        """Overlay loss and accuracy curves for untuned vs tuned model training."""
+        fig = make_subplots(rows=1, cols=2, subplot_titles=("Loss Comparison", "Accuracy Comparison"))
+
+        if history_untuned:
+            fig.add_trace(go.Scatter(y=history_untuned.get("loss", []), name="Untuned Train Loss", line=dict(color="#95a5a6", dash="dash")), row=1, col=1)
+            fig.add_trace(go.Scatter(y=history_untuned.get("val_loss", []), name="Untuned Val Loss", line=dict(color="#7f8c8d", dash="dash")), row=1, col=1)
+            fig.add_trace(go.Scatter(y=history_untuned.get("accuracy", []), name="Untuned Train Acc", line=dict(color="#95a5a6", dash="dash")), row=1, col=2)
+            fig.add_trace(go.Scatter(y=history_untuned.get("val_accuracy", []), name="Untuned Val Acc", line=dict(color="#7f8c8d", dash="dash")), row=1, col=2)
+
+        if history_tuned:
+            fig.add_trace(go.Scatter(y=history_tuned.get("loss", []), name="Tuned Train Loss", line=dict(color="#e74c3c")), row=1, col=1)
+            fig.add_trace(go.Scatter(y=history_tuned.get("val_loss", []), name="Tuned Val Loss", line=dict(color="#c0392b")), row=1, col=1)
+            fig.add_trace(go.Scatter(y=history_tuned.get("accuracy", []), name="Tuned Train Acc", line=dict(color="#2ecc71")), row=1, col=2)
+            fig.add_trace(go.Scatter(y=history_tuned.get("val_accuracy", []), name="Tuned Val Acc", line=dict(color="#27ae60")), row=1, col=2)
+
+        fig.update_xaxes(title_text="Epoch", row=1, col=1)
+        fig.update_xaxes(title_text="Epoch", row=1, col=2)
+        fig.update_yaxes(title_text="Loss", row=1, col=1)
+        fig.update_yaxes(title_text="Accuracy", row=1, col=2)
+        fig.update_layout(title=dict(text=f"{model_name} Training History: Untuned vs. Tuned", x=0.5), width=1100, height=480, **cls._PLOTLY_LAYOUT)
         cls._save_fig(fig, filename)
         return fig
 
