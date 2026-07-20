@@ -341,6 +341,32 @@
   white-space: nowrap;
 }
 
+/* Capacity Progress Bar */
+.progressBarBg {
+  width: 100%;
+  max-width: 140px;
+  height: 4px;
+  background: #e8f0fb;
+  border-radius: 50px;
+  overflow: hidden;
+  margin: 4px auto 0;
+}
+
+.progressBar {
+  height: 100%;
+  background: linear-gradient(90deg, #2756c5, #1a6ed8);
+  border-radius: 50px;
+  transition: width 0.4s ease;
+}
+
+/* Empty State */
+.emptyRow {
+  padding: 3rem;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.82rem;
+}
+
 /* Assign Button */
 .assignBtn {
   background: #1a6ed8;

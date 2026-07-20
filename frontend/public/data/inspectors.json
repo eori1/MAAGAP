@@ -1,0 +1,68 @@
+[
+  {
+    "id": "INSP-001",
+    "name": "Engr. Juan Dela Cruz",
+    "email": "juandelacruz@iloilo.gov.ph",
+    "position": "Project Inspector",
+    "role": "Inspector",
+    "status": "Active",
+    "vehicleAccess": true,
+    "capacity": 10,
+    "assigned": 10
+  },
+  {
+    "id": "INSP-002",
+    "name": "Engr. Maria Santos",
+    "email": "mariasantos@iloilo.gov.ph",
+    "position": "Project Inspector",
+    "role": "Inspector",
+    "status": "Active",
+    "vehicleAccess": true,
+    "capacity": 9,
+    "assigned": 9
+  },
+  {
+    "id": "INSP-003",
+    "name": "Engr. Antonio Reyes",
+    "email": "antonioreyes@iloilo.gov.ph",
+    "position": "Project Inspector",
+    "role": "Inspector",
+    "status": "Active",
+    "vehicleAccess": false,
+    "capacity": 6,
+    "assigned": 6
+  },
+  {
+    "id": "INSP-004",
+    "name": "Engr. Elena Gomez",
+    "email": "elenagomez@iloilo.gov.ph",
+    "position": "Project Inspector",
+    "role": "Inspector",
+    "status": "Active",
+    "vehicleAccess": true,
+    "capacity": 8,
+    "assigned": 8
+  },
+  {
+    "id": "INSP-005",
+    "name": "Engr. Roberto Garcia",
+    "email": "robertogarcia@iloilo.gov.ph",
+    "position": "Project Inspector",
+    "role": "Inspector",
+    "status": "On Duty",
+    "vehicleAccess": true,
+    "capacity": 3,
+    "assigned": 3
+  },
+  {
+    "id": "INSP-006",
+    "name": "Engr. Teresa Aquino",
+    "email": "teresaaquino@iloilo.gov.ph",
+    "position": "Project Inspector",
+    "role": "Inspector",
+    "status": "Active",
+    "vehicleAccess": false,
+    "capacity": 5,
+    "assigned": 5
+  }
+]

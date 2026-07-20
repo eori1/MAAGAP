@@ -1,0 +1,42 @@
+[
+  {
+    "type": "CRITICAL_RISK",
+    "projectId": "PROJ-2024-2332",
+    "fromTier": null,
+    "toTier": "Critical",
+    "riskScore": 0.955,
+    "message": "PROJ-2024-2332 is at Critical risk (95%) \u2014 immediate inspection required",
+    "date": "2026-07-20",
+    "id": "ALERT-0001"
+  },
+  {
+    "type": "CRITICAL_RISK",
+    "projectId": "PROJ-2019-1046",
+    "fromTier": null,
+    "toTier": "Critical",
+    "riskScore": 0.9546,
+    "message": "PROJ-2019-1046 is at Critical risk (95%) \u2014 immediate inspection required",
+    "date": "2026-07-20",
+    "id": "ALERT-0002"
+  },
+  {
+    "type": "CRITICAL_RISK",
+    "projectId": "PROJ-2024-2883",
+    "fromTier": null,
+    "toTier": "Critical",
+    "riskScore": 0.935,
+    "message": "PROJ-2024-2883 is at Critical risk (93%) \u2014 immediate inspection required",
+    "date": "2026-07-20",
+    "id": "ALERT-0003"
+  },
+  {
+    "type": "CRITICAL_RISK",
+    "projectId": "PROJ-2024-0864",
+    "fromTier": null,
+    "toTier": "Critical",
+    "riskScore": 0.9337,
+    "message": "PROJ-2024-0864 is at Critical risk (93%) \u2014 immediate inspection required",
+    "date": "2026-07-20",
+    "id": "ALERT-0004"
+  }
+]

@@ -165,6 +165,148 @@ class MainPipeline:
             json.dump(payload, f, indent=2)
         logger.info(f"Exported frontend assignments JSON to {out_path}")
 
+    @staticmethod
+    def _frontend_data_dir() -> str:
+        return os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend", "public", "data")
+
+    def _export_frontend_extras(
+        self,
+        df_test_projects: pd.DataFrame,
+        df_quarterly: pd.DataFrame,
+        inspectors_df: pd.DataFrame,
+        df_assignments: pd.DataFrame,
+        risk_scores_test: np.ndarray,
+        risk_tiers_test: np.ndarray,
+        predicted_delay_days: np.ndarray,
+        df_prev_predictions: "pd.DataFrame | None",
+    ) -> None:
+        """Export timeline, inspection-report, roster, and alert data for the
+        Next.js dashboard. Skipped when the frontend directory is absent."""
+        data_dir = self._frontend_data_dir()
+        if not os.path.isdir(data_dir):
+            logger.info("Frontend data directory not found; skipping extras export.")
+            return
+
+        test_ids = df_test_projects["project_id"].values
+        risk_by_id = dict(zip(test_ids, risk_scores_test))
+        tier_by_id = dict(zip(test_ids, risk_tiers_test))
+        delay_days_by_id = dict(zip(test_ids, predicted_delay_days))
+
+        # --- timeline.json: actual-vs-scheduled deviation per test project ---
+        timeline = []
+        for _, p in df_test_projects.iterrows():
+            status = "Delayed" if p["is_delayed"] == 1 else ("Ongoing" if p["year"] == max(df_test_projects["year"]) else "Completed")
+            timeline.append({
+                "id": p["project_id"],
+                "name": p["project_id"],
+                "location": p["location"],
+                "type": p["project_type"],
+                "year": int(p["year"]),
+                "startDate": p["start_date"],
+                "plannedEndDate": p["planned_end_date"],
+                "plannedMonths": int(p["planned_duration_months"]),
+                "actualDelayDays": int(p["delay_days"]),
+                "predictedDelayDays": round(float(delay_days_by_id[p["project_id"]]), 1),
+                "riskTier": tier_by_id[p["project_id"]],
+                "status": status,
+            })
+        with open(os.path.join(data_dir, "timeline.json"), "w", encoding="utf-8") as f:
+            json.dump(timeline, f, indent=2)
+
+        # --- reports.json: latest quarterly inspection log per test project ---
+        insp_name_by_id = dict(zip(inspectors_df["inspector_id"], inspectors_df["inspector_name"]))
+        df_q_test = df_quarterly[df_quarterly["project_id"].isin(test_ids)]
+        latest_q = df_q_test.sort_values("quarter").groupby("project_id").tail(1)
+        start_by_id = dict(zip(df_test_projects["project_id"], pd.to_datetime(df_test_projects["start_date"])))
+        reports = []
+        for _, q in latest_q.iterrows():
+            pid = q["project_id"]
+            slippage = float(q["slippage_pct"])
+            if slippage > 20:
+                r_status = "Flagged"
+            elif slippage > 5:
+                r_status = "Pending Review"
+            else:
+                r_status = "Validated"
+            # deterministic inspector attribution mirrors tbl_inspection_log round-robin
+            insp_idx = int(q.name) % len(inspectors_df)
+            insp_id = inspectors_df["inspector_id"].values[insp_idx]
+            report_date = start_by_id[pid] + pd.DateOffset(months=3 * int(q["quarter"]))
+            reports.append({
+                "projectId": pid,
+                "quarter": int(q["quarter"]),
+                "totalQuarters": int(q["total_quarters"]),
+                "plannedProgress": float(q["planned_progress_pct"]),
+                "actualProgress": float(q["actual_progress_pct"]),
+                "slippage": slippage,
+                "issues": int(q["issues_count"]),
+                "date": report_date.strftime("%Y-%m-%d"),
+                "status": r_status,
+                "inspectorId": insp_id,
+                "inspectorName": insp_name_by_id[insp_id],
+                "riskTier": tier_by_id.get(pid, "Low"),
+            })
+        reports.sort(key=lambda r: r["date"], reverse=True)
+        with open(os.path.join(data_dir, "reports.json"), "w", encoding="utf-8") as f:
+            json.dump(reports, f, indent=2)
+
+        # --- inspectors.json: roster + LP-assigned workload (Users page) ---
+        capacities = InspectorAssignmentOptimizer.compute_capacities(inspectors_df)
+        assigned_counts = df_assignments["inspector_id"].value_counts().to_dict()
+        roster = []
+        for j, (_, r) in enumerate(inspectors_df.iterrows()):
+            handle = r["inspector_name"].split(".")[-1].strip().lower().replace(" ", "")
+            roster.append({
+                "id": r["inspector_id"],
+                "name": r["inspector_name"],
+                "email": f"{handle}@iloilo.gov.ph",
+                "position": "Project Inspector",
+                "role": "Inspector",
+                "status": "Active" if str(r["availability_status"]).lower() == "available" else "On Duty",
+                "vehicleAccess": bool(r["vehicle_access"]),
+                "capacity": int(capacities[j]),
+                "assigned": int(assigned_counts.get(r["inspector_id"], 0)),
+            })
+        with open(os.path.join(data_dir, "inspectors.json"), "w", encoding="utf-8") as f:
+            json.dump(roster, f, indent=2)
+
+        # --- alerts.json: tier transitions vs previous run + critical alerts ---
+        tier_rank = {"Low": 0, "Medium": 1, "High": 2, "Critical": 3}
+        alerts = []
+        today = pd.Timestamp.now().strftime("%Y-%m-%d")
+        if df_prev_predictions is not None and "risk_tier" in df_prev_predictions.columns:
+            prev_tier = dict(zip(df_prev_predictions["project_id"], df_prev_predictions["risk_tier"]))
+            for pid in test_ids:
+                old, new = prev_tier.get(pid), tier_by_id[pid]
+                if old is not None and tier_rank.get(new, 0) > tier_rank.get(old, 0):
+                    alerts.append({
+                        "type": "TIER_ESCALATION",
+                        "projectId": pid,
+                        "fromTier": old,
+                        "toTier": new,
+                        "riskScore": round(float(risk_by_id[pid]), 4),
+                        "message": f"{pid} escalated from {old} to {new} risk",
+                        "date": today,
+                    })
+        for pid in test_ids:
+            if tier_by_id[pid] == "Critical":
+                alerts.append({
+                    "type": "CRITICAL_RISK",
+                    "projectId": pid,
+                    "fromTier": None,
+                    "toTier": "Critical",
+                    "riskScore": round(float(risk_by_id[pid]), 4),
+                    "message": f"{pid} is at Critical risk ({risk_by_id[pid]:.0%}) — immediate inspection required",
+                    "date": today,
+                })
+        alerts.sort(key=lambda a: (a["type"] != "TIER_ESCALATION", -a["riskScore"]))
+        for k, a in enumerate(alerts):
+            a["id"] = f"ALERT-{k+1:04d}"
+        with open(os.path.join(data_dir, "alerts.json"), "w", encoding="utf-8") as f:
+            json.dump(alerts, f, indent=2)
+
+        logger.info(f"Exported timeline/reports/inspectors/alerts JSON to {data_dir}")
+
     def run(self) -> None:
         """Execute the full pipeline."""
         try:
@@ -177,6 +319,11 @@ class MainPipeline:
             # ---------------------------------------------------------
             banner(logger, "DATA PIPELINE: REAL DATA & SYNTHETIC GENERATION")
             
+            # Snapshot the previous run's predictions (if any) before they are
+            # overwritten, so tier-transition alerts can be computed by diff.
+            prev_pred_path = os.path.join(DATA_PROCESSED_DIR, "tbl_predictions.csv")
+            df_prev_predictions = pd.read_csv(prev_pred_path) if os.path.exists(prev_pred_path) else None
+
             preprocessor = DataPreprocessor()
             df_real = preprocessor.load_and_clean_ppdo()
             dist = preprocessor.extract_distributions(df_real)
@@ -441,6 +588,14 @@ class MainPipeline:
 
             # Frontend export: per-inspector grouped assignments JSON
             self._export_frontend_assignments(df_assignments, inspectors_df, len(test_idx))
+
+            # Frontend export: timeline, inspection reports, roster, and tier-transition alerts
+            self._export_frontend_extras(
+                df_test_projects, df_quarterly, inspectors_df, df_assignments,
+                risk_scores_test, risk_tiers_test,
+                reg_delay_days.predict(X_static[test_idx]),
+                df_prev_predictions,
+            )
 
             banner(logger, "MAAGAP EXECUTION COMPLETE!")
 
