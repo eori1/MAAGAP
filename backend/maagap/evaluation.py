@@ -497,7 +497,7 @@ class Visualizer:
 
     @classmethod
     def plot_optimization_comparison(cls, base_eff: float, lp_eff: float, improvement_pct: float, mc_results: Dict[str, Any], filename: str = "optimization_comparison.png") -> go.Figure:
-        labels = ["Baseline (Manual/Random)", "LP Optimized"]
+        labels = ["Manual Round-Robin", "LP Optimized"]
         values = [base_eff, lp_eff]
         colors = ["#e74c3c", "#2ecc71"]
 
@@ -561,7 +561,7 @@ class Visualizer:
             fig.update_xaxes(title_text="Efficiency Improvement (%)", row=1, col=2)
             fig.update_yaxes(title_text="Probability Density", row=1, col=2)
 
-        fig.update_yaxes(title_text="Avg Captured Risk Score", row=1, col=1)
+        fig.update_yaxes(title_text="Captured Risk Utility", row=1, col=1)
         fig.update_layout(width=1100, height=480, **cls._PLOTLY_LAYOUT)
         cls._save_fig(fig, filename)
         return fig
@@ -587,8 +587,8 @@ class Visualizer:
         fig = go.Figure()
         for mask, label, color, sym in [
             (neither,  "Not Selected",       "#bdc3c7", "circle"),
-            (both,     "Selected by Both",    "#f39c12", "diamond"),
-            (base_only,"Baseline Only",       "#e74c3c", "square"),
+            (both,     "Visited by Both",     "#f39c12", "diamond"),
+            (base_only,"Manual Only",         "#e74c3c", "square"),
             (lp_only,  "LP Only",             "#2ecc71", "star"),
         ]:
             if mask.sum() == 0:

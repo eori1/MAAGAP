@@ -26,9 +26,9 @@ from maagap.data_preprocessing import DataPreprocessor
 from maagap.synthetic_generator import SyntheticDataGenerator
 from maagap.feature_engineering import FeatureEngineer, split_data
 from maagap.preprocessing_pipeline import MAAGAPPreprocessor
-from maagap.models import TreeModelTrainer, LSTMTrainer, MetaEnsembleTrainer
+from maagap.models import TreeModelTrainer, LSTMTrainer, MetaEnsembleTrainer, RegressionModelTrainer
 from maagap.risk_scoring import compute_all_risk_scores, get_risk_tier, check_logic_consistency
-from maagap.optimization import ResourceOptimizer
+from maagap.optimization import InspectorAssignmentOptimizer
 from maagap.explainability import ExplanationService
 from maagap.evaluation import Evaluator, Visualizer
 
@@ -45,7 +45,7 @@ class MainPipeline:
         self.visualizer = Visualizer()
         self.feature_engineer = FeatureEngineer()
         self.preprocessor_pipeline = MAAGAPPreprocessor()
-        self.optimizer = ResourceOptimizer()
+        self.optimizer = InspectorAssignmentOptimizer()
         self.metrics_list = []
 
     def _train_and_evaluate_pass(self, X_static, X_temporal, y_delay, df_projects, train_idx, val_idx, test_idx, tune: bool, label_prefix: str = "") -> dict:
@@ -113,6 +113,58 @@ class MainPipeline:
             "metrics": metrics,
         }
 
+    def _export_frontend_assignments(self, df_assignments: pd.DataFrame, inspectors_df: pd.DataFrame, n_projects: int) -> None:
+        """Write the LP deployment schedule as JSON for the Next.js dashboard.
+
+        Skipped silently when the frontend directory is not present (e.g.
+        backend-only checkouts)."""
+        frontend_data_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "frontend", "public", "data")
+        if not os.path.isdir(frontend_data_dir):
+            logger.info("Frontend data directory not found; skipping assignments JSON export.")
+            return
+
+        capacities = InspectorAssignmentOptimizer.compute_capacities(inspectors_df)
+        inspectors_payload = []
+        for j, (_, row) in enumerate(inspectors_df.iterrows()):
+            insp_rows = df_assignments[df_assignments["inspector_id"] == row["inspector_id"]]
+            projects = [
+                {
+                    "projectId": r["project_id"],
+                    "name": r["project_id"],
+                    "location": r["location"],
+                    "type": r["project_type"],
+                    "riskScore": float(r["risk_score"]),
+                    "riskTier": r["risk_tier"],
+                    "priority": r["priority"],
+                    "urgency": r["urgency"],
+                }
+                for _, r in insp_rows.iterrows()
+            ]
+            inspectors_payload.append({
+                "id": row["inspector_id"],
+                "name": row["inspector_name"],
+                "availability": row["availability_status"],
+                "vehicleAccess": bool(row["vehicle_access"]),
+                "capacity": int(capacities[j]),
+                "currentWorkload": int(row["current_workload"]),
+                "totalProjects": len(projects),
+                "projects": projects,
+            })
+
+        payload = {
+            "generatedAt": pd.Timestamp.now().isoformat(),
+            "solver": "PuLP CBC (Integer LP)",
+            "totalProjects": n_projects,
+            "assignedProjects": int(len(df_assignments)),
+            "unassignedProjects": int(n_projects - len(df_assignments)),
+            "criticalAssignments": int((df_assignments["risk_tier"] == "Critical").sum()),
+            "inspectors": inspectors_payload,
+        }
+        out_path = os.path.join(frontend_data_dir, "assignments.json")
+        with open(out_path, "w", encoding="utf-8") as f:
+            json.dump(payload, f, indent=2)
+        logger.info(f"Exported frontend assignments JSON to {out_path}")
+
     def run(self) -> None:
         """Execute the full pipeline."""
         try:
@@ -136,7 +188,7 @@ class MainPipeline:
             pipeline_path = self.preprocessor_pipeline.save()
             logger.info(f"Saved reusable preprocessor artifact to {pipeline_path}")
 
-            y_delay, y_overrun, y_risk_true, _, _ = self.feature_engineer.build_targets(df_projects)
+            y_delay, y_overrun, y_risk_true, y_delay_days, y_overrun_pct = self.feature_engineer.build_targets(df_projects)
 
             n_samples = len(X_static)
             train_idx, val_idx, test_idx = split_data(n_samples)
@@ -252,6 +304,42 @@ class MainPipeline:
             logger.info(f"Sample prediction SHAP explanation: {json.dumps(sample_shap_json, indent=2)}")
 
             # ---------------------------------------------------------
+            # COST OVERRUN MODEL & MAE REGRESSION (Objective 1 & 2)
+            # ---------------------------------------------------------
+            banner(logger, "COST OVERRUN CLASSIFIER & MAE REGRESSION MODELS")
+
+            xgb_overrun, _ = TreeModelTrainer.train_xgboost(
+                X_static[train_idx], y_overrun[train_idx],
+                X_static[val_idx], y_overrun[val_idx],
+                task="overrun", tune=self.tune_models
+            )
+            overrun_prob_test = xgb_overrun.predict_proba(X_static[test_idx])[:, 1]
+            overrun_pred_test = xgb_overrun.predict(X_static[test_idx])
+            overrun_metrics = self.evaluator.binary_metrics(
+                y_overrun[test_idx], overrun_pred_test, overrun_prob_test, label="XGBoost (Cost Overrun)"
+            )
+
+            from sklearn.metrics import mean_absolute_error
+            reg_delay_days = RegressionModelTrainer.train_xgboost_regressor(
+                X_static[train_idx], y_delay_days[train_idx], task="delay_days"
+            )
+            mae_delay_days = mean_absolute_error(y_delay_days[test_idx], reg_delay_days.predict(X_static[test_idx]))
+
+            reg_overrun_pct = RegressionModelTrainer.train_xgboost_regressor(
+                X_static[train_idx], y_overrun_pct[train_idx], task="overrun_pct"
+            )
+            mae_overrun_pct = mean_absolute_error(y_overrun_pct[test_idx], reg_overrun_pct.predict(X_static[test_idx]))
+
+            logger.info(f"MAE (delay duration): {mae_delay_days:.2f} days")
+            logger.info(f"MAE (cost overrun): {mae_overrun_pct * 100:.2f} percentage points of budget")
+
+            pd.DataFrame([
+                {"target": "delay_days", "model": "XGBoost Regressor", "MAE": round(float(mae_delay_days), 2), "unit": "days"},
+                {"target": "cost_overrun_pct", "model": "XGBoost Regressor", "MAE": round(float(mae_overrun_pct), 4), "unit": "fraction of budget"},
+                {"target": "is_cost_overrun", "model": "XGBoost Classifier", "MAE": None, "unit": f"F1={overrun_metrics['F1-Score']:.4f}, AUC={overrun_metrics['AUC-ROC']:.4f}"},
+            ]).to_csv(os.path.join(OUTPUTS_DIR, "regression_mae_report.csv"), index=False)
+
+            # ---------------------------------------------------------
             # OBJECTIVE 3: RISK ENGINE & BOUNDARY VERIFICATION
             # ---------------------------------------------------------
             banner(logger, "OBJECTIVE 3: DYNAMIC RISK SCORING ENGINE")
@@ -275,58 +363,84 @@ class MainPipeline:
             # ---------------------------------------------------------
             # OBJECTIVE 4: OPTIMIZATION
             # ---------------------------------------------------------
-            banner(logger, "OBJECTIVE 4: RESOURCE ALLOCATION OPTIMIZATION")
+            banner(logger, "OBJECTIVE 4: INSPECTOR DEPLOYMENT OPTIMIZATION")
 
-            budgets_test = df_projects.iloc[test_idx]["approved_budget"].values
-            agency_names_test = df_projects.iloc[test_idx]["implementing_agency"].values
-            
-            total_budget = np.sum(budgets_test) * 0.40
+            inspectors_df = pd.read_csv(os.path.join(DATA_PROCESSED_DIR, "tbl_inspector.csv"))
+            logger.info(f"Loaded PPDO inspector roster: {len(inspectors_df)} inspectors")
 
-            base_eff, base_sel = self.optimizer.run_monte_carlo_baseline(
-                budgets_test, risk_scores_test, total_budget, n_iterations=100
+            assignment, lp_status = self.optimizer.optimize_assignment(
+                risk_scores_test, inspectors_df,
+                min_critical_coverage=1.0, critical_threshold=0.90,
             )
+            lp_util = self.optimizer.captured_utility(risk_scores_test, assignment)
 
-            lp_sel, lp_status = self.optimizer.optimize_allocation(
-                budgets_test, risk_scores_test, total_budget,
-                agency_ids=agency_names_test, max_projects_per_agency=15,
-                min_critical_coverage=0.50, critical_threshold=0.90
+            manual_assignment = self.optimizer.run_manual_baseline(risk_scores_test, inspectors_df)
+            manual_util = self.optimizer.captured_utility(risk_scores_test, manual_assignment)
+            improvement = self.optimizer.analyze_improvement(manual_util, lp_util)
+
+            mc_results = self.optimizer.run_random_baseline_mc(
+                risk_scores_test, inspectors_df, lp_utility=lp_util, n_iterations=100
             )
-            
-            lp_eff = self.optimizer.evaluate_allocation_efficiency(risk_scores_test, lp_sel)
-            improvement = self.optimizer.analyze_improvement(base_eff, lp_eff)
-
-            mc_results = {
-                "n_successful": 100,
-                "mean_improvement_pct": improvement["improvement_pct"],
-                "std_improvement_pct": 3.2,
-            }
 
             self.visualizer.plot_optimization_comparison(
-                base_eff, lp_eff, improvement["improvement_pct"], mc_results, "optimization_comparison.png"
+                manual_util, lp_util, improvement["improvement_pct"], mc_results, "optimization_comparison.png"
             )
 
             self.visualizer.plot_lp_selection_profile(
-                risk_scores_test, risk_tiers_test, np.where(lp_sel == 1)[0], np.where(base_sel == 1)[0], "lp_selection_profile.png"
+                risk_scores_test, risk_tiers_test,
+                np.where(assignment >= 0)[0], np.where(manual_assignment >= 0)[0],
+                "lp_selection_profile.png"
             )
 
             # ---------------------------------------------------------
-            # EXPORT RELATIONAL TBL_PREDICTIONS CSV
+            # EXPORT RELATIONAL TABLES: PREDICTIONS + ASSIGNMENTS
             # ---------------------------------------------------------
             df_test_projects = df_projects.iloc[test_idx].copy()
+            inspector_ids = inspectors_df["inspector_id"].values
+            assignment_refs = [
+                inspector_ids[assignment[idx]] if assignment[idx] >= 0 else "UNASSIGNED"
+                for idx in range(len(test_idx))
+            ]
+
             df_predictions_tbl = pd.DataFrame({
                 "prediction_id": [f"PRED-{idx+1:05d}" for idx in range(len(test_idx))],
                 "project_id": df_test_projects["project_id"].values,
                 "prediction_date": pd.Timestamp.now().strftime("%Y-%m-%d"),
                 "delay_probability": np.round(meta_prob_test, 4),
-                "cost_overrun_probability": np.round(pass_res["xgb_prob_test"], 4),
+                "cost_overrun_probability": np.round(overrun_prob_test, 4),
+                "predicted_delay_days": np.round(reg_delay_days.predict(X_static[test_idx]), 1),
                 "risk_score": np.round(risk_scores_test, 4),
                 "risk_tier": risk_tiers_test,
                 "shap_explanation": [json.dumps(ExplanationService.format_shap_json(rf_shap, static_cols, rf_base, idx)) for idx in range(len(test_idx))],
-                "optimized_assignment_ref": [f"ASSIGN-INSP-00{(idx % 6)+1}" if lp_sel[idx] == 1 else "UNASSIGNED" for idx in range(len(test_idx))],
+                "optimized_assignment_ref": assignment_refs,
             })
             pred_tbl_path = os.path.join(DATA_PROCESSED_DIR, "tbl_predictions.csv")
             df_predictions_tbl.to_csv(pred_tbl_path, index=False)
             logger.info(f"Exported relational predictions table to {pred_tbl_path}")
+
+            # Deployment schedule table (DFD data store D4)
+            tier_priority = {"Critical": "HIGH", "High": "HIGH", "Medium": "MEDIUM", "Low": "LOW"}
+            tier_urgency = {"Critical": "VISIT ASAP", "High": "VISIT SOON", "Medium": "CHECK IN A WEEK", "Low": "ROUTINE"}
+            assigned_mask = assignment >= 0
+            assigned_indices = np.where(assigned_mask)[0]
+            df_assignments = pd.DataFrame({
+                "assignment_id": [f"ASSIGN-{k+1:05d}" for k in range(len(assigned_indices))],
+                "project_id": df_test_projects["project_id"].values[assigned_indices],
+                "project_type": df_test_projects["project_type"].values[assigned_indices],
+                "location": df_test_projects["location"].values[assigned_indices],
+                "inspector_id": [inspector_ids[assignment[i]] for i in assigned_indices],
+                "inspector_name": [inspectors_df["inspector_name"].values[assignment[i]] for i in assigned_indices],
+                "risk_score": np.round(risk_scores_test[assigned_indices], 4),
+                "risk_tier": risk_tiers_test[assigned_indices],
+                "priority": [tier_priority[t] for t in risk_tiers_test[assigned_indices]],
+                "urgency": [tier_urgency[t] for t in risk_tiers_test[assigned_indices]],
+            }).sort_values(["inspector_id", "risk_score"], ascending=[True, False])
+            assign_tbl_path = os.path.join(DATA_PROCESSED_DIR, "tbl_assignments.csv")
+            df_assignments.to_csv(assign_tbl_path, index=False)
+            logger.info(f"Exported deployment schedule table to {assign_tbl_path}")
+
+            # Frontend export: per-inspector grouped assignments JSON
+            self._export_frontend_assignments(df_assignments, inspectors_df, len(test_idx))
 
             banner(logger, "MAAGAP EXECUTION COMPLETE!")
 

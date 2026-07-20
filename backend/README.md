@@ -12,7 +12,7 @@ MAAGAP implements a comprehensive backend pipeline addressing the first four obj
 
 1. **Objective 1 & 2 (Predictive Framework & Evaluation):** A stacking meta-ensemble that fuses Random Forest and XGBoost (static features) with a Long Short-Term Memory (LSTM) neural network (temporal quarterly sequences).
 2. **Objective 3 (Dynamic Risk Scoring Engine):** Translates predicted probabilities into actionable management tiers (Low, Medium, High, Critical) with strict threshold logic consistency.
-3. **Objective 4 (Resource Allocation Optimization):** A Linear Programming (LP) model (PuLP) that optimizes the deployment of limited inspectors to high-utility projects, benchmarked against manual/random allocation under realistic roster constraints.
+3. **Objective 4 (Inspector Deployment Optimization):** An integer Linear Programming model (PuLP) that assigns the limited PPDO inspector roster (`tbl_inspector`) to projects, maximizing captured risk utility under per-inspector workload capacity, availability, and vehicle-access constraints. Benchmarked against the manual round-robin practice and a Monte Carlo random baseline.
 4. **Explainable AI (SHAP Interpretability):** Provides transparent feature attributions for all predictions using SHAP (SHapley Additive exPlanations).
 5. **Inference Pipeline & Relational Export:** Versioned preprocessor artifact (`preprocessing_pipeline.pkl`) and 6 ERD-aligned relational tables (`tbl_project`, `tbl_contractor`, `tbl_inspection_log`, `tbl_inspector`, `tbl_external_context`, `tbl_predictions`) ready for Part B database integration.
 
@@ -32,9 +32,13 @@ The four-model architecture (RF, XGBoost, LSTM, Stacking Meta-Ensemble) consiste
 The pipeline successfully classifies projects into 4 tiers: **Low [0.0, 0.30)**, **Medium [0.30, 0.70)**, **High [0.70, 0.90)**, and **Critical [0.90, 1.0]**. 
 - A programmatic **Logic Consistency Check** confirms **0 violations** across the test set, proving the threshold boundaries act exactly as defined in the manuscript.
 
-### 3. Allocation Optimization (LP vs Baseline)
-- **Efficiency Improvement:** The LP optimization achieved a **+67.11% improvement** in captured risk utility compared to the baseline allocation strategy under real inspector roster capacity limits, far exceeding the ≥15% target.
-- **Monte Carlo Robustness:** Across a 100-iteration simulation with perturbed risk scores, 100% of the runs exceeded the 15% improvement target, proving the LP approach is highly robust.
+### 3. Inspector Deployment Optimization (LP vs Baselines)
+- The assignment LP schedules inspectors to the highest-risk projects first, subject to roster capacity (41 visit slots per cycle across 6 inspectors in the current roster). Improvement is measured against (a) the **manual round-robin baseline** (projects visited in monitoring-report order, mirroring current PPDO practice) and (b) a **100-iteration Monte Carlo random-assignment baseline** whose mean/std improvement statistics are computed from the actual simulation runs.
+- **Latest run:** +250.4% captured-risk improvement over the manual baseline; vs the random baseline, mean improvement 296.2% (std 70.2) with **100/100 runs exceeding the ≥15% target**. Figures are written to `outputs/optimization_comparison.png` during `python main.py`.
+
+### 4. Cost Overrun & Magnitude Models (Objective 2 MAE)
+- A dedicated XGBoost classifier predicts cost overrun probability (no longer proxied by the delay model), and two XGBoost regressors quantify **delay duration (days)** and **cost overrun (% of budget)**, reported as MAE in `outputs/regression_mae_report.csv`.
+- **Latest run:** MAE 30.4 days (delay duration) and 8.6 percentage points of budget (cost overrun).
 
 ---
 
@@ -82,7 +86,8 @@ MAAGAP/
 | **`tbl_inspection_log`** | Time-series inspection log entries | Exported to `data/processed/tbl_inspection_log.csv` |
 | **`tbl_inspector`** | PPDO inspector roster & workload capacities | Exported to `data/processed/tbl_inspector.csv` |
 | **`tbl_external_context`** | Environmental & economic indicators | Exported to `data/processed/tbl_external_context.csv` |
-| **`tbl_predictions`** | Probabilities, risk scores, tiers, SHAP JSON attributions, and LP assignment refs | Exported to `data/processed/tbl_predictions.csv` |
+| **`tbl_predictions`** | Probabilities, predicted delay days, risk scores, tiers, SHAP JSON attributions, and LP assignment refs | Exported to `data/processed/tbl_predictions.csv` |
+| **`tbl_assignments`** | LP-optimized inspector deployment schedule (DFD data store D4) | Exported to `data/processed/tbl_assignments.csv` and `frontend/public/data/assignments.json` |
 
 ---
 

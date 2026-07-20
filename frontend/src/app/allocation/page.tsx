@@ -1,111 +1,66 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import TopRight from "@/components/TopRight";
 import styles from "./page.module.css";
 
-/* ─── Types ───────────────────────────────────────────── */
+/* ─── Types (mirror backend assignments.json payload) ─── */
+type Priority = "HIGH" | "MEDIUM" | "LOW";
+type Urgency = "VISIT ASAP" | "VISIT SOON" | "CHECK IN A WEEK" | "ROUTINE";
+
 interface AssignedProject {
+  projectId: string;
   name: string;
   location: string;
   type: string;
-  progress: number;
-  delay: number;
-  priority: "HIGH" | "MEDIUM" | "LOW";
-  urgency: "VISIT ASAP" | "VISIT SOON" | "CHECK IN A WEEK";
+  riskScore: number;
+  riskTier: "Low" | "Medium" | "High" | "Critical";
+  priority: Priority;
+  urgency: Urgency;
 }
 
 interface Inspector {
   id: string;
   name: string;
-  location: string;
-  arCode: string;
-  efficiency: number;
-  priority: "HIGH" | "MEDIUM" | "LOW";
+  availability: string;
+  vehicleAccess: boolean;
+  capacity: number;
+  currentWorkload: number;
   totalProjects: number;
   projects: AssignedProject[];
 }
 
-/* ─── Mock Data ───────────────────────────────────────── */
-const INSPECTORS: Inspector[] = [
-  {
-    id: "i1", name: "Juan de la Cruz", location: "Pavia, Iloilo",
-    arCode: "AR-4213", efficiency: 89, priority: "HIGH", totalProjects: 12,
-    projects: [
-      { name: "Aganan Flyover Construction", location: "Pavia Iloilo", type: "Infrastructure",
-        progress: 30, delay: 34, priority: "HIGH",   urgency: "VISIT ASAP" },
-      { name: "Buhang Flyover Construction", location: "Tagbak Iloilo City", type: "Infrastructure",
-        progress: 30, delay: 7,  priority: "MEDIUM", urgency: "VISIT ASAP" },
-    ],
-  },
-  {
-    id: "i2", name: "Maria Clara", location: "San Miguel, Iloilo",
-    arCode: "AR-4214", efficiency: 75, priority: "MEDIUM", totalProjects: 9,
-    projects: [
-      { name: "San Miguel Bridge Rehabilitation", location: "San Miguel Iloilo", type: "Infrastructure",
-        progress: 40, delay: 20, priority: "MEDIUM", urgency: "VISIT SOON" },
-      { name: "Jose Rizal Memorial",  location: "Jaro, Iloilo City", type: "Infrastructure",
-        progress: 50, delay: 10, priority: "LOW",    urgency: "CHECK IN A WEEK" },
-    ],
-  },
-  {
-    id: "i3", name: "Andrea Bonifacio", location: "Oton, Iloilo",
-    arCode: "AR-4215", efficiency: 92, priority: "HIGH", totalProjects: 7,
-    projects: [
-      { name: "Oton Flood Control Phase 2", location: "Oton Iloilo", type: "Flood Control",
-        progress: 20, delay: 45, priority: "HIGH",   urgency: "VISIT ASAP" },
-      { name: "Tigbauan Road Widening",      location: "Tigbauan Iloilo", type: "Road",
-        progress: 55, delay: 5,  priority: "LOW",    urgency: "CHECK IN A WEEK" },
-    ],
-  },
-  {
-    id: "i4", name: "Pedro Martinez", location: "Cabatuan, Iloilo",
-    arCode: "AR-4216", efficiency: 81, priority: "MEDIUM", totalProjects: 7,
-    projects: [
-      { name: "Cabatuan Market Renovation", location: "Cabatuan Iloilo", type: "Public Bldg",
-        progress: 65, delay: 0,  priority: "LOW",    urgency: "CHECK IN A WEEK" },
-      { name: "Janiuay River Dike",          location: "Janiuay Iloilo", type: "Flood Control",
-        progress: 35, delay: 18, priority: "MEDIUM", urgency: "VISIT SOON" },
-    ],
-  },
-  {
-    id: "i5", name: "Sofia Reyes", location: "Iloilo City",
-    arCode: "AR-4217", efficiency: 95, priority: "LOW", totalProjects: 15,
-    projects: [
-      { name: "Iloilo City Boardwalk Extension", location: "Iloilo City", type: "Tourism",
-        progress: 70, delay: 3,  priority: "LOW",    urgency: "CHECK IN A WEEK" },
-      { name: "La Paz Water Supply Upgrade",      location: "La Paz Iloilo", type: "Utilities",
-        progress: 45, delay: 12, priority: "MEDIUM", urgency: "VISIT SOON" },
-    ],
-  },
-];
+interface AssignmentData {
+  generatedAt: string;
+  solver: string;
+  totalProjects: number;
+  assignedProjects: number;
+  unassignedProjects: number;
+  criticalAssignments: number;
+  inspectors: Inspector[];
+}
 
-const OVERVIEW = [
-  { name: "Juan de la Cruz", projects: 12, pct: 80 },
-  { name: "Maria Gomez",     projects: 9,  pct: 60 },
-  { name: "Pedro Martinez",  projects: 7,  pct: 47 },
-  { name: "Sofia Reyes",     projects: 15, pct: 100 },
-  { name: "Andrea Bonifacio",projects: 7,  pct: 47 },
-];
-
-const PRIORITY_COLORS = {
+const PRIORITY_COLORS: Record<Priority, { bg: string; border: string; text: string }> = {
   HIGH:   { bg: "#fff2f2", border: "#e74c3c", text: "#e74c3c" },
   MEDIUM: { bg: "#fffbf0", border: "#f59e0b", text: "#f59e0b" },
   LOW:    { bg: "#f0fff4", border: "#27ae60", text: "#27ae60" },
 };
 
-const URGENCY_COLORS = {
-  "VISIT ASAP":        "#e74c3c",
-  "VISIT SOON":        "#f59e0b",
-  "CHECK IN A WEEK":   "#27ae60",
+const URGENCY_COLORS: Record<Urgency, string> = {
+  "VISIT ASAP":      "#e74c3c",
+  "VISIT SOON":      "#f59e0b",
+  "CHECK IN A WEEK": "#27ae60",
+  "ROUTINE":         "#64748b",
 };
 
-const PROJECT_BG = {
+const PROJECT_BG: Record<Priority, string> = {
   HIGH:   "#fff8ec",
   MEDIUM: "#fffbf0",
   LOW:    "#f8fff8",
 };
+
+const MAX_VISIBLE_PROJECTS = 5;
 
 /* ─── Icon Components ─────────────────────────────────── */
 function InspectorIcon() {
@@ -132,9 +87,19 @@ function ProjectIcon({ color }: { color: string }) {
 }
 
 /* ─── Inspector Card ──────────────────────────────────── */
+function inspectorPriority(inspector: Inspector): Priority {
+  if (inspector.projects.some(p => p.priority === "HIGH")) return "HIGH";
+  if (inspector.projects.some(p => p.priority === "MEDIUM")) return "MEDIUM";
+  return "LOW";
+}
+
 function InspectorCard({ inspector }: { inspector: Inspector }) {
   const [accepted, setAccepted] = useState(false);
-  const pc = PRIORITY_COLORS[inspector.priority];
+  const [expanded, setExpanded] = useState(false);
+  const priority = inspectorPriority(inspector);
+  const pc = PRIORITY_COLORS[priority];
+  const visible = expanded ? inspector.projects : inspector.projects.slice(0, MAX_VISIBLE_PROJECTS);
+  const hidden = inspector.projects.length - MAX_VISIBLE_PROJECTS;
 
   return (
     <div className={styles.inspCard}>
@@ -147,8 +112,10 @@ function InspectorCard({ inspector }: { inspector: Inspector }) {
           <div>
             <div className={styles.inspName}>{inspector.name}</div>
             <div className={styles.inspMeta}>
-              {inspector.location} · {inspector.arCode}&nbsp;
-              <span style={{ color: "#27ae60", fontWeight: 700 }}>{inspector.efficiency}% Efficiency</span>
+              {inspector.id} · {inspector.vehicleAccess ? "Vehicle assigned" : "No vehicle"}&nbsp;
+              <span style={{ color: "#2756c5", fontWeight: 700 }}>
+                {inspector.totalProjects}/{inspector.capacity} visit slots used
+              </span>
             </div>
           </div>
         </div>
@@ -156,27 +123,27 @@ function InspectorCard({ inspector }: { inspector: Inspector }) {
           className={styles.priorityBadge}
           style={{ borderColor: pc.border, color: pc.text }}
         >
-          {inspector.priority} PRIORITY
+          {priority} PRIORITY
         </div>
       </div>
 
-      {/* Assigned projects */}
+      {/* Assigned projects (sorted by risk score by the LP export) */}
       <div className={styles.projectsList}>
-        {inspector.projects.map((p, i) => {
+        {visible.map((p) => {
           const projBg = PROJECT_BG[p.priority];
           const urgColor = URGENCY_COLORS[p.urgency];
           const iconColor = p.priority === "HIGH" ? "#e74c3c" : p.priority === "MEDIUM" ? "#f59e0b" : "#27ae60";
 
           return (
-            <div key={i} className={styles.projectRow} style={{ background: projBg }}>
+            <div key={p.projectId} className={styles.projectRow} style={{ background: projBg }}>
               <ProjectIcon color={iconColor} />
               <div className={styles.projectInfo}>
                 <div className={styles.projectName}>{p.name}</div>
                 <div className={styles.projectMeta}>
-                  {p.location} · {p.type} · {p.progress}% Complete
-                  {p.delay > 0 && (
-                    <span style={{ color: "#e74c3c", fontWeight: 700 }}> +{p.delay} days delayed</span>
-                  )}
+                  {p.location} · {p.type} ·{" "}
+                  <span style={{ color: urgColor, fontWeight: 700 }}>
+                    {p.riskTier} risk ({(p.riskScore * 100).toFixed(0)}%)
+                  </span>
                 </div>
               </div>
               <div className={styles.projectUrgency}>
@@ -186,6 +153,11 @@ function InspectorCard({ inspector }: { inspector: Inspector }) {
             </div>
           );
         })}
+        {hidden > 0 && (
+          <button className={styles.editBtn} style={{ alignSelf: "flex-start" }} onClick={() => setExpanded(!expanded)}>
+            {expanded ? "Show fewer" : `Show ${hidden} more assignment${hidden > 1 ? "s" : ""}`}
+          </button>
+        )}
       </div>
 
       {/* Action buttons */}
@@ -214,6 +186,21 @@ function InspectorCard({ inspector }: { inspector: Inspector }) {
 
 /* ─── Page ────────────────────────────────────────────── */
 export default function AllocationPage() {
+  const [data, setData] = useState<AssignmentData | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetch("/api/assignments")
+      .then(res => {
+        if (!res.ok) throw new Error("Assignment schedule not available");
+        return res.json();
+      })
+      .then(setData)
+      .catch(() => setError("No optimized schedule found. Run the backend pipeline (python main.py) to generate inspector assignments."));
+  }, []);
+
+  const activeInspectors = data?.inspectors.filter(i => i.totalProjects > 0).length ?? 0;
+
   return (
     <div className={styles.shell}>
       <Sidebar />
@@ -232,22 +219,26 @@ export default function AllocationPage() {
         {/* Page heading */}
         <div className={styles.headCard}>
           <h1 className={styles.headTitle}>Inspector Allocation</h1>
-          <p className={styles.headSub}>AI-recommended field assignments</p>
+          <p className={styles.headSub}>
+            {data
+              ? `LP-optimized field assignments · ${data.solver} · generated ${new Date(data.generatedAt).toLocaleDateString()}`
+              : "AI-recommended field assignments"}
+          </p>
         </div>
 
         {/* Stats row */}
         <div className={styles.statsRow}>
           {[
-            { label: "Active Inspectors",   value: "8",   color: "#27ae60", icon: (
+            { label: "Active Inspectors",    value: data ? String(activeInspectors) : "—", color: "#27ae60", icon: (
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#27ae60" strokeWidth="1.6"><circle cx="9" cy="7" r="3"/><path d="M3 20v-1a6 6 0 0 1 9.33-5"/><circle cx="17" cy="14" r="3"/><path d="M14 20v-1a3 3 0 0 1 6 0v1"/></svg>
             )},
-            { label: "Assigned Projects",   value: "125", color: "#2756c5", icon: (
+            { label: "Assigned Projects",    value: data ? String(data.assignedProjects) : "—", color: "#2756c5", icon: (
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2756c5" strokeWidth="1.6"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
             )},
-            { label: "Critical Assignments",value: "13",  color: "#e74c3c", icon: (
+            { label: "Critical Assignments", value: data ? String(data.criticalAssignments) : "—", color: "#e74c3c", icon: (
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#e74c3c" strokeWidth="1.6"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
             )},
-            { label: "Unassigned Projects",  value: "23",  color: "#94a3b8", icon: (
+            { label: "Unassigned Projects",  value: data ? String(data.unassignedProjects) : "—", color: "#94a3b8", icon: (
               <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="1.6" strokeDasharray="3 2"><circle cx="12" cy="12" r="9"/></svg>
             )},
           ].map(({ label, value, color, icon }) => (
@@ -264,33 +255,47 @@ export default function AllocationPage() {
         {/* Body */}
         <div className={styles.body}>
 
-          {/* Inspector cards list */}
-          <div className={styles.inspList}>
-            {INSPECTORS.map(insp => (
-              <InspectorCard key={insp.id} inspector={insp} />
-            ))}
-          </div>
-
-          {/* Allocation overview sidebar */}
-          <div className={styles.overviewPanel}>
-            <div className={styles.overviewTitle}>Allocation Overview</div>
-            <div className={styles.overviewList}>
-              {OVERVIEW.map(item => (
-                <div key={item.name} className={styles.overviewRow}>
-                  <div className={styles.overviewTop}>
-                    <span className={styles.overviewName}>{item.name}</span>
-                    <span className={styles.overviewCount}>{item.projects} projects</span>
-                  </div>
-                  <div className={styles.overviewBarBg}>
-                    <div
-                      className={styles.overviewBar}
-                      style={{ width: `${item.pct}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
+          {error && (
+            <div className={styles.headCard} style={{ borderLeft: "4px solid #f59e0b" }}>
+              <p className={styles.headSub}>{error}</p>
             </div>
-          </div>
+          )}
+
+          {data && (
+            <>
+              {/* Inspector cards list */}
+              <div className={styles.inspList}>
+                {data.inspectors
+                  .filter(insp => insp.totalProjects > 0)
+                  .map(insp => (
+                    <InspectorCard key={insp.id} inspector={insp} />
+                  ))}
+              </div>
+
+              {/* Allocation overview sidebar */}
+              <div className={styles.overviewPanel}>
+                <div className={styles.overviewTitle}>Allocation Overview</div>
+                <div className={styles.overviewList}>
+                  {data.inspectors.map(insp => (
+                    <div key={insp.id} className={styles.overviewRow}>
+                      <div className={styles.overviewTop}>
+                        <span className={styles.overviewName}>{insp.name}</span>
+                        <span className={styles.overviewCount}>
+                          {insp.totalProjects}/{insp.capacity} visits
+                        </span>
+                      </div>
+                      <div className={styles.overviewBarBg}>
+                        <div
+                          className={styles.overviewBar}
+                          style={{ width: `${insp.capacity > 0 ? Math.min(100, (insp.totalProjects / insp.capacity) * 100) : 0}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
 
         </div>
       </div>

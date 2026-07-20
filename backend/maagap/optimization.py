@@ -1,7 +1,15 @@
 """Objective 4 -- LP Optimization for Resource Allocation.
 
-Formulates and solves the Knapsack-like LP problem to maximise risk mitigation 
-subject to budget constraints.
+Two formulations:
+
+1. ``InspectorAssignmentOptimizer`` -- the primary engine matching the manuscript
+   (DFD Level 2, Fig. 13): assigns the limited PPDO inspector roster to
+   elevated-risk projects, constrained by per-inspector workload capacity,
+   availability status, and vehicle access. Benchmarked against the manual
+   round-robin practice and a Monte Carlo random baseline.
+
+2. ``ResourceOptimizer`` -- the earlier Knapsack-like budget-constrained project
+   selection LP, retained for comparison experiments.
 """
 
 import numpy as np
@@ -13,6 +21,189 @@ from typing import Dict, Any, List, Optional, Tuple
 from .logger import get_logger
 
 logger = get_logger(__name__)
+
+# Inspection-cycle capacity assumptions (visits per quarterly cycle).
+# An inspector with a service vehicle can reach more distributed sites than one
+# relying on shared transport -- reflecting the logistics delimitation in the
+# manuscript (vehicle availability limits inspection frequency).
+BASE_VISITS_WITH_VEHICLE = 12
+BASE_VISITS_WITHOUT_VEHICLE = 7
+BUSY_STATUS_PENALTY = 4  # visits removed when roster status is not "Available"
+
+
+class InspectorAssignmentOptimizer:
+    """Assign PPDO inspectors to projects via integer LP (PuLP/CBC).
+
+    Decision variable x[i][j] = 1 when inspector j is scheduled to visit
+    project i during the inspection cycle. The objective maximises the total
+    risk score captured by scheduled visits, so high-risk projects are
+    prioritised under the roster's manpower limits.
+    """
+
+    def __init__(self, seed: int = 42):
+        self.rng = np.random.RandomState(seed)
+
+    @staticmethod
+    def compute_capacities(inspectors_df: pd.DataFrame) -> np.ndarray:
+        """Derive per-inspector visit capacity from the roster attributes."""
+        caps = []
+        for _, row in inspectors_df.iterrows():
+            base = BASE_VISITS_WITH_VEHICLE if row["vehicle_access"] else BASE_VISITS_WITHOUT_VEHICLE
+            if str(row["availability_status"]).strip().lower() != "available":
+                base -= BUSY_STATUS_PENALTY
+            cap = max(0, base - int(row["current_workload"]))
+            caps.append(cap)
+        return np.array(caps, dtype=int)
+
+    def optimize_assignment(
+        self,
+        risk_scores: np.ndarray,
+        inspectors_df: pd.DataFrame,
+        min_critical_coverage: float = 1.0,
+        critical_threshold: float = 0.90,
+    ) -> Tuple[np.ndarray, str]:
+        """Solve the inspector-to-project assignment LP.
+
+        Returns
+        -------
+        assignment : np.ndarray of shape (n_projects,)
+            Index of the assigned inspector per project, or -1 if unvisited.
+        status : str
+            PuLP solver status name.
+        """
+        n = len(risk_scores)
+        capacities = self.compute_capacities(inspectors_df)
+        m = len(capacities)
+        logger.info(
+            f"Formulating inspector assignment LP: {n} projects, {m} inspectors, "
+            f"total capacity {capacities.sum()} visits/cycle"
+        )
+
+        prob = pulp.LpProblem("Inspector_Deployment_Optimization", pulp.LpMaximize)
+        x = pulp.LpVariable.dicts("visit", (range(n), range(m)), cat="Binary")
+
+        # Objective: maximise total risk utility captured by scheduled visits
+        prob += pulp.lpSum(risk_scores[i] * x[i][j] for i in range(n) for j in range(m)), "Captured_Risk_Utility"
+
+        # Each project receives at most one inspector this cycle
+        for i in range(n):
+            prob += pulp.lpSum(x[i][j] for j in range(m)) <= 1, f"Single_Visit_{i}"
+
+        # Each inspector is bounded by their derived workload capacity
+        for j in range(m):
+            prob += pulp.lpSum(x[i][j] for i in range(n)) <= int(capacities[j]), f"Capacity_{j}"
+
+        # Critical projects must be covered (up to total capacity)
+        critical_idx = np.where(np.asarray(risk_scores) >= critical_threshold)[0]
+        if len(critical_idx) > 0:
+            required = int(np.ceil(len(critical_idx) * min_critical_coverage))
+            required = min(required, int(capacities.sum()))
+            prob += pulp.lpSum(x[i][j] for i in critical_idx for j in range(m)) >= required, "Critical_Coverage"
+
+        solver = pulp.PULP_CBC_CMD(msg=False, timeLimit=120)
+        prob.solve(solver)
+        status = pulp.LpStatus[prob.status]
+        logger.info(f"Assignment LP solver status: {status}")
+
+        assignment = np.full(n, -1, dtype=int)
+        if prob.status == pulp.LpStatusOptimal:
+            for i in range(n):
+                for j in range(m):
+                    if x[i][j].varValue is not None and round(x[i][j].varValue) == 1:
+                        assignment[i] = j
+                        break
+        else:
+            logger.warning("Assignment LP did not reach an optimal solution.")
+        return assignment, status
+
+    @staticmethod
+    def captured_utility(risk_scores: np.ndarray, assignment: np.ndarray) -> float:
+        """Total risk score captured by the scheduled visits."""
+        mask = assignment >= 0
+        return float(np.sum(np.asarray(risk_scores)[mask]))
+
+    def run_manual_baseline(self, risk_scores: np.ndarray, inspectors_df: pd.DataFrame) -> np.ndarray:
+        """Mimic current PPDO manual practice: visit projects in list order
+        (as they appear on the monitoring report), rotating inspectors
+        round-robin until each reaches capacity -- no risk prioritisation."""
+        n = len(risk_scores)
+        capacities = self.compute_capacities(inspectors_df).astype(int)
+        remaining = capacities.copy()
+        assignment = np.full(n, -1, dtype=int)
+        j = 0
+        m = len(capacities)
+        for i in range(n):
+            if remaining.sum() == 0:
+                break
+            # advance to next inspector with remaining capacity
+            tries = 0
+            while remaining[j % m] == 0 and tries < m:
+                j += 1
+                tries += 1
+            if remaining[j % m] > 0:
+                assignment[i] = j % m
+                remaining[j % m] -= 1
+                j += 1
+        return assignment
+
+    def run_random_baseline_mc(
+        self,
+        risk_scores: np.ndarray,
+        inspectors_df: pd.DataFrame,
+        lp_utility: float,
+        n_iterations: int = 100,
+        target_pct: float = 15.0,
+    ) -> Dict[str, Any]:
+        """Monte Carlo random assignment respecting capacities.
+
+        Computes the actual distribution of LP improvement over random
+        baselines -- no summary statistic is assumed or hardcoded.
+        """
+        n = len(risk_scores)
+        capacities = self.compute_capacities(inspectors_df).astype(int)
+        m = len(capacities)
+        utilities, improvements = [], []
+
+        for _ in range(n_iterations):
+            remaining = capacities.copy()
+            assignment = np.full(n, -1, dtype=int)
+            order = self.rng.permutation(n)
+            for i in order:
+                if remaining.sum() == 0:
+                    break
+                avail = np.where(remaining > 0)[0]
+                j = avail[self.rng.randint(len(avail))]
+                assignment[i] = j
+                remaining[j] -= 1
+            util = self.captured_utility(risk_scores, assignment)
+            utilities.append(util)
+            improvements.append(((lp_utility - util) / util) * 100.0 if util > 0 else 0.0)
+
+        improvements = np.asarray(improvements)
+        results = {
+            "n_iterations": n_iterations,
+            "n_successful": int(np.sum(improvements >= target_pct)),
+            "mean_baseline_utility": float(np.mean(utilities)),
+            "mean_improvement_pct": float(np.mean(improvements)),
+            "std_improvement_pct": float(np.std(improvements)),
+            "min_improvement_pct": float(np.min(improvements)),
+            "max_improvement_pct": float(np.max(improvements)),
+        }
+        logger.info(
+            f"Monte Carlo random baseline: mean improvement {results['mean_improvement_pct']:.2f}% "
+            f"(std {results['std_improvement_pct']:.2f}), "
+            f"{results['n_successful']}/{n_iterations} runs >= {target_pct}% target"
+        )
+        return results
+
+    @staticmethod
+    def analyze_improvement(base_utility: float, lp_utility: float) -> Dict[str, float]:
+        """Relative percentage improvement of LP over a baseline utility."""
+        if base_utility <= 0:
+            return {"improvement_pct": 0.0}
+        imp = ((lp_utility - base_utility) / base_utility) * 100.0
+        logger.info(f"LP assignment achieved +{imp:.2f}% captured-risk improvement over baseline.")
+        return {"improvement_pct": imp}
 
 
 class ResourceOptimizer:

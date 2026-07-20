@@ -191,6 +191,26 @@ class TreeModelTrainer:
         return xgb, evals_result
 
 
+class RegressionModelTrainer:
+    """XGBoost regressors quantifying magnitudes (Objective 2 MAE metric):
+    delay duration in days and cost overrun percentage."""
+
+    @staticmethod
+    def train_xgboost_regressor(X_train: np.ndarray, y_train: np.ndarray, task: str = "delay_days") -> Any:
+        from xgboost import XGBRegressor
+        logger.info(f"Training XGBoost Regressor (task={task})...")
+        reg = XGBRegressor(
+            n_estimators=model_params.xgb_n_estimators,
+            max_depth=model_params.xgb_max_depth,
+            learning_rate=model_params.xgb_learning_rate,
+            objective="reg:absoluteerror",
+            random_state=SEED, n_jobs=-1,
+        )
+        reg.fit(X_train, y_train)
+        joblib.dump(reg, os.path.join(MODELS_DIR, f"xgb_reg_{task}.pkl"))
+        return reg
+
+
 class LSTMTrainer:
     """Trainer for Stage 2 LSTM model."""
 
