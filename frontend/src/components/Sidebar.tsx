@@ -41,6 +41,7 @@ export default function Sidebar() {
   const pathname = usePathname();
   const router = useRouter();
   const [profile, setProfile] = useState<SessionProfile | null>(null);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     fetch("/api/me")
@@ -48,6 +49,11 @@ export default function Sidebar() {
       .then(setProfile)
       .catch(() => setProfile(null));
   }, []);
+
+  // Close the mobile drawer on every navigation.
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
 
   async function handleLogout() {
     const supabase = getSupabaseBrowserClient();
@@ -59,51 +65,69 @@ export default function Sidebar() {
   const visibleNavItems = NAV_ITEMS.filter((item) => !item.excludeInspector || profile?.role !== "inspector");
 
   return (
-    <aside className={styles.sidebar}>
-
-      {/* ── Logo ─────────────────────────────────── */}
-      <div className={styles.logoArea}>
-        {/* Two-tone arrow/chevron mark matching MAAGAP brand */}
-        <svg className={styles.logoIcon} viewBox="0 0 34 34" fill="none">
-          {/* Dark navy body */}
-          <path d="M17 3L5 28h8l4-9 4 9h8L17 3z" fill="#1b3a5e"/>
-          {/* Blue accent stripe */}
-          <path d="M17 3l5 11.5L17 18l-5-3.5L17 3z" fill="#1264ae"/>
+    <>
+      <button
+        className={styles.mobileToggle}
+        aria-label={mobileOpen ? "Close navigation" : "Open navigation"}
+        onClick={() => setMobileOpen((o) => !o)}
+      >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+          {mobileOpen ? (
+            <><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></>
+          ) : (
+            <><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" /></>
+          )}
         </svg>
-        <span className={styles.logoText}>
-          MAA<span className={styles.logoTextBlue}>GAP</span>
-        </span>
-      </div>
+      </button>
 
-      {/* ── Navigation ──────────────────────────── */}
-      <nav className={styles.nav}>
-        {visibleNavItems.map(({ label, href, icon: Icon }) => {
-          const isActive = pathname === href || pathname.startsWith(href + "/");
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={`${styles.navItem} ${isActive ? styles.navItemActive : ""}`}
-            >
-              <Icon className={styles.navIcon} />
-              {label}
-            </Link>
-          );
-        })}
-      </nav>
+      {mobileOpen && <div className={styles.backdropOpen} onClick={() => setMobileOpen(false)} />}
 
-      {/* ── User Section ────────────────────────── */}
-      <div className={styles.userSection}>
-        <div className={styles.userRow}>
-          <div className={styles.userAvatar}>{profile ? initials(profile.fullName, profile.email) : "…"}</div>
-          <div className={styles.userInfo}>
-            <div className={styles.userName}>{profile?.fullName || profile?.email || "Loading..."}</div>
-            <div className={styles.userRole}>{profile ? ROLE_LABELS[profile.role] : ""}</div>
-          </div>
+      <aside className={`${styles.sidebar} ${mobileOpen ? styles.sidebarOpen : ""}`}>
+
+        {/* ── Logo ─────────────────────────────────── */}
+        <div className={styles.logoArea}>
+          {/* Two-tone arrow/chevron mark matching MAAGAP brand */}
+          <svg className={styles.logoIcon} viewBox="0 0 34 34" fill="none">
+            {/* Dark navy body */}
+            <path d="M17 3L5 28h8l4-9 4 9h8L17 3z" fill="#1b3a5e"/>
+            {/* Blue accent stripe */}
+            <path d="M17 3l5 11.5L17 18l-5-3.5L17 3z" fill="#1264ae"/>
+          </svg>
+          <span className={styles.logoText}>
+            MAA<span className={styles.logoTextBlue}>GAP</span>
+          </span>
         </div>
-        <button className={styles.logoutBtn} onClick={handleLogout}>Log out</button>
-      </div>
-    </aside>
+
+        {/* ── Navigation ──────────────────────────── */}
+        <nav className={styles.nav}>
+          {visibleNavItems.map(({ label, href, icon: Icon }) => {
+            const isActive = pathname === href || pathname.startsWith(href + "/");
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={`${styles.navItem} ${isActive ? styles.navItemActive : ""}`}
+              >
+                <Icon className={styles.navIcon} />
+                {label}
+              </Link>
+            );
+          })}
+        </nav>
+
+        {/* ── User Section ────────────────────────── */}
+        <div className={styles.userSection}>
+          <div className={styles.userRow}>
+            <div className={styles.userAvatar}>{profile ? initials(profile.fullName, profile.email) : "…"}</div>
+            <div className={styles.userInfo}>
+              <div className={styles.userName}>{profile?.fullName || profile?.email || "Loading..."}</div>
+              <div className={styles.userRole}>{profile ? ROLE_LABELS[profile.role] : ""}</div>
+            </div>
+          </div>
+          <button className={styles.logoutBtn} onClick={handleLogout}>Log out</button>
+        </div>
+      </aside>
+    </>
   );
 }
 

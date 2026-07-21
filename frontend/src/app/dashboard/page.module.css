@@ -17,6 +17,13 @@
   overflow: hidden;
 }
 
+@media (max-width: 768px) {
+  .main {
+    margin-left: 0;
+    padding-top: 3rem;
+  }
+}
+
 /* TOP BAR */
 .topBar {
   height: 60px;
@@ -324,3 +331,11 @@
 .badgeMedium   { background: #fef3d4; color: #b7770d; }
 .badgeLow      { background: #d5f5e3; color: #1a7a45; }
 .badgeCritical { background: #f5d5d5; color: #922b21; }
+
+@media (max-width: 900px) {
+  .statsRow { grid-template-columns: repeat(2, 1fr); }
+  .midRow { grid-template-columns: 1fr; }
+}
+@media (max-width: 480px) {
+  .statsRow { grid-template-columns: 1fr; }
+}

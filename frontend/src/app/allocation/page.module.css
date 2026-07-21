@@ -17,6 +17,13 @@
   background: #f0f4f9;
 }
 
+@media (max-width: 768px) {
+  .main {
+    margin-left: 0;
+    padding-top: 3rem;
+  }
+}
+
 /* ── Top Bar ─────────────────────────────────────────── */
 .topbar {
   display: flex;
@@ -428,4 +435,11 @@
   background: linear-gradient(90deg, #2756c5, #1a6ed8);
   border-radius: 50px;
   transition: width 0.4s ease;
+}
+
+@media (max-width: 900px) {
+  .statsRow { flex-wrap: wrap; }
+  .statCard { flex: 1 1 45%; }
+  .body { flex-direction: column; overflow-y: auto; overflow-x: hidden; }
+  .overviewPanel { width: 100%; min-width: 0; position: static; }
 }

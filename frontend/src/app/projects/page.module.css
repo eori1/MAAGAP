@@ -18,6 +18,13 @@
   overflow: hidden;
 }
 
+@media (max-width: 768px) {
+  .main {
+    margin-left: 0;
+    padding-top: 3rem;
+  }
+}
+
 /* ── TOP BAR ─────────────────────────────────────── */
 .topBar {
   height: 58px;
@@ -315,6 +322,7 @@
 
 /* ── TABLE ───────────────────────────────────────── */
 .tableWrap {
+  overflow-x: auto;
   overflow-y: auto;
   border-radius: 10px;
   border: 1px solid #eaeff6;
@@ -616,3 +624,18 @@
   pointer-events: all;
 }
 .zoomBtn:hover { background: #f0f5fb; color: #1264ae; }
+
+@media (max-width: 900px) {
+  .mapArea { flex-direction: column; }
+  .mapList { width: 100%; }
+  .mapContainer { height: 320px; }
+}
+
+@media (max-width: 900px) {
+  .table { min-width: 720px; }
+}
+
+@media (max-width: 900px) {
+  .pageHeader { flex-wrap: wrap; gap: 0.75rem; }
+  .actionBtns { flex-wrap: wrap; }
+}

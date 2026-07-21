@@ -17,6 +17,13 @@
   background: #f0f4f9;
 }
 
+@media (max-width: 768px) {
+  .main {
+    margin-left: 0;
+    padding-top: 3rem;
+  }
+}
+
 /* ── Top Bar ──────────────────────────────────────────── */
 .topbar {
   display: flex;
@@ -413,4 +420,9 @@
   background: transparent !important;
   border-color: inherit;
   flex-shrink: 0;
+}
+
+@media (max-width: 900px) {
+  .body { flex-direction: column; overflow-y: auto; }
+  .leftPanel { width: 100%; min-width: 0; max-width: none; max-height: 240px; }
 }
