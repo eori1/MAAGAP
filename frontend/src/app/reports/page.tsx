@@ -19,7 +19,7 @@ interface InspectionReport {
   notes: string;
   photoUrls: string[];
   date: string;
-  status: "Validated" | "Pending Review" | "Flagged" | "Submitted";
+  status: "Validated" | "At Risk" | "Flagged" | "Submitted";
   inspectorId: string | null;
   inspectorName: string;
   riskTier: "Low" | "Medium" | "High" | "Critical";
@@ -37,7 +37,7 @@ const REVIEW_STYLE: Record<string, { bg: string; color: string; label: string }>
 
 const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
   Validated:        { bg: "#27ae60", color: "#fff" },
-  "Pending Review":  { bg: "#f59e0b", color: "#fff" },
+  "At Risk":        { bg: "#f59e0b", color: "#fff" },
   Flagged:          { bg: "#e74c3c", color: "#fff" },
   Submitted:        { bg: "#2756c5", color: "#fff" },
 };
@@ -170,7 +170,7 @@ export default function ReportsPage() {
               <div className={styles.selectWrap}>
                 <select className={styles.select} value={status} onChange={e => setStatus(e.target.value)}>
                   <option>All Status</option>
-                  <option>Validated</option><option>Pending Review</option><option>Flagged</option><option>Submitted</option>
+                  <option>Validated</option><option>At Risk</option><option>Flagged</option><option>Submitted</option>
                 </select>
                 <svg className={styles.selectChevron} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
               </div>

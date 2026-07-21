@@ -50,9 +50,9 @@ interface InspectorNameRow {
   inspector_name: string;
 }
 
-function statusFromSlippage(slippage: number): "Validated" | "Pending Review" | "Flagged" | "Submitted" {
+function statusFromSlippage(slippage: number): "Validated" | "At Risk" | "Flagged" | "Submitted" {
   if (slippage > 20) return "Flagged";
-  if (slippage > 5) return "Pending Review";
+  if (slippage > 5) return "At Risk";
   return "Validated";
 }
 
