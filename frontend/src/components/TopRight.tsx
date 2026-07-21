@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import styles from "./TopRight.module.css";
 
 interface Alert {
@@ -78,12 +79,12 @@ export default function TopRight() {
         )}
       </div>
 
-      <button className={styles.iconBtn} aria-label="Profile">
+      <Link className={styles.iconBtn} href="/account" aria-label="Account Settings">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
           <circle cx="12" cy="7" r="4" />
         </svg>
-      </button>
+      </Link>
     </div>
   );
 }

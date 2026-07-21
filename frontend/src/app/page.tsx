@@ -52,6 +52,29 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setError("Enter your email address above, then click \"Forgot Password?\"");
+      return;
+    }
+    setResetLoading(true);
+    setError(null);
+
+    const supabase = getSupabaseBrowserClient();
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+
+    setResetLoading(false);
+    if (resetError) {
+      setError(resetError.message);
+      return;
+    }
+    setResetSent(true);
+  };
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,6 +148,11 @@ function LoginForm() {
             </p>
 
             {error && <p className={styles.disclaimer} style={{ color: "#c0392b" }}>{error}</p>}
+            {resetSent && (
+              <p className={styles.disclaimer} style={{ color: "#27ae60" }}>
+                If an account exists for that email, a password reset link has been sent.
+              </p>
+            )}
 
             <form onSubmit={handleLogin}>
               {/* Email */}
@@ -168,8 +196,14 @@ function LoginForm() {
                   </button>
                 </div>
                 <div className={styles.forgotRow}>
-                  <button type="button" id="btn-forgot-password" className={styles.forgotLink}>
-                    Forgot Password?
+                  <button
+                    type="button"
+                    id="btn-forgot-password"
+                    className={styles.forgotLink}
+                    onClick={handleForgotPassword}
+                    disabled={resetLoading}
+                  >
+                    {resetLoading ? "Sending..." : "Forgot Password?"}
                   </button>
                 </div>
               </div>

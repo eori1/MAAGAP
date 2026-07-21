@@ -1,0 +1,124 @@
+.shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(160deg, #0f2744 0%, #1b3a5e 45%, #2756c5 100%);
+  font-family: 'Inter', system-ui, sans-serif;
+  padding: 1.5rem;
+}
+
+.card {
+  width: 100%;
+  max-width: 380px;
+  background: #fff;
+  border-radius: 16px;
+  padding: 2.25rem 2rem 2rem;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.25);
+}
+
+.logoRow {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1.5rem;
+}
+
+.logoText {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: #1b3a5e;
+  letter-spacing: -0.02em;
+}
+
+.logoTextBlue { color: #2756c5; }
+
+.title {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #1b3a5e;
+  margin: 0 0 0.25rem;
+}
+
+.subtitle {
+  font-size: 0.8rem;
+  color: #7a8fa6;
+  margin: 0 0 1.5rem;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  margin-bottom: 1rem;
+}
+
+.label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #4a5a6a;
+}
+
+.input {
+  padding: 0.65rem 0.85rem;
+  border: 1.5px solid #dde4f0;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: #1b3a5e;
+  outline: none;
+  font-family: inherit;
+}
+.input:focus { border-color: #2756c5; }
+
+.submitBtn {
+  width: 100%;
+  padding: 0.7rem;
+  margin-top: 0.5rem;
+  background: #2756c5;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.submitBtn:hover { background: #1b3a5e; }
+.submitBtn:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.error {
+  background: #fff2f2;
+  border: 1px solid #f5c6c6;
+  color: #c0392b;
+  font-size: 0.78rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.success {
+  background: #f0fff4;
+  border: 1px solid #b7e4c7;
+  color: #27ae60;
+  font-size: 0.78rem;
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+.link {
+  display: inline-block;
+  margin-top: 1rem;
+  font-size: 0.78rem;
+  color: #2756c5;
+  text-decoration: none;
+  font-weight: 600;
+}
+.link:hover { text-decoration: underline; }
+
+.statusText {
+  font-size: 0.82rem;
+  color: #7a8fa6;
+  text-align: center;
+  padding: 1rem 0;
+}
