@@ -34,11 +34,13 @@ Two SQL files in `backend/supabase/`, both must be run once via the Supabase SQL
 Next.js 16 App Router (`frontend/src/app/`). **Next.js 16 renamed Middleware to Proxy** — see [[04-Workflows-and-Gotchas]], this matters if you're used to older Next.js conventions.
 
 ### Pages
-Dashboard, Projects (table + Leaflet map view), Forecast Engine, Allocation, Reports, Project Timeline, Users. All are client components (`"use client"`) that fetch from same-origin `/api/*` routes.
+Dashboard, Projects (table + Leaflet map view), Forecast Engine, Allocation, Reports, Project Timeline, Users, Account. All are client components (`"use client"`) that fetch from same-origin `/api/*` routes.
 
 ### Auth
 - Login screen lives at the site **root** (`/`, `src/app/page.tsx`) — NOT a separate `/login` route (one was built then deleted; see [[02-Decisions-Log]]).
-- `src/proxy.ts` — refreshes the Supabase session cookie every request, redirects unauthenticated requests to `/`, redirects authenticated requests away from `/` to `/dashboard`. Excludes `/api/*` (those do their own 401 JSON, not HTML redirects).
+- `src/app/reset-password/page.tsx` — lands here from the emailed password-reset link; listens for the `PASSWORD_RECOVERY` auth event to know a valid recovery session exists, then lets the user set a new password. Public (unauthenticated-reachable) in `proxy.ts`, since the first request has no session cookie yet.
+- `src/app/account/page.tsx` — self-service account page (any role): shows profile info, lets the user change their own password (`supabase.auth.updateUser`). Reachable via the profile icon in `TopRight.tsx`.
+- `src/proxy.ts` — refreshes the Supabase session cookie every request, redirects unauthenticated requests to `/`, redirects authenticated requests away from `/` to `/dashboard`. Public paths: `/` and `/reset-password`. Excludes `/api/*` (those do their own 401 JSON, not HTML redirects).
 - `src/lib/supabaseBrowserClient.ts` — anon-key client for client components (login form, logout button).
 - `src/lib/supabaseSessionServer.ts` — cookie-aware anon-key client + `getSessionProfile()` (resolves `{userId, email, role, inspectorId, fullName}` from the session), used in every API route for auth + role checks.
 - `src/lib/supabaseServer.ts` — service-role client (bypasses RLS), used for all actual data queries once a route has verified the caller via `getSessionProfile()`.

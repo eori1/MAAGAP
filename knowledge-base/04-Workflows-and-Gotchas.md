@@ -28,6 +28,13 @@ If you (or the user) copy the Supabase project URL from somewhere that includes 
 
 This repo's `frontend/AGENTS.md` warns "this is NOT the Next.js you know" for a reason. `middleware.ts` doesn't exist in this version — it's `src/proxy.ts`, exporting a function named `proxy` (or default export), same `config.matcher` convention. If you're about to write `middleware.ts`, stop and check `node_modules/next/dist/docs/01-app/01-getting-started/16-proxy.md` first.
 
+## Password-recovery links land on a page with no session cookie yet
+
+Clicking a Supabase "reset password" email link takes the browser to `/reset-password?code=...`. The one-time code is exchanged for a session **client-side**, by the Supabase browser JS running after the page loads — not by the server. That means:
+
+1. `proxy.ts` must treat `/reset-password` as a public path, or it'll redirect the very first request away before the code can ever be exchanged (losing the code param).
+2. The page component can't assume a session exists on mount — it has to listen for the `PASSWORD_RECOVERY` auth event (`supabase.auth.onAuthStateChange`), and *also* call `getSession()` directly as a fallback, because the event can fire before your listener finishes attaching. `src/app/reset-password/page.tsx` does both, plus a timeout that shows an "invalid/expired link" state if neither resolves within 5s.
+
 ## `/api/reports` inspector-name bug (fixed, but the underlying data ambiguity remains)
 
 Two different columns look like "who's the inspector for this project" and mean different things:

@@ -58,6 +58,13 @@ User chose Supabase over SQLite (see [[02-Decisions-Log]]).
 - Removed the now-unused `papaparse`/`@types/papaparse` dependencies.
 - Verified end-to-end in-browser across all three roles.
 
-## Knowledge-base vault created
+## Commit `6b422a9` — docs: knowledge-base vault created
 
-This vault (`/knowledge-base`) was set up at this point, git-tracked, to be updated automatically after future significant work. See [[06-Current-State-and-Next-Steps]] for what's next.
+This vault (`/knowledge-base`) was set up at this point, git-tracked, to be updated automatically after future significant work. Root `CLAUDE.md` added pointing Claude Code at it.
+
+## Commit `ea3ff1a` — feat: password self-service
+
+- Login page's pre-existing "Forgot Password?" button (previously a no-op placeholder) wired to `supabase.auth.resetPasswordForEmail()`.
+- New `/reset-password` page: listens for the `PASSWORD_RECOVERY` auth event (also checks `getSession()` directly, in case the event fired before the listener attached — a real timing race, not a hypothetical one) and lets the user set a new password. Added to `proxy.ts`'s public paths, since the first request after clicking the emailed link has no session cookie yet — the client-side code-exchange happens after the page loads.
+- New `/account` page: shows the logged-in user's email/name/role and a self-service change-password form (`supabase.auth.updateUser({password})`, no re-authentication required — Supabase's default). Reachable from all three roles via the profile icon in `TopRight.tsx`, which was previously an inert placeholder button.
+- Verified end-to-end by the user: both change-password (logged in) and forgot-password (real email received, link clicked, password reset, redirected to dashboard) confirmed working.
