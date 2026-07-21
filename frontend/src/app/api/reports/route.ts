@@ -1,33 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabaseServer";
 import { getSessionProfile } from "@/lib/supabaseSessionServer";
-import type { SupabaseClient } from "@supabase/supabase-js";
-
-const PAGE_SIZE = 1000;
-
-// Supabase/PostgREST enforces a server-side max-rows cap (commonly 1000)
-// that a single request's .range() cannot exceed regardless of the span
-// requested, so result sets larger than that must be paged client-side.
-async function fetchAllRows<T>(
-  supabase: SupabaseClient,
-  table: string,
-  columns: string,
-  projectIds: string[],
-): Promise<T[]> {
-  const rows: T[] = [];
-  for (let start = 0; ; start += PAGE_SIZE) {
-    const { data, error } = await supabase
-      .from(table)
-      .select(columns)
-      .in("project_id", projectIds)
-      .range(start, start + PAGE_SIZE - 1);
-    if (error) throw error;
-    if (!data || data.length === 0) break;
-    rows.push(...(data as unknown as T[]));
-    if (data.length < PAGE_SIZE) break;
-  }
-  return rows;
-}
+import { fetchAllRowsIn } from "@/lib/supabasePaging";
 
 interface PredictionRow {
   project_id: string;
@@ -91,7 +65,7 @@ export async function GET() {
     if (projectIds.length === 0) return NextResponse.json([]);
 
     const [logs, { data: asgData, error: asgErr2 }, { data: insData, error: insErr }] = await Promise.all([
-      fetchAllRows<InspectionLogRow>(supabase, "inspection_logs", "*", projectIds),
+      fetchAllRowsIn<InspectionLogRow>(supabase, "inspection_logs", "*", "project_id", projectIds),
       supabase.from("assignments").select("project_id, inspector_id").in("project_id", projectIds),
       supabase.from("inspectors").select("inspector_id, inspector_name"),
     ]);
