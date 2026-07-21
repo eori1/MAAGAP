@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
 import TopRight from "@/components/TopRight";
-import ReportReviewModal from "@/components/ReportReviewModal";
+import ReportDetailModal, { ReportDetail } from "@/components/ReportDetailModal";
 import styles from "./page.module.css";
 
 /* ─── Types (mirror /api/reports payload) ─────── */
@@ -26,6 +26,7 @@ interface InspectionReport {
   reportId: string | null;
   reviewStatus: "pending" | "approved" | "needs_revision" | null;
   reviewComment: string | null;
+  financialAccomplishmentPct: number | null;
 }
 
 const REVIEW_STYLE: Record<string, { bg: string; color: string; label: string }> = {
@@ -60,7 +61,7 @@ export default function ReportsPage() {
   const [sortBy,  setSortBy]  = useState("Most Recent");
   const [orderBy, setOrderBy] = useState("Descending");
   const [viewerRole, setViewerRole] = useState<"manager" | "inspector" | "admin" | null>(null);
-  const [revisionTarget, setRevisionTarget] = useState<InspectionReport | null>(null);
+  const [detailTarget, setDetailTarget] = useState<InspectionReport | null>(null);
 
   const loadReports = () => {
     fetch("/api/reports")
@@ -82,17 +83,8 @@ export default function ReportsPage() {
 
   const canReview = viewerRole === "manager" || viewerRole === "admin";
 
-  async function handleApprove(reportId: string) {
-    const res = await fetch(`/api/reports/${reportId}/review`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action: "approve" }),
-    });
-    if (res.ok) loadReports();
-  }
-
-  function handleRevisionRequested() {
-    setRevisionTarget(null);
+  function handleReviewed() {
+    setDetailTarget(null);
     loadReports();
   }
 
@@ -271,18 +263,16 @@ export default function ReportsPage() {
                         </span>
                       </td>
                       <td className={`${styles.td} ${styles.tdCenter}`}>
-                        {r.reviewStatus ? (
+                        {r.reviewStatus && r.reportId ? (
                           <>
                             <span className={styles.statusBadge} style={{ background: REVIEW_STYLE[r.reviewStatus].bg, color: REVIEW_STYLE[r.reviewStatus].color }}>
                               {REVIEW_STYLE[r.reviewStatus].label}
                             </span>
-                            {r.reviewComment && <div className={styles.projectId} style={{ marginTop: 4 }}>{r.reviewComment}</div>}
-                            {canReview && r.reviewStatus === "pending" && r.reportId && (
-                              <div style={{ display: "flex", gap: 6, marginTop: 6, justifyContent: "center" }}>
-                                <button className={styles.clearBtn} onClick={() => handleApprove(r.reportId!)}>Approve</button>
-                                <button className={styles.clearBtn} onClick={() => setRevisionTarget(r)}>Request Revision</button>
-                              </div>
-                            )}
+                            <div style={{ marginTop: 6 }}>
+                              <button className={styles.clearBtn} onClick={() => setDetailTarget(r)}>
+                                {canReview && r.reviewStatus === "pending" ? "Review Report" : "View Report"}
+                              </button>
+                            </div>
                           </>
                         ) : (
                           "—"
@@ -305,12 +295,25 @@ export default function ReportsPage() {
         </div>
       </div>
 
-      {revisionTarget && revisionTarget.reportId && (
-        <ReportReviewModal
-          reportId={revisionTarget.reportId}
-          projectName={revisionTarget.projectId}
-          onClose={() => setRevisionTarget(null)}
-          onReviewed={handleRevisionRequested}
+      {detailTarget && detailTarget.reportId && (
+        <ReportDetailModal
+          report={{
+            reportId: detailTarget.reportId,
+            projectId: detailTarget.projectId,
+            inspectorName: detailTarget.inspectorName,
+            date: detailTarget.date,
+            actualProgress: detailTarget.actualProgress,
+            financialAccomplishmentPct: detailTarget.financialAccomplishmentPct,
+            slippage: detailTarget.slippage,
+            issuesSummary: detailTarget.issuesSummary,
+            notes: detailTarget.notes,
+            photoUrls: detailTarget.photoUrls,
+            reviewStatus: detailTarget.reviewStatus,
+            reviewComment: detailTarget.reviewComment,
+          } as ReportDetail}
+          canReview={canReview}
+          onClose={() => setDetailTarget(null)}
+          onReviewed={handleReviewed}
         />
       )}
     </div>

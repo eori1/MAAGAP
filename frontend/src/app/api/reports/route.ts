@@ -172,6 +172,7 @@ export async function GET() {
           reportId: real.report_id,
           reviewStatus: real.review_status,
           reviewComment: real.review_comment,
+          financialAccomplishmentPct: real.financial_accomplishment_pct,
         };
       }
 
@@ -197,6 +198,7 @@ export async function GET() {
         reportId: null,
         reviewStatus: null,
         reviewComment: null,
+        financialAccomplishmentPct: null,
       };
     }).filter((r): r is NonNullable<typeof r> => r !== null);
 
