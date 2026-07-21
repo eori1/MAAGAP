@@ -9,11 +9,25 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, ResponsiveContainer } fro
 import { useState, useEffect } from "react";
 import { fetchProjects } from "@/lib/api";
 
-const ALERTS = [
-  { name: "Aganan Flyover",               desc: "Likely delayed by 35 days", conf: "95 % conf.", severity: "high"  },
-  { name: "Pototan Flood Control Project", desc: "Likely delayed by 6 days",  conf: "78 % conf.", severity: "high"  },
-  { name: "Carles Seawall",               desc: "Minor delay risk rising",    conf: "67 % conf.", severity: "amber" },
-];
+interface AlertData {
+  id: string;
+  type: "TIER_ESCALATION" | "CRITICAL_RISK";
+  projectId: string;
+  riskScore: number;
+  message: string;
+}
+
+interface SessionProfile {
+  fullName: string | null;
+  email: string;
+}
+
+function timeOfDayGreeting(): string {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good Morning";
+  if (hour < 18) return "Good Afternoon";
+  return "Good Evening";
+}
 
 /* ─── Chart using Recharts ───────────────────────── */
 const chartData = [
@@ -89,10 +103,17 @@ interface ProjectData {
 /* ─── Dashboard Page ──────────────────────────────── */
 export default function DashboardPage() {
   const [projects, setProjects] = useState<ProjectData[]>([]);
+  const [alerts, setAlerts] = useState<AlertData[]>([]);
+  const [profile, setProfile] = useState<SessionProfile | null>(null);
 
   useEffect(() => {
     fetchProjects().then(data => setProjects(data));
+    fetch("/api/alerts").then(res => (res.ok ? res.json() : [])).then(setAlerts).catch(() => setAlerts([]));
+    fetch("/api/me").then(res => (res.ok ? res.json() : null)).then(setProfile).catch(() => setProfile(null));
   }, []);
+
+  const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" });
+  const greetingName = profile?.fullName?.split(" ")[0] || profile?.email?.split("@")[0] || "";
 
   const totalProjects = projects.length;
   const completedProjects = projects.filter(p => p.status === "Completed").length;
@@ -126,9 +147,9 @@ export default function DashboardPage() {
 
           {/* Welcome Banner */}
           <div className={styles.banner}>
-            <div className={styles.bannerTitle}>Good Morning, Ricardo!</div>
+            <div className={styles.bannerTitle}>{timeOfDayGreeting()}{greetingName ? `, ${greetingName}` : ""}!</div>
             <div className={styles.bannerSub}>
-              As of <strong>Friday, May 15, 2026</strong>, we are tracking{" "}
+              As of <strong>{today}</strong>, we are tracking{" "}
               <strong>{criticalCount} Critical projects</strong> and{" "}
               <strong>{highRiskCount} High-Risk</strong> projects across Iloilo Province.
             </div>
@@ -138,10 +159,7 @@ export default function DashboardPage() {
           <div className={styles.statsRow}>
             <div className={styles.statCard}>
               <div className={styles.statLeft}>
-                <div className={styles.statLabel}>
-                  Total Projects
-                  <span className={`${styles.statBadge} ${styles.statBadgeGreen}`}>+5.3%</span>
-                </div>
+                <div className={styles.statLabel}>Total Projects</div>
                 <div className={`${styles.statValue} ${styles.statValueBlue}`}>{totalProjects}</div>
               </div>
               <FolderIcon className={styles.statIcon} />
@@ -149,10 +167,7 @@ export default function DashboardPage() {
 
             <div className={styles.statCard}>
               <div className={styles.statLeft}>
-                <div className={styles.statLabel}>
-                  Completed Projects
-                  <span className={`${styles.statBadge} ${styles.statBadgeGreen}`}>+5.3%</span>
-                </div>
+                <div className={styles.statLabel}>Completed Projects</div>
                 <div className={`${styles.statValue} ${styles.statValueGreen}`}>{completedProjects}</div>
               </div>
               <CheckIcon className={styles.statIcon} />
@@ -160,10 +175,7 @@ export default function DashboardPage() {
 
             <div className={styles.statCard}>
               <div className={styles.statLeft}>
-                <div className={styles.statLabel}>
-                  Ongoing Projects
-                  <span className={`${styles.statBadge} ${styles.statBadgeGreen}`}>+5.3%</span>
-                </div>
+                <div className={styles.statLabel}>Ongoing Projects</div>
                 <div className={`${styles.statValue} ${styles.statValueBlue}`}>{ongoingProjects}</div>
               </div>
               <SyncIcon className={styles.statIcon} />
@@ -171,10 +183,7 @@ export default function DashboardPage() {
 
             <div className={styles.statCard}>
               <div className={styles.statLeft}>
-                <div className={styles.statLabel}>
-                  Critical Projects
-                  <span className={`${styles.statBadge} ${styles.statBadgeRed}`}>+5.3%</span>
-                </div>
+                <div className={styles.statLabel}>Critical Projects</div>
                 <div className={`${styles.statValue} ${styles.statValueRed}`}>{criticalCount}</div>
               </div>
               <AlertIcon className={styles.statIcon} />
@@ -196,32 +205,35 @@ export default function DashboardPage() {
               <div className={styles.cardTitle}>AI Forecast Alerts</div>
               <div className={styles.cardSub}>Predictive Intelligence</div>
               <div className={styles.alertList}>
-                {ALERTS.map((a, idx) => (
-                  <div key={a.name} className={`${styles.alertItem} ${a.severity === "amber" ? styles.alertItemAmber : ""} ${idx < ALERTS.length - 1 ? styles.alertItemBorder : ""}`}>
-                    <div className={styles.alertLeft}>
-                      <div className={`${styles.alertIconWrap} ${a.severity === "amber" ? styles.alertIconWrapAmber : ""}`}>
-                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
-                          stroke={a.severity === "amber" ? "#d97706" : "#e74c3c"} strokeWidth="2.5"
-                          strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-                          <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
-                        </svg>
-                      </div>
-                      <div>
-                        <div className={styles.alertName}>{a.name}</div>
-                        <div className={`${styles.alertDesc} ${a.severity === "amber" ? styles.alertDescAmber : ""}`}>
-                          {a.severity !== "amber"
-                            ? (<>Likely <strong>delayed</strong> {a.desc.replace("Likely delayed ", "")}</>)
-                            : (<>Minor <strong>delay risk rising</strong></>)
-                          }
+                {alerts.length === 0 && (
+                  <div className={styles.alertDesc} style={{ padding: "0.75rem 0" }}>No active alerts.</div>
+                )}
+                {alerts.slice(0, 5).map((a, idx) => {
+                  const isAmber = a.type !== "CRITICAL_RISK";
+                  return (
+                    <div key={a.id} className={`${styles.alertItem} ${isAmber ? styles.alertItemAmber : ""} ${idx < Math.min(alerts.length, 5) - 1 ? styles.alertItemBorder : ""}`}>
+                      <div className={styles.alertLeft}>
+                        <div className={`${styles.alertIconWrap} ${isAmber ? styles.alertIconWrapAmber : ""}`}>
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+                            stroke={isAmber ? "#d97706" : "#e74c3c"} strokeWidth="2.5"
+                            strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                            <line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>
+                          </svg>
+                        </div>
+                        <div>
+                          <div className={styles.alertName}>{a.projectId}</div>
+                          <div className={`${styles.alertDesc} ${isAmber ? styles.alertDescAmber : ""}`}>
+                            {a.message}
+                          </div>
                         </div>
                       </div>
+                      <div className={`${styles.alertConf} ${isAmber ? styles.alertConfAmber : ""}`}>
+                        {(a.riskScore * 100).toFixed(0)}% risk
+                      </div>
                     </div>
-                    <div className={`${styles.alertConf} ${a.severity === "amber" ? styles.alertConfAmber : ""}`}>
-                      {a.conf}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
