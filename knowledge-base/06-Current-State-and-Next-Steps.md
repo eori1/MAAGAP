@@ -1,6 +1,6 @@
 # Current State and Next Steps
 
-**Last updated:** 2026-07-21, end of the Reports-page real-data merge.
+**Last updated:** 2026-07-21, end of the mobile-responsiveness pass.
 
 Related: [[03-Progress-Log]] · [[05-Manuscript-Alignment]] · [[04-Workflows-and-Gotchas]]
 
@@ -8,7 +8,7 @@ Related: [[03-Progress-Log]] · [[05-Manuscript-Alignment]] · [[04-Workflows-an
 
 ## Current state
 
-Branch `fix/inspector-assignment-alignment` (off `main`, not yet merged, not confirmed pushed to remote — check `git status`/`git log` at session start). Commits in order: `5ddfdf4`, `1c796c6`, `ecf666a`, `637bc00`, `100c360`, `6b422a9` (knowledge-base vault), `ea3ff1a` (password self-service), `06ef5cd` (Dashboard mock-data cleanup), `00836f6` (operational workflow), `1308faf` (vault update), `89c5de6` (Reports-page real-data merge).
+Branch `fix/inspector-assignment-alignment` (off `main`, not yet merged, not confirmed pushed to remote — check `git status`/`git log` at session start). Commits in order: `5ddfdf4`, `1c796c6`, `ecf666a`, `637bc00`, `100c360`, `6b422a9` (knowledge-base vault), `ea3ff1a` (password self-service), `06ef5cd` (Dashboard mock-data cleanup), `00836f6` (operational workflow), `1308faf` (vault update), `89c5de6` (Reports-page real-data merge), `f623eae` (vault update), `e11ee9b` (mobile responsiveness baseline).
 
 The system is fully functional end-to-end and manually verified:
 - Full ML pipeline runs (`python main.py`, ~5-8 min) and syncs to Supabase.
@@ -23,15 +23,15 @@ See [[05-Manuscript-Alignment]] for the objective-by-objective status.
 
 ## Immediate next steps
 
-A full codebase audit against the PPDO's described operational workflow and general frontend UI/UX turned up several items, tackled in priority order. Remaining:
+A full codebase audit against the PPDO's described operational workflow and general frontend UI/UX turned up several items. Status:
 
-1. **Mobile responsiveness** — only 2 of 12+ page CSS modules have any `@media` query, and neither is an app page. Fixed 210px sidebar, wide multi-column layouts. Matters because Inspectors are field workers who'd realistically check schedules/submit reports from a phone. Not yet started.
-2. **Loading states** — no page shows a spinner/skeleton while its initial fetch is in flight; tables/lists just render empty until data arrives. Not yet started.
+1. **Mobile responsiveness** — ✅ baseline done (`e11ee9b`): sidebar off-canvas drawer, tables scroll horizontally, stat rows/two-column layouts stack, Projects header wraps. **User tested and confirmed it's a real improvement but tables/charts still aren't fully resolved on mobile** (e.g. horizontal table scroll works but isn't a great mobile experience for 7-column tables). **Decision: defer further polish to a planned full UI revamp later, rather than keep iterating now.** Don't re-attempt incremental mobile CSS fixes on the current design unless explicitly asked — the user wants to redesign, not patch further.
+2. **Loading states** — no page shows a spinner/skeleton while its initial fetch is in flight; tables/lists just render empty until data arrives. Not started; likely folds into the same future UI revamp rather than being worth doing separately now.
 3. **ISO/IEC 25010 evaluation (manuscript Objective 5)** — entirely unaddressed, see [[05-Manuscript-Alignment]]. Likely a UAT/survey-design task, not a coding task — clarify scope with the user before assuming it's a dev task.
 
-**Explicitly discussed and deferred, not forgotten**: a Manager-facing report approve/comment workflow (click a report row → approve or request revision) was proposed by the user as a possible next feature after the Reports-page merge. Agreed to finish the already-scoped items above first, then revisit — this needs its own scoping pass (a `review_status` on `inspection_reports`, who can act on it, whether "needs revision" surfaces back to the inspector) once there's more real report data to design around.
+**User's explicit direction at this point (2026-07-21)**: pause frontend/UI work, focus on "other backend stuff and the core workflow of the system" instead. Next session should ask what specifically that means (options include: the deferred report approve/comment workflow, model retraining feedback loop using real `inspection_reports` data, other backend/ML work) rather than assume — the user hadn't specified further when this note was written.
 
-No other next steps identified as of this update — ask the user what they want to tackle next rather than assuming.
+**Explicitly discussed and deferred, not forgotten**: a Manager-facing report approve/comment workflow (click a report row → approve or request revision) was proposed by the user as a possible next feature after the Reports-page merge. Needs its own scoping pass (a `review_status` on `inspection_reports`, who can act on it, whether "needs revision" surfaces back to the inspector) once there's more real report data to design around.
 
 ## Things that are known-fine, don't re-litigate
 

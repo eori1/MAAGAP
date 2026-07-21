@@ -102,3 +102,11 @@ Next audit item tackled after the workflow feature. `/api/reports` now joins `in
 Bug caught by the user testing the very first real submission: `physical_accomplishment_pct` is an optional field on the submit form, and treating a missing value as `0` (rather than "not reported") produced a nonsensical "-100.0 pts / Flagged" result. Fixed by keeping `null` as `null` throughout the response and rendering: progress shows "—", slippage shows "Not reported", and a new neutral "Submitted" status badge replaces the false "Flagged" when nothing was actually measured.
 
 User then asked (exploratory, not yet actioned) whether reports should be clickable for Manager approve/comment. Agreed to finish already-scoped items (mobile responsiveness, loading states) first — see [[06-Current-State-and-Next-Steps]].
+
+## Commit `e11ee9b` — feat: mobile responsiveness baseline
+
+Sidebar off-canvas drawer + hamburger, `.main` margin collapse on all 8 authenticated pages, stat-row/two-column-layout stacking, Gantt horizontal scroll, table `overflow-x: auto`.
+
+First pass didn't actually fix table scrolling: `.table { width: 100% }` forced tables to compress to fit rather than overflow, so `overflow-x: auto` on the parent had nothing to scroll — columns were squishing/truncating instead. Fixed with a mobile-only `min-width` on `.table`. Also fixed the Projects page's action-button row overflowing off-screen (`.pageHeader`/`.actionBtns` needed `flex-wrap`).
+
+**User tested again and found table/chart rendering still not fully satisfactory on mobile.** Decision: stop iterating on the current design's mobile behavior and defer to a planned full UI revamp later — see [[02-Decisions-Log]] and [[06-Current-State-and-Next-Steps]]. User then redirected focus to backend/core-workflow items instead of further frontend polish.

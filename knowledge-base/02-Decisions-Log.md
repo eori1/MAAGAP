@@ -78,3 +78,11 @@ Chronological record of non-obvious choices and why they were made. Each entry: 
 **Decision**: The original Allocation page (inherited from the pre-Supabase mockup) had one "Accept AI Allocation" button per inspector card — accepting an entire day's schedule as one blob, and not wired to anything (local component state only, reset on refresh). Redesigned to per-project-row Accept/Submit Report/Reported controls instead.
 
 **Why**: A real PPDO inspector doesn't accept or decline their *entire schedule* as a unit — acceptance is naturally per-assignment (per-project). The audit that surfaced this also found the button did nothing persistent, so it was actively misleading about state, not just wrong-grained.
+
+## Defer further mobile/table UI polish to a future full UI revamp
+
+**Decision**: After a baseline mobile-responsiveness pass (sidebar drawer, table horizontal scroll, layout stacking — commit `e11ee9b`), the user tested again and found table/chart rendering on mobile still not fully satisfactory. Rather than keep iterating incrementally on the *current* design's responsive behavior, the user decided to defer further polish to a planned full UI revamp, and redirected focus to backend/core-workflow items.
+
+**Why**: The current page designs (wide multi-column tables, dense stat rows, Gantt charts) were built mockup-first without mobile in mind; incremental CSS patches (horizontal scroll, stacking, wrapping) improve things but don't fundamentally solve the mismatch between "desktop dashboard density" and "phone screen." A future revamp can redesign these views mobile-first (e.g. card-based lists instead of tables) rather than continuing to retrofit.
+
+**Consequence**: Don't re-attempt incremental mobile CSS fixes on the current page designs unless explicitly asked — the baseline (`e11ee9b`) is considered "good enough for now," and the user wants a redesign, not further patching, when this comes up again. Loading states (a related, smaller polish item) were also left unstarted for the same reason — likely folds into the same future revamp.
