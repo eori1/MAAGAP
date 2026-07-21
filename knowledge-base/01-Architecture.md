@@ -53,7 +53,9 @@ All query Supabase directly (no more file-based JSON reads — that was the pre-
 |---|---|
 | `/api/me` | returns the caller's session profile |
 | `/api/projects` | Dashboard/Projects/Forecast Engine data. Inspector → own assigned projects only |
-| `/api/assignments` | Allocation page. Inspector → own record only |
+| `/api/assignments` | Allocation page. Inspector → own record only. Returns `status` (pending/accepted) and `hasReport` per project |
+| `/api/assignments/[id]/accept` (PATCH) | Inspector accepts one of their own assignments (403 if not theirs) |
+| `/api/reports/submit` (POST) | Inspector submits a report for an *accepted* assignment (409 if not yet accepted) — inserts into `inspection_reports` |
 | `/api/timeline` | Timeline page. Inspector → own assigned projects |
 | `/api/reports` | Reports page. Inspector → own assigned projects. **Inspector name comes from `assignments.inspector_id`, not `inspection_logs.inspector_id`** — see [[04-Workflows-and-Gotchas]] |
 | `/api/inspectors` | Users page roster. Inspector → own record only |
@@ -62,6 +64,15 @@ All query Supabase directly (no more file-based JSON reads — that was the pre-
 | `/api/admin/users/[id]` (PATCH) | Change a user's role (Admin only) |
 
 Shared helpers: `src/lib/supabasePaging.ts` (`fetchAllRowsIn` — see [[04-Workflows-and-Gotchas]] on the PostgREST row cap), `src/lib/iloiloMunicipalityCentroids.ts` (map pin coordinates — synthetic data has no lat/lng, only municipality names, so pins are a deterministic jitter around each municipality's centroid).
+
+### Operational workflow (assign → accept → submit report)
+
+The one part of the app where an Inspector actually *writes* data, not just views it. See [[02-Decisions-Log]] for why photo upload / accept-only / report-gated-on-acceptance were chosen.
+
+- `assignments.status` (`pending` | `accepted`) + `accepted_at` — added by `backend/supabase/schema_workflow.sql`, additive to the original `schema.sql` assignments table.
+- `inspection_reports` table — real, inspector-submitted reports. Distinct from `inspection_logs` (synthetic pipeline data — see [[04-Workflows-and-Gotchas]] on not confusing the two). Columns: `assignment_id`, `project_id`, `inspector_id`, `submitted_by` (→ `profiles.id`), `physical_accomplishment_pct`, `financial_accomplishment_pct`, `issues_noted`, `notes`, `photo_urls` (`text[]`), `submitted_at`.
+- Storage bucket `inspection-photos` (public): the browser client uploads photos directly using the user's own session (not the service-role key) — gated by Storage RLS policies (authenticated insert, public select), not table RLS. `src/components/SubmitReportModal.tsx` handles the upload-then-POST-metadata flow.
+- Allocation page (`src/app/allocation/page.tsx`): each project row shows Accept → Submit Report → "✓ Reported" for the assigned Inspector (actionable buttons), or the same three states as read-only badges for Manager/Admin viewing any inspector's card.
 
 ### Roles
 - **admin** — everything, plus create accounts / change roles

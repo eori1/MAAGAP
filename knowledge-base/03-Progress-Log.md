@@ -68,3 +68,29 @@ This vault (`/knowledge-base`) was set up at this point, git-tracked, to be upda
 - New `/reset-password` page: listens for the `PASSWORD_RECOVERY` auth event (also checks `getSession()` directly, in case the event fired before the listener attached — a real timing race, not a hypothetical one) and lets the user set a new password. Added to `proxy.ts`'s public paths, since the first request after clicking the emailed link has no session cookie yet — the client-side code-exchange happens after the page loads.
 - New `/account` page: shows the logged-in user's email/name/role and a self-service change-password form (`supabase.auth.updateUser({password})`, no re-authentication required — Supabase's default). Reachable from all three roles via the profile icon in `TopRight.tsx`, which was previously an inert placeholder button.
 - Verified end-to-end by the user: both change-password (logged in) and forgot-password (real email received, link clicked, password reset, redirected to dashboard) confirmed working.
+
+## Full codebase audit: PPDO workflow alignment + frontend UI/UX
+
+Requested by the user: audit the whole codebase against the described PPDO operational workflow (Admin/Manager tracks backlogs, assigns projects, Inspector accepts and submits reports) and general frontend UI/UX. Verified every finding against actual code (API routes, schema, page source), not memory. Key findings:
+- The entire frontend was read-only against Supabase except `/api/admin/users` — no accept/decline persistence, no report-submission path, decorative buttons ("Manual Edit", "Add new PPA", "Import Data") with no handlers.
+- Dashboard still had leftover mock data (hardcoded greeting/date/trend badges/alerts) missed during the earlier Supabase migration.
+- No dedicated "backlog" view/metric.
+- No responsive/mobile support anywhere in the app.
+- No loading states (pages render empty until fetch resolves).
+
+Full findings reported to the user; priority order agreed: (1) Dashboard mock-data cleanup, (2) scope and build the accept/submit-report workflow, (3) mobile responsiveness (not started as of this entry) — see [[06-Current-State-and-Next-Steps]].
+
+## Commit `06ef5cd` — fix: Dashboard mock-data cleanup
+
+Real name/time-of-day greeting (via `/api/me`), real date, fake "+5.3%" badges removed (no historical data existed to compute a real trend from), "AI Forecast Alerts" wired to real `/api/alerts`.
+
+## Commit `00836f6` — feat: operational assign→accept→submit-report workflow
+
+The largest finding from the audit. See [[02-Decisions-Log]] for the three scoping decisions (photo upload, accept-only, report gated on acceptance).
+
+- `backend/supabase/schema_workflow.sql` (additive): `assignments.status`/`accepted_at`; new `inspection_reports` table; public `inspection-photos` Storage bucket + policies.
+- `PATCH /api/assignments/[id]/accept`, `POST /api/reports/submit` — both enforce the caller is the assigned inspector; submit also enforces `status === 'accepted'`.
+- `GET /api/assignments` extended with `status`/`hasReport` per project.
+- Allocation page redesigned: per-project-row Accept/Submit Report/Reported controls (Inspector, actionable) vs. read-only Pending/Accepted/Reported badges (Manager/Admin) — replacing the old non-functional per-card button.
+- New `SubmitReportModal` component: accomplishment %, issues, notes, multi-photo upload directly to Storage from the browser client.
+- Verified end-to-end by the user as both Inspector (accept → submit with photo → "Reported" badge) and Manager (same state, read-only). Report row confirmed correctly persisted in Supabase.

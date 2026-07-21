@@ -61,3 +61,20 @@ Chronological record of non-obvious choices and why they were made. Each entry: 
 **Decision**: Build `/knowledge-base` in the repo root as a git-tracked Obsidian vault, and update it automatically after significant work rather than waiting to be asked.
 
 **Why**: User's stated goal is surviving `/compact` and fresh sessions without re-deriving context or hallucinating prior decisions. Git-tracked means it travels with clones/branches and stays versioned alongside the code it describes.
+
+## Operational workflow: photo upload, accept-only (no decline), report gated on acceptance
+
+**Decision**: When scoping the assign→accept→submit-report feature (surfaced by a full codebase audit against the PPDO's stated workflow), three explicit choices were made via direct questions rather than assumed:
+1. Reports include photo upload (not just data fields) — requires a Supabase Storage bucket, an extra manual setup step for the user.
+2. Inspectors can only **accept** an assignment, not decline it. If an inspector genuinely can't do a visit, that's handled outside the app (contact the Manager) rather than a formal decline/reassignment flow. Simpler, and avoids needing to model "assignment goes back to the pool" without re-running the offline LP.
+3. Submitting a report **requires** the assignment to already be `accepted` (enforced server-side, 409 if not) — matches the real-world sequence (accept the visit → go inspect → submit) rather than allowing a report for any assigned project regardless of acceptance state.
+
+**Why**: These aren't obvious defaults — a simpler v1 could've skipped photos, allowed decline, or left reports ungated — so the choices are recorded here to avoid re-litigating or "simplifying" them away in a future session.
+
+**Consequence**: `inspection_reports.photo_urls` is a `text[]` column, uploaded to a public `inspection-photos` Storage bucket directly from the browser client (using the user's own session, not the service-role key — Storage RLS policies, not table RLS, gate this). `assignments.status` has only two values (`pending`, `accepted`), no `declined`. `POST /api/reports/submit` returns 409 if the assignment isn't accepted yet.
+
+## Old per-inspector-card "Accept AI Allocation" button replaced with per-project-row controls
+
+**Decision**: The original Allocation page (inherited from the pre-Supabase mockup) had one "Accept AI Allocation" button per inspector card — accepting an entire day's schedule as one blob, and not wired to anything (local component state only, reset on refresh). Redesigned to per-project-row Accept/Submit Report/Reported controls instead.
+
+**Why**: A real PPDO inspector doesn't accept or decline their *entire schedule* as a unit — acceptance is naturally per-assignment (per-project). The audit that surfaced this also found the button did nothing persistent, so it was actively misleading about state, not just wrong-grained.

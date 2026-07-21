@@ -1,6 +1,6 @@
 # Current State and Next Steps
 
-**Last updated:** 2026-07-21, end of the password self-service work.
+**Last updated:** 2026-07-21, end of the operational assign→accept→submit-report workflow.
 
 Related: [[03-Progress-Log]] · [[05-Manuscript-Alignment]] · [[04-Workflows-and-Gotchas]]
 
@@ -8,24 +8,28 @@ Related: [[03-Progress-Log]] · [[05-Manuscript-Alignment]] · [[04-Workflows-an
 
 ## Current state
 
-Branch `fix/inspector-assignment-alignment` (off `main`, not yet merged, not confirmed pushed to remote — check `git status`/`git log` at session start). Six feature commits so far, in order: `5ddfdf4`, `1c796c6`, `ecf666a`, `637bc00`, `100c360`, `6b422a9` (knowledge-base vault), `ea3ff1a` (password self-service).
+Branch `fix/inspector-assignment-alignment` (off `main`, not yet merged, not confirmed pushed to remote — check `git status`/`git log` at session start). Commits in order: `5ddfdf4`, `1c796c6`, `ecf666a`, `637bc00`, `100c360`, `6b422a9` (knowledge-base vault), `ea3ff1a` (password self-service), `06ef5cd` (Dashboard mock-data cleanup), `00836f6` (operational workflow).
 
 The system is fully functional end-to-end and manually verified:
 - Full ML pipeline runs (`python main.py`, ~5-8 min) and syncs to Supabase.
-- All 7 frontend pages query Supabase live, no more static/mock data anywhere.
+- All 7 frontend pages query Supabase live, no more static/mock data anywhere (Dashboard's remaining mock leftovers — fake greeting/date/trend badges/alerts — were the last of these, now fixed).
 - Supabase Auth with 3 roles (manager/inspector/admin), verified in-browser for all three.
-- Password self-service: logged-in "change password" (`/account`) and "forgot password" email flow (`/reset-password`), both verified end-to-end by the user including real email delivery.
+- Password self-service: logged-in "change password" (`/account`) and "forgot password" email flow (`/reset-password`), both verified end-to-end including real email delivery.
+- **Operational workflow (new)**: Inspectors can accept an assigned visit and submit a real inspection report (physical/financial accomplishment %, issues, notes, photos) directly in the app — the assign→accept→inspect→report loop from the PPDO's actual workflow now has a real implementation, not just AI-generated read-only schedules. See [[01-Architecture]] and [[02-Decisions-Log]].
 - 25/25 backend tests passing, frontend builds clean, no known type errors.
 
 See [[05-Manuscript-Alignment]] for the objective-by-objective status.
 
 ## Immediate next steps
 
-Only one open item remains from the original gap list:
+A full codebase audit against the PPDO's described operational workflow and general frontend UI/UX turned up several items, tackled in priority order. Remaining, in the order surfaced:
 
-1. **ISO/IEC 25010 evaluation (manuscript Objective 5)** — entirely unaddressed, see [[05-Manuscript-Alignment]]. This is likely a UAT/survey-design task, not a coding task — clarify scope with the user before assuming it's a dev task.
+1. **Mobile responsiveness** — only 2 of 12+ page CSS modules have any `@media` query, and neither is an app page. Fixed 210px sidebar, wide multi-column layouts. Matters because Inspectors are field workers who'd realistically check schedules/submit reports from a phone. Not yet started.
+2. **ISO/IEC 25010 evaluation (manuscript Objective 5)** — entirely unaddressed, see [[05-Manuscript-Alignment]]. Likely a UAT/survey-design task, not a coding task — clarify scope with the user before assuming it's a dev task.
+3. **Merge real submitted reports into the Reports page** — the Reports page still only shows synthetic `inspection_logs` data; real submissions from `inspection_reports` aren't surfaced there yet (they're currently only visible as status badges on the Allocation page). Explicitly deferred, not forgotten — see [[02-Decisions-Log]].
+4. **Loading states** — no page shows a spinner/skeleton while its initial fetch is in flight; tables/lists just render empty until data arrives.
 
-No other next steps have been identified as of this update — ask the user what they want to tackle next rather than assuming.
+No other next steps identified as of this update — ask the user what they want to tackle next rather than assuming.
 
 ## Things that are known-fine, don't re-litigate
 
@@ -34,6 +38,8 @@ No other next steps have been identified as of this update — ask the user what
 - PDF export via `window.print()` (not a server PDF library) was a deliberate lightweight choice for a thesis prototype, not a placeholder that needs upgrading unless asked.
 - The map's project pins are jittered centroids, not real GPS coordinates — this is a known, accepted approximation (the original demo data had the same limitation).
 - Password self-service exists and is verified working — don't rebuild it if asked about "forgot password" or "change password" again; check [[01-Architecture]] and [[04-Workflows-and-Gotchas]] first.
+- The accept/submit-report workflow exists and is verified working (both Inspector and Manager/Admin views tested in-browser) — don't rebuild it if asked about "assignment status" or "inspection reports" again; check [[01-Architecture]] and [[02-Decisions-Log]] first. The old ResourceOptimizer-era `ASSIGN-INSP-00X` fake refs are long gone; `assignments.status` and `inspection_reports` are the real thing now.
+- Reports support photo upload (chosen over data-fields-only), there's no decline path (accept-only was chosen over accept/decline), and report submission is gated on acceptance (chosen over ungated) — all explicit scoping decisions made with the user, not oversights. See [[02-Decisions-Log]] before "fixing" any of them.
 
 ## If you're picking this up cold (after `/compact` or a new session)
 
