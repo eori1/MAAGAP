@@ -21,6 +21,12 @@ interface AssignmentRow {
   risk_tier: string;
   priority: string;
   urgency: string;
+  status: string;
+}
+
+interface ReportRow {
+  assignment_id: string;
+  submitted_at: string;
 }
 
 // Serves the LP-optimized inspector deployment schedule from Supabase
@@ -54,6 +60,18 @@ export async function GET() {
       assignments = assignments.filter((a) => a.inspector_id === profile.inspectorId);
     }
 
+    const assignmentIds = assignments.map((a) => a.assignment_id);
+    let reportedAssignmentIds = new Set<string>();
+    if (assignmentIds.length > 0) {
+      const { data: reportData, error: reportErr } = await supabase
+        .from("inspection_reports")
+        .select("assignment_id, submitted_at")
+        .in("assignment_id", assignmentIds);
+      if (reportErr) throw reportErr;
+      const reports = (reportData ?? []) as unknown as ReportRow[];
+      reportedAssignmentIds = new Set(reports.map((r) => r.assignment_id));
+    }
+
     const byInspector = new Map<string, AssignmentRow[]>();
     for (const a of assignments) {
       const list = byInspector.get(a.inspector_id) ?? [];
@@ -72,6 +90,7 @@ export async function GET() {
         currentWorkload: insp.current_workload,
         totalProjects: rows.length,
         projects: rows.map((r) => ({
+          assignmentId: r.assignment_id,
           projectId: r.project_id,
           name: r.project_id,
           location: r.location,
@@ -80,6 +99,8 @@ export async function GET() {
           riskTier: r.risk_tier,
           priority: r.priority,
           urgency: r.urgency,
+          status: r.status ?? "pending",
+          hasReport: reportedAssignmentIds.has(r.assignment_id),
         })),
       };
     });

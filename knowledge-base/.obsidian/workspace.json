@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "05-Manuscript-Alignment.md",
+                "file": "02-Decisions-Log.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "05-Manuscript-Alignment"
+              "title": "02-Decisions-Log"
             }
           }
         ]
@@ -94,7 +94,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "05-Manuscript-Alignment.md",
+                "file": "02-Decisions-Log.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -104,7 +104,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for 05-Manuscript-Alignment"
+              "title": "Backlinks for 02-Decisions-Log"
             }
           },
           {
@@ -113,12 +113,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "05-Manuscript-Alignment.md",
+                "file": "02-Decisions-Log.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from 05-Manuscript-Alignment"
+              "title": "Outgoing links from 02-Decisions-Log"
             }
           },
           {
@@ -156,13 +156,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "05-Manuscript-Alignment.md",
+                "file": "02-Decisions-Log.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of 05-Manuscript-Alignment"
+              "title": "Outline of 02-Decisions-Log"
             }
           }
         ]
@@ -185,11 +185,11 @@
   },
   "active": "19e73d3fc4b27806",
   "lastOpenFiles": [
+    "05-Manuscript-Alignment.md",
+    "06-Current-State-and-Next-Steps.md",
     "04-Workflows-and-Gotchas.md.tmp.14708.c126f0d2fdd2",
     "01-Architecture.md.tmp.14708.e9bda97766f9",
     "03-Progress-Log.md.tmp.14708.9a8dd368602d",
-    "06-Current-State-and-Next-Steps.md",
-    "05-Manuscript-Alignment.md",
     "05-Manuscript-Alignment.md.tmp.14708.ba6033adf402",
     "04-Workflows-and-Gotchas.md",
     "03-Progress-Log.md",

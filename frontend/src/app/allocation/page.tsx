@@ -3,13 +3,16 @@
 import { useEffect, useState } from "react";
 import Sidebar from "@/components/Sidebar";
 import TopRight from "@/components/TopRight";
+import SubmitReportModal from "@/components/SubmitReportModal";
 import styles from "./page.module.css";
 
 /* ─── Types (mirror backend assignments.json payload) ─── */
 type Priority = "HIGH" | "MEDIUM" | "LOW";
 type Urgency = "VISIT ASAP" | "VISIT SOON" | "CHECK IN A WEEK" | "ROUTINE";
+type Role = "manager" | "inspector" | "admin";
 
 interface AssignedProject {
+  assignmentId: string;
   projectId: string;
   name: string;
   location: string;
@@ -18,6 +21,8 @@ interface AssignedProject {
   riskTier: "Low" | "Medium" | "High" | "Critical";
   priority: Priority;
   urgency: Urgency;
+  status: "pending" | "accepted";
+  hasReport: boolean;
 }
 
 interface Inspector {
@@ -93,8 +98,46 @@ function inspectorPriority(inspector: Inspector): Priority {
   return "LOW";
 }
 
-function InspectorCard({ inspector }: { inspector: Inspector }) {
-  const [accepted, setAccepted] = useState(false);
+function ProjectAction({
+  project, isViewerInspector, onAccept, onSubmitReport,
+}: {
+  project: AssignedProject;
+  isViewerInspector: boolean;
+  onAccept: (assignmentId: string) => void;
+  onSubmitReport: (project: AssignedProject) => void;
+}) {
+  if (project.hasReport) {
+    return <span className={styles.statusBadgeDone}>✓ Reported</span>;
+  }
+  if (!isViewerInspector) {
+    return (
+      <span className={project.status === "accepted" ? styles.statusBadgeAccepted : styles.statusBadgePending}>
+        {project.status === "accepted" ? "Accepted" : "Pending"}
+      </span>
+    );
+  }
+  if (project.status === "pending") {
+    return (
+      <button className={styles.rowAcceptBtn} onClick={() => onAccept(project.assignmentId)}>
+        Accept
+      </button>
+    );
+  }
+  return (
+    <button className={styles.rowSubmitBtn} onClick={() => onSubmitReport(project)}>
+      Submit Report
+    </button>
+  );
+}
+
+function InspectorCard({
+  inspector, isViewerInspector, onAccept, onSubmitReport,
+}: {
+  inspector: Inspector;
+  isViewerInspector: boolean;
+  onAccept: (assignmentId: string) => void;
+  onSubmitReport: (project: AssignedProject) => void;
+}) {
   const [expanded, setExpanded] = useState(false);
   const priority = inspectorPriority(inspector);
   const pc = PRIORITY_COLORS[priority];
@@ -135,7 +178,7 @@ function InspectorCard({ inspector }: { inspector: Inspector }) {
           const iconColor = p.priority === "HIGH" ? "#e74c3c" : p.priority === "MEDIUM" ? "#f59e0b" : "#27ae60";
 
           return (
-            <div key={p.projectId} className={styles.projectRow} style={{ background: projBg }}>
+            <div key={p.assignmentId} className={styles.projectRow} style={{ background: projBg }}>
               <ProjectIcon color={iconColor} />
               <div className={styles.projectInfo}>
                 <div className={styles.projectName}>{p.name}</div>
@@ -150,6 +193,14 @@ function InspectorCard({ inspector }: { inspector: Inspector }) {
                 <div className={styles.urgPriority} style={{ color: urgColor }}>{p.priority}</div>
                 <div className={styles.urgLabel}  style={{ color: urgColor }}>{p.urgency}</div>
               </div>
+              <div className={styles.projectActionCell}>
+                <ProjectAction
+                  project={p}
+                  isViewerInspector={isViewerInspector}
+                  onAccept={onAccept}
+                  onSubmitReport={onSubmitReport}
+                />
+              </div>
             </div>
           );
         })}
@@ -159,27 +210,6 @@ function InspectorCard({ inspector }: { inspector: Inspector }) {
           </button>
         )}
       </div>
-
-      {/* Action buttons */}
-      <div className={styles.cardActions}>
-        <button
-          className={`${styles.acceptBtn} ${accepted ? styles.acceptBtnDone : ""}`}
-          onClick={() => setAccepted(true)}
-        >
-          {accepted ? (
-            <>✓ Allocation Accepted</>
-          ) : (
-            <>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-              Accept AI Allocation
-            </>
-          )}
-        </button>
-        <button className={styles.editBtn}>
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-          Manual Edit
-        </button>
-      </div>
     </div>
   );
 }
@@ -188,8 +218,10 @@ function InspectorCard({ inspector }: { inspector: Inspector }) {
 export default function AllocationPage() {
   const [data, setData] = useState<AssignmentData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [viewerRole, setViewerRole] = useState<Role | null>(null);
+  const [reportModalProject, setReportModalProject] = useState<AssignedProject | null>(null);
 
-  useEffect(() => {
+  const loadAssignments = () => {
     fetch("/api/assignments")
       .then(res => {
         if (!res.ok) throw new Error("Assignment schedule not available");
@@ -197,9 +229,28 @@ export default function AllocationPage() {
       })
       .then(setData)
       .catch(() => setError("No optimized schedule found. Run the backend pipeline (python main.py) to generate inspector assignments."));
+  };
+
+  useEffect(() => {
+    loadAssignments();
+    fetch("/api/me")
+      .then(res => (res.ok ? res.json() : null))
+      .then(profile => setViewerRole(profile?.role ?? null))
+      .catch(() => setViewerRole(null));
   }, []);
 
+  async function handleAccept(assignmentId: string) {
+    const res = await fetch(`/api/assignments/${assignmentId}/accept`, { method: "PATCH" });
+    if (res.ok) loadAssignments();
+  }
+
+  function handleReportSubmitted() {
+    setReportModalProject(null);
+    loadAssignments();
+  }
+
   const activeInspectors = data?.inspectors.filter(i => i.totalProjects > 0).length ?? 0;
+  const isViewerInspector = viewerRole === "inspector";
 
   return (
     <div className={styles.shell}>
@@ -268,7 +319,13 @@ export default function AllocationPage() {
                 {data.inspectors
                   .filter(insp => insp.totalProjects > 0)
                   .map(insp => (
-                    <InspectorCard key={insp.id} inspector={insp} />
+                    <InspectorCard
+                      key={insp.id}
+                      inspector={insp}
+                      isViewerInspector={isViewerInspector}
+                      onAccept={handleAccept}
+                      onSubmitReport={setReportModalProject}
+                    />
                   ))}
               </div>
 
@@ -299,6 +356,15 @@ export default function AllocationPage() {
 
         </div>
       </div>
+
+      {reportModalProject && (
+        <SubmitReportModal
+          assignmentId={reportModalProject.assignmentId}
+          projectName={reportModalProject.name}
+          onClose={() => setReportModalProject(null)}
+          onSubmitted={handleReportSubmitted}
+        />
+      )}
     </div>
   );
 }
