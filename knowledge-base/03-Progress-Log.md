@@ -144,3 +144,15 @@ User caught a real gap after the first pass: the Reports table row only has room
 - New `ReportDetailModal` (+ `.module.css`) replaces the removed `ReportReviewModal`: full-size photos, complete issues/notes text, physical **and** financial accomplishment % side-by-side, and Approve/Request Revision live inline right below the evidence — folding the revision-comment flow into the same read-first surface instead of stacking two separate modals.
 - Reports page: the Review Status column now shows one **Review Report** (Manager/Admin, pending) / **View Report** (everyone else, or already decided) button that opens the modal, instead of separate inline Approve/Request Revision buttons disconnected from the report content.
 - `tsc`/lint re-verified clean after this change.
+
+### Follow-up (same PR, commit `b2fefb9`) — renamed a naming collision
+
+User spotted, via a Reports-page screenshot, that the pre-existing slippage-based Status value **"Pending Review"** read as the same concept as the new Review Status column's **"Awaiting Review"**, even though one is an automated slippage heuristic and the other is a human decision. Renamed the older value to **"At Risk"** (`statusFromSlippage()` in `/api/reports/route.ts`, plus the Reports page's type/style map/filter options) — label only, no threshold/logic change.
+
+### Follow-up (same PR, commit `4c67f64`) — Review Status filter
+
+Added a **Review Status** filter (Awaiting Review / Approved / Needs Revision / No Report) to the Reports page, matching the existing Quarter/Status/Source filters.
+
+## PR #2 — merged into `main` (2026-07-21)
+
+User verified the full FR-13 walkthrough in-browser (Manager approve/request-revision → Inspector sees the notification-bell alert and a Resubmit Report button on Allocation → resubmission resets to Awaiting Review and the Manager sees Approve/Request Revision reappear) before merging. All 5 commits from `313976d` through `4c67f64` were squash-merged into `main` as one commit, `a20ddfa`. The `feat/report-review-workflow` branch still exists on `origin` post-merge (not deleted), same as PR #1.

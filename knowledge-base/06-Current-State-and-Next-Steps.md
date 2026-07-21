@@ -1,6 +1,6 @@
 # Current State and Next Steps
 
-**Last updated:** 2026-07-21, after FR-13 (report review/approval) + detail-modal follow-up, PR #2 opened.
+**Last updated:** 2026-07-21, after PR #2 (FR-13) merged into `main`.
 
 Related: [[03-Progress-Log]] · [[05-Manuscript-Alignment]] · [[04-Workflows-and-Gotchas]] · [[07-PRD]]
 
@@ -21,16 +21,15 @@ The system is fully functional end-to-end and manually verified:
 - Reports page now shows real inspector-submitted reports (with a "Field Report" badge, photos, notes) in preference to the synthetic pipeline baseline, per project.
 - 25/25 backend tests passing, frontend builds clean, no known type errors.
 
-**FR-13 (report review/approval) is implemented and in PR #2** (`https://github.com/eori1/MAAGAP/pull/2`, branch `feat/report-review-workflow`, commits `313976d` + `47b3c44`), not yet merged. See [[03-Progress-Log]] for what was built and [[02-Decisions-Log]] for the scoping decisions, including the follow-up that replaced inline table review actions with a full `ReportDetailModal` (full-size photos, complete notes, both accomplishment percentages) after the user asked how a reviewer would actually see the evidence before deciding. `npx tsc --noEmit` clean, `pytest` 25/25, ESLint clean. The Supabase schema migration (`schema_review.sql`) **has been applied** by the user. **Still needs**: the in-browser verification walkthrough (Manager approve/request-revision → Inspector sees alert + resubmit → Manager sees it pending again) — not yet confirmed done as of this note.
+**FR-13 (report review/approval) is merged.** PR #2 (`https://github.com/eori1/MAAGAP/pull/2`, branch `feat/report-review-workflow`) squash-merged into `main` as `a20ddfa`. User verified the full walkthrough in-browser (Manager approve/request-revision → Inspector sees alert + resubmit → Manager sees it pending again) before merging. See [[03-Progress-Log]] for what was built and [[02-Decisions-Log]] for the scoping decisions, including the follow-up that replaced inline table review actions with a full `ReportDetailModal` (full-size photos, complete notes, both accomplishment percentages) and the "Pending Review"→"At Risk" rename that resolved a naming collision the user caught via screenshot. `npx tsc --noEmit` clean, `pytest` 25/25, ESLint clean throughout. The Supabase schema migration (`schema_review.sql`) has been applied. The `feat/report-review-workflow` branch still exists on `origin` post-merge (not deleted), same pattern as PR #1.
 
 See [[05-Manuscript-Alignment]] for the objective-by-objective status.
 
 ## Immediate next steps
 
-1. **Run the in-browser verification walkthrough** for FR-13 (see PR #2's "How to Test" section or [[03-Progress-Log]]), then merge PR #2 into `main`.
-2. **Mobile responsiveness** — ✅ baseline done (`e11ee9b`): sidebar off-canvas drawer, tables scroll horizontally, stat rows/two-column layouts stack, Projects header wraps. **User tested and confirmed it's a real improvement but tables/charts still aren't fully resolved on mobile.** **Decision: defer further polish to a planned full UI revamp later.** Don't re-attempt incremental mobile CSS fixes on the current design unless explicitly asked.
-3. **Loading states** — no page shows a spinner/skeleton while its initial fetch is in flight. Not started; likely folds into the same future UI revamp.
-4. **FR-14 (ML feedback loop)** and **FR-15 (ISO/IEC 25010 evaluation)** — still "Planned, not scoped" per [[07-PRD]]; ask the user before starting either.
+1. **Mobile responsiveness** — ✅ baseline done (`e11ee9b`): sidebar off-canvas drawer, tables scroll horizontally, stat rows/two-column layouts stack, Projects header wraps. **User tested and confirmed it's a real improvement but tables/charts still aren't fully resolved on mobile.** **Decision: defer further polish to a planned full UI revamp later.** Don't re-attempt incremental mobile CSS fixes on the current design unless explicitly asked.
+2. **Loading states** — no page shows a spinner/skeleton while its initial fetch is in flight. Not started; likely folds into the same future UI revamp.
+3. **FR-14 (ML feedback loop)** and **FR-15 (ISO/IEC 25010 evaluation)** — still "Planned, not scoped" per [[07-PRD]]; ask the user before starting either.
 
 ## Things that are known-fine, don't re-litigate
 
@@ -42,6 +41,7 @@ See [[05-Manuscript-Alignment]] for the objective-by-objective status.
 - The accept/submit-report workflow exists and is verified working (both Inspector and Manager/Admin views tested in-browser) — don't rebuild it if asked about "assignment status" or "inspection reports" again; check [[01-Architecture]] and [[02-Decisions-Log]] first. The old ResourceOptimizer-era `ASSIGN-INSP-00X` fake refs are long gone; `assignments.status` and `inspection_reports` are the real thing now.
 - Reports support photo upload (chosen over data-fields-only), there's no decline path (accept-only was chosen over accept/decline), and report submission is gated on acceptance (chosen over ungated) — all explicit scoping decisions made with the user, not oversights. See [[02-Decisions-Log]] before "fixing" any of them.
 - The Reports page now merges real `inspection_reports` with synthetic `inspection_logs` (real takes priority per project) — don't rebuild this if asked about "why does Reports still show fake data," check first whether the project actually has a real submission yet (most of the 450-project cohort still won't, since only test accounts have submitted so far).
+- FR-13 (report review/approval) exists and is verified working end-to-end (Manager/Admin approve/request-revision, Inspector notification + resubmit) — don't rebuild it if asked about "report approval" again; check [[02-Decisions-Log]] and [[03-Progress-Log]] first. Review happens via `ReportDetailModal` (full photos/notes/both accomplishment %s), not inline table buttons — that was a deliberate redesign after the first pass, not the current state to "simplify." The Reports page's older slippage-based status is "At Risk" (not "Pending Review") specifically to avoid colliding with the newer Review Status column.
 
 ## If you're picking this up cold (after `/compact` or a new session)
 
