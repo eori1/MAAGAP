@@ -57,7 +57,7 @@ All query Supabase directly (no more file-based JSON reads — that was the pre-
 | `/api/assignments/[id]/accept` (PATCH) | Inspector accepts one of their own assignments (403 if not theirs) |
 | `/api/reports/submit` (POST) | Inspector submits a report for an *accepted* assignment (409 if not yet accepted) — inserts into `inspection_reports` |
 | `/api/timeline` | Timeline page. Inspector → own assigned projects |
-| `/api/reports` | Reports page. Inspector → own assigned projects. **Inspector name comes from `assignments.inspector_id`, not `inspection_logs.inspector_id`** — see [[04-Workflows-and-Gotchas]] |
+| `/api/reports` | Reports page. Inspector → own assigned projects. Per project: prefers the latest real `inspection_reports` submission over the synthetic `inspection_logs` baseline, when one exists (`source: "inspector" \| "pipeline"` in the response). **Inspector name comes from `assignments.inspector_id`, not `inspection_logs.inspector_id`** — see [[04-Workflows-and-Gotchas]] |
 | `/api/inspectors` | Users page roster. Inspector → own record only |
 | `/api/alerts` | Notification bell. Inspector → alerts for own projects only |
 | `/api/admin/users` (GET/POST) | Account list (Manager+Admin can view) / create account (Admin only) |

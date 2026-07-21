@@ -94,3 +94,11 @@ The largest finding from the audit. See [[02-Decisions-Log]] for the three scopi
 - Allocation page redesigned: per-project-row Accept/Submit Report/Reported controls (Inspector, actionable) vs. read-only Pending/Accepted/Reported badges (Manager/Admin) — replacing the old non-functional per-card button.
 - New `SubmitReportModal` component: accomplishment %, issues, notes, multi-photo upload directly to Storage from the browser client.
 - Verified end-to-end by the user as both Inspector (accept → submit with photo → "Reported" badge) and Manager (same state, read-only). Report row confirmed correctly persisted in Supabase.
+
+## Commit `89c5de6` — feat: merge real submitted reports into the Reports page
+
+Next audit item tackled after the workflow feature. `/api/reports` now joins `inspection_reports` alongside `inspection_logs`/`projects`; a project's row prefers its latest real submission when one exists. New "Source" column/filter ("Field Report" vs "Pipeline Estimate"); issues/notes/photos surface for real reports.
+
+Bug caught by the user testing the very first real submission: `physical_accomplishment_pct` is an optional field on the submit form, and treating a missing value as `0` (rather than "not reported") produced a nonsensical "-100.0 pts / Flagged" result. Fixed by keeping `null` as `null` throughout the response and rendering: progress shows "—", slippage shows "Not reported", and a new neutral "Submitted" status badge replaces the false "Flagged" when nothing was actually measured.
+
+User then asked (exploratory, not yet actioned) whether reports should be clickable for Manager approve/comment. Agreed to finish already-scoped items (mobile responsiveness, loading states) first — see [[06-Current-State-and-Next-Steps]].
