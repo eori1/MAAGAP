@@ -1,11 +1,29 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabaseServer";
+import { getSessionProfile } from "@/lib/supabaseSessionServer";
 
 // Serves per-project actual-vs-scheduled deviation data from Supabase,
 // joining predictions (risk tier, forecast) with the project registry.
+// Inspectors only see projects assigned to them.
 export async function GET() {
+  const profile = await getSessionProfile();
+  if (!profile) {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
+
   try {
     const supabase = getSupabaseServerClient();
+
+    let ownProjectIds: Set<string> | null = null;
+    if (profile.role === "inspector") {
+      const { data: asg, error: asgErr } = await supabase
+        .from("assignments")
+        .select("project_id")
+        .eq("inspector_id", profile.inspectorId ?? "__none__");
+      if (asgErr) throw asgErr;
+      const asgRows = (asg ?? []) as unknown as { project_id: string }[];
+      ownProjectIds = new Set(asgRows.map((a) => a.project_id));
+    }
 
     const { data, error } = await supabase
       .from("predictions")
@@ -34,7 +52,7 @@ export async function GET() {
     const maxYear = Math.max(...rows.map((r) => r.projects?.project_year ?? 0));
 
     const timeline = rows
-      .filter((r) => r.projects)
+      .filter((r) => r.projects && (!ownProjectIds || ownProjectIds.has(r.project_id)))
       .map((r) => {
         const p = r.projects!;
         const status = p.is_delayed ? "Delayed" : p.project_year === maxYear ? "Ongoing" : "Completed";

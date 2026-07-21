@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabaseServer";
+import { getSessionProfile } from "@/lib/supabaseSessionServer";
 
 interface InspectorRow {
   inspector_id: string;
@@ -23,8 +24,14 @@ interface AssignmentRow {
 }
 
 // Serves the LP-optimized inspector deployment schedule from Supabase
-// (populated by backend/main.py -> maagap.database.sync_all).
+// (populated by backend/main.py -> maagap.database.sync_all). Inspectors are
+// scoped to their own schedule only; Manager/Admin see the full roster.
 export async function GET() {
+  const profile = await getSessionProfile();
+  if (!profile) {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
+
   try {
     const supabase = getSupabaseServerClient();
 
@@ -39,8 +46,13 @@ export async function GET() {
     if (asgErr) throw asgErr;
     if (cntErr) throw cntErr;
 
-    const inspectors = (insData ?? []) as unknown as InspectorRow[];
-    const assignments = (asgData ?? []) as unknown as AssignmentRow[];
+    let inspectors = (insData ?? []) as unknown as InspectorRow[];
+    let assignments = (asgData ?? []) as unknown as AssignmentRow[];
+
+    if (profile.role === "inspector") {
+      inspectors = inspectors.filter((i) => i.inspector_id === profile.inspectorId);
+      assignments = assignments.filter((a) => a.inspector_id === profile.inspectorId);
+    }
 
     const byInspector = new Map<string, AssignmentRow[]>();
     for (const a of assignments) {
@@ -74,13 +86,14 @@ export async function GET() {
 
     const assignedProjects = assignments.length;
     const criticalAssignments = assignments.filter((a) => a.risk_tier === "Critical").length;
+    const totalScope = profile.role === "inspector" ? assignedProjects : (totalProjects ?? 0);
 
     return NextResponse.json({
       generatedAt: new Date().toISOString(),
       solver: "PuLP CBC (Integer LP)",
-      totalProjects: totalProjects ?? 0,
+      totalProjects: totalScope,
       assignedProjects,
-      unassignedProjects: Math.max(0, (totalProjects ?? 0) - assignedProjects),
+      unassignedProjects: Math.max(0, totalScope - assignedProjects),
       criticalAssignments,
       inspectors: inspectorPayload,
     });

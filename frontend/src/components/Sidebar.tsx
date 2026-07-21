@@ -1,21 +1,62 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { getSupabaseBrowserClient } from "@/lib/supabaseBrowserClient";
 import styles from "./Sidebar.module.css";
 
-const NAV_ITEMS = [
+type Role = "manager" | "inspector" | "admin";
+
+interface SessionProfile {
+  email: string;
+  role: Role;
+  fullName: string | null;
+}
+
+const ROLE_LABELS: Record<Role, string> = {
+  admin: "Administrator",
+  manager: "PPDO Manager",
+  inspector: "Field Inspector",
+};
+
+const NAV_ITEMS: { label: string; href: string; icon: typeof DashboardIcon; excludeInspector?: boolean }[] = [
   { label: "Dashboard",        href: "/dashboard",  icon: DashboardIcon  },
   { label: "Projects",         href: "/projects",   icon: ProjectsIcon   },
   { label: "Forecast Engine",  href: "/forecast-engine", icon: ForecastIcon   },
   { label: "Allocation",       href: "/allocation", icon: AllocationIcon },
   { label: "Reports",          href: "/reports",    icon: ReportsIcon    },
   { label: "Project Timeline", href: "/timeline",   icon: TimelineIcon   },
-  { label: "User Management",  href: "/users",      icon: UsersIcon      },
+  // Manager + Admin see everything; Inspector is scoped to their own schedule/reports only.
+  { label: "User Management",  href: "/users",      icon: UsersIcon, excludeInspector: true },
 ];
+
+function initials(name: string | null, email: string): string {
+  const source = name?.trim() || email;
+  const parts = source.split(/[\s.@]+/).filter(Boolean);
+  return (parts[0]?.[0] ?? "").toUpperCase() + (parts[1]?.[0] ?? "").toUpperCase();
+}
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const [profile, setProfile] = useState<SessionProfile | null>(null);
+
+  useEffect(() => {
+    fetch("/api/me")
+      .then((res) => (res.ok ? res.json() : null))
+      .then(setProfile)
+      .catch(() => setProfile(null));
+  }, []);
+
+  async function handleLogout() {
+    const supabase = getSupabaseBrowserClient();
+    await supabase.auth.signOut();
+    router.push("/");
+    router.refresh();
+  }
+
+  const visibleNavItems = NAV_ITEMS.filter((item) => !item.excludeInspector || profile?.role !== "inspector");
 
   return (
     <aside className={styles.sidebar}>
@@ -36,7 +77,7 @@ export default function Sidebar() {
 
       {/* ── Navigation ──────────────────────────── */}
       <nav className={styles.nav}>
-        {NAV_ITEMS.map(({ label, href, icon: Icon }) => {
+        {visibleNavItems.map(({ label, href, icon: Icon }) => {
           const isActive = pathname === href || pathname.startsWith(href + "/");
           return (
             <Link
@@ -54,13 +95,13 @@ export default function Sidebar() {
       {/* ── User Section ────────────────────────── */}
       <div className={styles.userSection}>
         <div className={styles.userRow}>
-          <div className={styles.userAvatar}>RS</div>
+          <div className={styles.userAvatar}>{profile ? initials(profile.fullName, profile.email) : "…"}</div>
           <div className={styles.userInfo}>
-            <div className={styles.userName}>Ricardo Santos</div>
-            <div className={styles.userRole}>Administrator</div>
+            <div className={styles.userName}>{profile?.fullName || profile?.email || "Loading..."}</div>
+            <div className={styles.userRole}>{profile ? ROLE_LABELS[profile.role] : ""}</div>
           </div>
         </div>
-        <button className={styles.logoutBtn}>Log out</button>
+        <button className={styles.logoutBtn} onClick={handleLogout}>Log out</button>
       </div>
     </aside>
   );

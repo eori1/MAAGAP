@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabaseServer";
+import { getSessionProfile } from "@/lib/supabaseSessionServer";
 
 interface InspectorRow {
   inspector_id: string;
@@ -14,8 +15,15 @@ interface AssignmentInspectorIdRow {
 }
 
 // Serves the PPDO inspector roster with LP-computed capacity/workload from
-// Supabase, joined with a live count of current assignments.
+// Supabase, joined with a live count of current assignments. Inspectors are
+// scoped to their own record (defense in depth -- the Users page nav item
+// is also hidden from them).
 export async function GET() {
+  const profile = await getSessionProfile();
+  if (!profile) {
+    return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
+  }
+
   try {
     const supabase = getSupabaseServerClient();
 
@@ -26,8 +34,12 @@ export async function GET() {
     if (insErr) throw insErr;
     if (asgErr) throw asgErr;
 
-    const inspectors = (insData ?? []) as unknown as InspectorRow[];
+    let inspectors = (insData ?? []) as unknown as InspectorRow[];
     const assignments = (asgData ?? []) as unknown as AssignmentInspectorIdRow[];
+
+    if (profile.role === "inspector") {
+      inspectors = inspectors.filter((i) => i.inspector_id === profile.inspectorId);
+    }
 
     const assignedCount = new Map<string, number>();
     for (const a of assignments) {

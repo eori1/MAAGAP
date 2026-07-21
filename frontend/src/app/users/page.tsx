@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import TopRight from "@/components/TopRight";
 import styles from "./page.module.css";
 
-/* ─── Types (mirror backend inspectors.json payload) ──── */
+/* ─── Types ────────────────────────────────────────────── */
 interface InspectorRecord {
   id: string;
   name: string;
@@ -18,9 +19,30 @@ interface InspectorRecord {
   assigned: number;
 }
 
+type AccountRole = "manager" | "inspector" | "admin";
+
+interface AccountRecord {
+  id: string;
+  email: string;
+  full_name: string | null;
+  role: AccountRole;
+  inspector_id: string | null;
+  created_at: string;
+}
+
+interface SessionProfile {
+  role: AccountRole;
+}
+
 const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
   "Active":  { bg: "#d4efdf", color: "#27ae60" },
   "On Duty": { bg: "#fcf3cf", color: "#f39c12" },
+};
+
+const ROLE_STYLE: Record<AccountRole, { bg: string; color: string }> = {
+  admin:     { bg: "#e8e0fb", color: "#6c3fc5" },
+  manager:   { bg: "#d4e0f5", color: "#2756c5" },
+  inspector: { bg: "#e2e8f0", color: "#4a5a6a" },
 };
 
 /* ─── Icons ───────────────────────────────────────────── */
@@ -34,24 +56,122 @@ function AvatarIcon() {
   );
 }
 
+function PlusIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+      <line x1="12" y1="5" x2="12" y2="19" />
+      <line x1="5" y1="12" x2="19" y2="12" />
+    </svg>
+  );
+}
+
+/* ─── Create Account Form (Admin only) ───────────────────── */
+function CreateAccountForm({ inspectors, onCreated }: { inspectors: InspectorRecord[]; onCreated: () => void }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [role, setRole] = useState<AccountRole>("inspector");
+  const [inspectorId, setInspectorId] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    const res = await fetch("/api/admin/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email, password, fullName,
+        role,
+        inspectorId: role === "inspector" ? (inspectorId || null) : null,
+      }),
+    });
+    setBusy(false);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setError(body.error ?? "Failed to create account");
+      return;
+    }
+    setEmail(""); setPassword(""); setFullName(""); setInspectorId("");
+    onCreated();
+  }
+
+  return (
+    <form className={styles.createForm} onSubmit={handleSubmit}>
+      {error && <div className={styles.formError}>{error}</div>}
+      <div className={styles.createFormRow}>
+        <input className={styles.searchInput} placeholder="Full name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+        <input className={styles.searchInput} type="email" placeholder="Email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+        <input className={styles.searchInput} type="password" placeholder="Temporary password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
+        <select className={styles.select} value={role} onChange={(e) => setRole(e.target.value as AccountRole)}>
+          <option value="inspector">Inspector</option>
+          <option value="manager">Manager</option>
+          <option value="admin">Admin</option>
+        </select>
+        {role === "inspector" && (
+          <select className={styles.select} value={inspectorId} onChange={(e) => setInspectorId(e.target.value)}>
+            <option value="">Link to roster entry...</option>
+            {inspectors.map((i) => (
+              <option key={i.id} value={i.id}>{i.name} ({i.id})</option>
+            ))}
+          </select>
+        )}
+        <button className={styles.addBtn} type="submit" disabled={busy}>
+          <PlusIcon /> {busy ? "Creating..." : "Create Account"}
+        </button>
+      </div>
+    </form>
+  );
+}
+
 /* ─── Page Component ──────────────────────────────────── */
 export default function UserManagementPage() {
+  const router = useRouter();
+  const [sessionProfile, setSessionProfile] = useState<SessionProfile | null>(null);
   const [inspectors, setInspectors] = useState<InspectorRecord[]>([]);
+  const [accounts, setAccounts] = useState<AccountRecord[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("All Status");
   const [sortBy, setSortBy] = useState("Alphabetical (A-Z)");
   const [orderBy, setOrderBy] = useState("Ascending");
 
+  const loadAccounts = () => {
+    fetch("/api/admin/users")
+      .then((res) => (res.ok ? res.json() : []))
+      .then(setAccounts)
+      .catch(() => setAccounts([]));
+  };
+
   useEffect(() => {
+    fetch("/api/me")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((profile: SessionProfile | null) => {
+        if (!profile || profile.role === "inspector") {
+          router.replace("/dashboard");
+          return;
+        }
+        setSessionProfile(profile);
+      });
+
     fetch("/api/inspectors")
-      .then(res => {
-        if (!res.ok) throw new Error("no data");
-        return res.json();
-      })
+      .then((res) => (res.ok ? res.json() : []))
       .then(setInspectors)
       .catch(() => setLoadError("No inspector roster found. Run the backend pipeline (python main.py) to generate it."));
-  }, []);
+
+    loadAccounts();
+  }, [router]);
+
+  async function handleRoleChange(id: string, role: AccountRole) {
+    setAccounts((prev) => prev.map((a) => (a.id === id ? { ...a, role } : a)));
+    await fetch(`/api/admin/users/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ role }),
+    });
+  }
 
   const filtered = useMemo(() => {
     let list = [...inspectors];
@@ -65,6 +185,9 @@ export default function UserManagementPage() {
   }, [inspectors, search, status, sortBy, orderBy]);
 
   const clearFilters = () => { setSearch(""); setStatus("All Status"); };
+  const isAdmin = sessionProfile?.role === "admin";
+
+  if (!sessionProfile) return null;
 
   return (
     <div className={styles.shell}>
@@ -81,7 +204,70 @@ export default function UserManagementPage() {
           <TopRight />
         </div>
 
-        {/* ── Main white card ── */}
+        {/* ── Account Access (login accounts / AuthService) ── */}
+        <div className={styles.card} style={{ marginBottom: "1rem" }}>
+          <div className={styles.cardHeader}>
+            <div>
+              <h1 className={styles.cardTitle}>
+                Account <span className={styles.accent}>Access</span>
+              </h1>
+              <p className={styles.cardSub}>
+                {isAdmin ? "Manage login accounts and role assignments" : "View login accounts (role changes require Admin)"}
+              </p>
+            </div>
+          </div>
+          <div className={styles.divider} />
+
+          {isAdmin && <CreateAccountForm inspectors={inspectors} onCreated={loadAccounts} />}
+
+          <div className={styles.tableWrap}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th className={styles.th}>Account</th>
+                  <th className={styles.th}>Linked Inspector</th>
+                  <th className={styles.th} style={{ textAlign: "center" }}>Role</th>
+                </tr>
+              </thead>
+              <tbody>
+                {accounts.map((a) => (
+                  <tr key={a.id} className={styles.row}>
+                    <td className={styles.td}>
+                      <div className={styles.employeeCell}>
+                        <AvatarIcon />
+                        <div>
+                          <div className={styles.employeeName}>{a.full_name || a.email}</div>
+                          <div className={styles.employeeId}>{a.email}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className={styles.td}>{a.inspector_id ?? "—"}</td>
+                    <td className={`${styles.td} ${styles.tdCenter}`}>
+                      {isAdmin ? (
+                        <select
+                          className={styles.select}
+                          value={a.role}
+                          onChange={(e) => handleRoleChange(a.id, e.target.value as AccountRole)}
+                        >
+                          <option value="inspector">Inspector</option>
+                          <option value="manager">Manager</option>
+                          <option value="admin">Admin</option>
+                        </select>
+                      ) : (
+                        <span className={styles.statusBadge} style={ROLE_STYLE[a.role]}>{a.role}</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {accounts.length === 0 && (
+                  <tr><td colSpan={3} className={styles.emptyRow}>No accounts yet.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* ── Main white card: Inspector Roster ── */}
         <div className={styles.card}>
 
           {/* Card header */}
