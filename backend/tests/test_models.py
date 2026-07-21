@@ -11,9 +11,10 @@ from maagap.feature_engineering import split_data
 
 
 @pytest.fixture(scope="module")
-def prepared_features():
+def prepared_features(tmp_path_factory):
     gen = SyntheticDataGenerator(seed=42)
-    df_proj, df_qtr = gen.generate_synthetic_dataset(n_projects=80)
+    out_dir = tmp_path_factory.mktemp("test_models_data")
+    df_proj, df_qtr = gen.generate_synthetic_dataset(n_projects=80, output_dir=str(out_dir))
     
     preprocessor = MAAGAPPreprocessor()
     X_static, X_temporal, static_cols, temporal_cols = preprocessor.fit_transform(df_proj, df_qtr)

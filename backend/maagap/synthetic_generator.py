@@ -103,12 +103,19 @@ class SyntheticDataGenerator:
         return "Critical"
 
     def generate_synthetic_dataset(
-        self, 
-        distributions: Optional[Dict[str, Any]] = None, 
-        n_projects: Optional[int] = None
+        self,
+        distributions: Optional[Dict[str, Any]] = None,
+        n_projects: Optional[int] = None,
+        output_dir: Optional[str] = None,
     ) -> Tuple[pd.DataFrame, pd.DataFrame]:
-        """Generate the full synthetic dataset: projects + quarterly monitoring."""
+        """Generate the full synthetic dataset: projects + quarterly monitoring.
+
+        ``output_dir`` overrides where the CSV/ERD tables are written --
+        callers such as unit tests should pass a temp directory so they don't
+        clobber the production pipeline's output in DATA_PROCESSED_DIR.
+        """
         n = n_projects or SYNTHETIC_NUM_PROJECTS
+        out_dir = output_dir or DATA_PROCESSED_DIR
         projects = []
         quarterly_records = []
 
@@ -284,8 +291,8 @@ class SyntheticDataGenerator:
         df_projects = pd.DataFrame(projects)
         df_quarterly = pd.DataFrame(quarterly_records)
 
-        proj_path = os.path.join(DATA_PROCESSED_DIR, "synthetic_projects.csv")
-        qtr_path = os.path.join(DATA_PROCESSED_DIR, "synthetic_quarterly.csv")
+        proj_path = os.path.join(out_dir, "synthetic_projects.csv")
+        qtr_path = os.path.join(out_dir, "synthetic_quarterly.csv")
         df_projects.to_csv(proj_path, index=False)
         df_quarterly.to_csv(qtr_path, index=False)
 
@@ -307,7 +314,7 @@ class SyntheticDataGenerator:
                 "reliability_score": rel,
             })
         df_contractors = pd.DataFrame(contractor_list)
-        df_contractors.to_csv(os.path.join(DATA_PROCESSED_DIR, "tbl_contractor.csv"), index=False)
+        df_contractors.to_csv(os.path.join(out_dir, "tbl_contractor.csv"), index=False)
 
         # 2. PPDO_INSPECTOR Table (6 inspectors per delimitation)
         inspectors = [
@@ -319,7 +326,7 @@ class SyntheticDataGenerator:
             {"inspector_id": "INSP-006", "inspector_name": "Engr. Teresa Aquino", "availability_status": "Available", "current_workload": 2, "vehicle_access": False},
         ]
         df_inspectors = pd.DataFrame(inspectors)
-        df_inspectors.to_csv(os.path.join(DATA_PROCESSED_DIR, "tbl_inspector.csv"), index=False)
+        df_inspectors.to_csv(os.path.join(out_dir, "tbl_inspector.csv"), index=False)
 
         # 3. PROJECT Table
         df_tbl_proj = df_projects[[
@@ -331,7 +338,7 @@ class SyntheticDataGenerator:
             "implementing_agency": "category",
         }, inplace=True)
         df_tbl_proj["status"] = "Active"
-        df_tbl_proj.to_csv(os.path.join(DATA_PROCESSED_DIR, "tbl_project.csv"), index=False)
+        df_tbl_proj.to_csv(os.path.join(out_dir, "tbl_project.csv"), index=False)
 
         # 4. INSPECTION_LOG Table
         df_tbl_log = df_quarterly.copy()
@@ -344,14 +351,14 @@ class SyntheticDataGenerator:
             "actual_expenditure": "actual_financial_accomplishment",
             "issues_count": "issues_noted",
         }, inplace=True)
-        df_tbl_log.to_csv(os.path.join(DATA_PROCESSED_DIR, "tbl_inspection_log.csv"), index=False)
+        df_tbl_log.to_csv(os.path.join(out_dir, "tbl_inspection_log.csv"), index=False)
 
         # 5. EXTERNAL_CONTEXT Table
         df_tbl_ext = df_quarterly[["quarter", "rainfall_mm", "typhoon_days", "cpi_quarterly", "cmrpi_quarterly"]].drop_duplicates().copy()
         df_tbl_ext["context_id"] = [f"CTX-{idx+1:04d}" for idx in range(len(df_tbl_ext))]
-        df_tbl_ext.to_csv(os.path.join(DATA_PROCESSED_DIR, "tbl_external_context.csv"), index=False)
+        df_tbl_ext.to_csv(os.path.join(out_dir, "tbl_external_context.csv"), index=False)
         
-        logger.info(f"Exported 5 ERD relational schema tables to {DATA_PROCESSED_DIR}")
+        logger.info(f"Exported 5 ERD relational schema tables to {out_dir}")
         return df_projects, df_quarterly
 
 # Provide backward-compatibility wrapper

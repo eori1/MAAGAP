@@ -1,42 +1,52 @@
 [
   {
+    "type": "TIER_ESCALATION",
+    "projectId": "PROJ-2024-1480",
+    "fromTier": "Medium",
+    "toTier": "High",
+    "riskScore": 0.7002,
+    "message": "PROJ-2024-1480 escalated from Medium to High risk",
+    "date": "2026-07-21",
+    "id": "ALERT-0001"
+  },
+  {
+    "type": "TIER_ESCALATION",
+    "projectId": "PROJ-2025-0601",
+    "fromTier": "Low",
+    "toTier": "Medium",
+    "riskScore": 0.3153,
+    "message": "PROJ-2025-0601 escalated from Low to Medium risk",
+    "date": "2026-07-21",
+    "id": "ALERT-0002"
+  },
+  {
     "type": "CRITICAL_RISK",
     "projectId": "PROJ-2024-2332",
     "fromTier": null,
     "toTier": "Critical",
-    "riskScore": 0.955,
+    "riskScore": 0.9535,
     "message": "PROJ-2024-2332 is at Critical risk (95%) \u2014 immediate inspection required",
-    "date": "2026-07-20",
-    "id": "ALERT-0001"
+    "date": "2026-07-21",
+    "id": "ALERT-0003"
   },
   {
     "type": "CRITICAL_RISK",
     "projectId": "PROJ-2019-1046",
     "fromTier": null,
     "toTier": "Critical",
-    "riskScore": 0.9546,
+    "riskScore": 0.9456,
     "message": "PROJ-2019-1046 is at Critical risk (95%) \u2014 immediate inspection required",
-    "date": "2026-07-20",
-    "id": "ALERT-0002"
-  },
-  {
-    "type": "CRITICAL_RISK",
-    "projectId": "PROJ-2024-2883",
-    "fromTier": null,
-    "toTier": "Critical",
-    "riskScore": 0.935,
-    "message": "PROJ-2024-2883 is at Critical risk (93%) \u2014 immediate inspection required",
-    "date": "2026-07-20",
-    "id": "ALERT-0003"
+    "date": "2026-07-21",
+    "id": "ALERT-0004"
   },
   {
     "type": "CRITICAL_RISK",
     "projectId": "PROJ-2024-0864",
     "fromTier": null,
     "toTier": "Critical",
-    "riskScore": 0.9337,
+    "riskScore": 0.926,
     "message": "PROJ-2024-0864 is at Critical risk (93%) \u2014 immediate inspection required",
-    "date": "2026-07-20",
-    "id": "ALERT-0004"
+    "date": "2026-07-21",
+    "id": "ALERT-0005"
   }
 ]

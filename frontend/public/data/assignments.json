@@ -1,10 +1,10 @@
 {
-  "generatedAt": "2026-07-20T17:48:20.512918",
+  "generatedAt": "2026-07-21T10:29:54.926768",
   "solver": "PuLP CBC (Integer LP)",
   "totalProjects": 450,
   "assignedProjects": 41,
   "unassignedProjects": 409,
-  "criticalAssignments": 4,
+  "criticalAssignments": 3,
   "inspectors": [
     {
       "id": "INSP-001",
@@ -20,7 +20,7 @@
           "name": "PROJ-2024-0864",
           "location": "Passi City",
           "type": "Infrastructure",
-          "riskScore": 0.9337,
+          "riskScore": 0.926,
           "riskTier": "Critical",
           "priority": "HIGH",
           "urgency": "VISIT ASAP"
@@ -30,7 +30,7 @@
           "name": "PROJ-2023-0005",
           "location": "Barotac Viejo",
           "type": "Infrastructure",
-          "riskScore": 0.8469,
+          "riskScore": 0.8021,
           "riskTier": "High",
           "priority": "HIGH",
           "urgency": "VISIT SOON"
@@ -40,17 +40,7 @@
           "name": "PROJ-2018-1013",
           "location": "Dingle",
           "type": "Infrastructure",
-          "riskScore": 0.8079,
-          "riskTier": "High",
-          "priority": "HIGH",
-          "urgency": "VISIT SOON"
-        },
-        {
-          "projectId": "PROJ-2025-1760",
-          "name": "PROJ-2025-1760",
-          "location": "San Enrique",
-          "type": "Infrastructure",
-          "riskScore": 0.771,
+          "riskScore": 0.7924,
           "riskTier": "High",
           "priority": "HIGH",
           "urgency": "VISIT SOON"
@@ -60,7 +50,17 @@
           "name": "PROJ-2020-0624",
           "location": "Oton",
           "type": "Infrastructure",
-          "riskScore": 0.7582,
+          "riskScore": 0.7274,
+          "riskTier": "High",
+          "priority": "HIGH",
+          "urgency": "VISIT SOON"
+        },
+        {
+          "projectId": "PROJ-2025-1760",
+          "name": "PROJ-2025-1760",
+          "location": "San Enrique",
+          "type": "Infrastructure",
+          "riskScore": 0.7246,
           "riskTier": "High",
           "priority": "HIGH",
           "urgency": "VISIT SOON"
@@ -70,7 +70,7 @@
           "name": "PROJ-2023-0972",
           "location": "Igbaras",
           "type": "Infrastructure",
-          "riskScore": 0.7579,
+          "riskScore": 0.7205,
           "riskTier": "High",
           "priority": "HIGH",
           "urgency": "VISIT SOON"
@@ -80,17 +80,7 @@
           "name": "PROJ-2024-1824",
           "location": "Zarraga",
           "type": "Infrastructure",
-          "riskScore": 0.7459,
-          "riskTier": "High",
-          "priority": "HIGH",
-          "urgency": "VISIT SOON"
-        },
-        {
-          "projectId": "PROJ-2025-1163",
-          "name": "PROJ-2025-1163",
-          "location": "Concepcion",
-          "type": "Infrastructure",
-          "riskScore": 0.7309,
+          "riskScore": 0.7174,
           "riskTier": "High",
           "priority": "HIGH",
           "urgency": "VISIT SOON"
@@ -100,7 +90,7 @@
           "name": "PROJ-2016-0861",
           "location": "Maasin",
           "type": "Infrastructure",
-          "riskScore": 0.6986,
+          "riskScore": 0.6911,
           "riskTier": "Medium",
           "priority": "MEDIUM",
           "urgency": "CHECK IN A WEEK"
@@ -110,7 +100,17 @@
           "name": "PROJ-2020-2344",
           "location": "Carles",
           "type": "Infrastructure",
-          "riskScore": 0.6819,
+          "riskScore": 0.6758,
+          "riskTier": "Medium",
+          "priority": "MEDIUM",
+          "urgency": "CHECK IN A WEEK"
+        },
+        {
+          "projectId": "PROJ-2025-1163",
+          "name": "PROJ-2025-1163",
+          "location": "Concepcion",
+          "type": "Infrastructure",
+          "riskScore": 0.6729,
           "riskTier": "Medium",
           "priority": "MEDIUM",
           "urgency": "CHECK IN A WEEK"
@@ -131,27 +131,17 @@
           "name": "PROJ-2024-2332",
           "location": "Estancia",
           "type": "Infrastructure",
-          "riskScore": 0.955,
+          "riskScore": 0.9535,
           "riskTier": "Critical",
           "priority": "HIGH",
           "urgency": "VISIT ASAP"
-        },
-        {
-          "projectId": "PROJ-2024-2845",
-          "name": "PROJ-2024-2845",
-          "location": "Barotac Nuevo",
-          "type": "Infrastructure",
-          "riskScore": 0.8976,
-          "riskTier": "High",
-          "priority": "HIGH",
-          "urgency": "VISIT SOON"
         },
         {
           "projectId": "PROJ-2017-2089",
           "name": "PROJ-2017-2089",
           "location": "Dumangas",
           "type": "Infrastructure",
-          "riskScore": 0.8892,
+          "riskScore": 0.8734,
           "riskTier": "High",
           "priority": "HIGH",
           "urgency": "VISIT SOON"
@@ -161,7 +151,17 @@
           "name": "PROJ-2016-1637",
           "location": "Leganes",
           "type": "Infrastructure",
-          "riskScore": 0.8809,
+          "riskScore": 0.8686,
+          "riskTier": "High",
+          "priority": "HIGH",
+          "urgency": "VISIT SOON"
+        },
+        {
+          "projectId": "PROJ-2024-2845",
+          "name": "PROJ-2024-2845",
+          "location": "Barotac Nuevo",
+          "type": "Infrastructure",
+          "riskScore": 0.8243,
           "riskTier": "High",
           "priority": "HIGH",
           "urgency": "VISIT SOON"
@@ -171,7 +171,7 @@
           "name": "PROJ-2024-0096",
           "location": "Carles",
           "type": "Infrastructure",
-          "riskScore": 0.8282,
+          "riskScore": 0.7787,
           "riskTier": "High",
           "priority": "HIGH",
           "urgency": "VISIT SOON"
@@ -181,7 +181,7 @@
           "name": "PROJ-2016-2613",
           "location": "Igbaras",
           "type": "Infrastructure",
-          "riskScore": 0.8048,
+          "riskScore": 0.7716,
           "riskTier": "High",
           "priority": "HIGH",
           "urgency": "VISIT SOON"
@@ -191,7 +191,7 @@
           "name": "PROJ-2020-0470",
           "location": "Oton",
           "type": "Infrastructure",
-          "riskScore": 0.7821,
+          "riskScore": 0.7515,
           "riskTier": "High",
           "priority": "HIGH",
           "urgency": "VISIT SOON"
@@ -201,7 +201,7 @@
           "name": "PROJ-2016-0294",
           "location": "Tubungan",
           "type": "Infrastructure",
-          "riskScore": 0.7597,
+          "riskScore": 0.7464,
           "riskTier": "High",
           "priority": "HIGH",
           "urgency": "VISIT SOON"
@@ -211,7 +211,7 @@
           "name": "PROJ-2023-1244",
           "location": "Alimodian",
           "type": "Infrastructure",
-          "riskScore": 0.749,
+          "riskScore": 0.7119,
           "riskTier": "High",
           "priority": "HIGH",
           "urgency": "VISIT SOON"
@@ -232,7 +232,7 @@
           "name": "PROJ-2019-1046",
           "location": "Lambunao",
           "type": "Infrastructure",
-          "riskScore": 0.9546,
+          "riskScore": 0.9456,
           "riskTier": "Critical",
           "priority": "HIGH",
           "urgency": "VISIT ASAP"
@@ -242,7 +242,7 @@
           "name": "PROJ-2019-2256",
           "location": "Estancia",
           "type": "Infrastructure",
-          "riskScore": 0.8615,
+          "riskScore": 0.8541,
           "riskTier": "High",
           "priority": "HIGH",
           "urgency": "VISIT SOON"
@@ -252,7 +252,7 @@
           "name": "PROJ-2019-1368",
           "location": "Carles",
           "type": "Infrastructure",
-          "riskScore": 0.8443,
+          "riskScore": 0.8144,
           "riskTier": "High",
           "priority": "HIGH",
           "urgency": "VISIT SOON"
@@ -262,7 +262,17 @@
           "name": "PROJ-2025-2705",
           "location": "Tubungan",
           "type": "Infrastructure",
-          "riskScore": 0.8189,
+          "riskScore": 0.7532,
+          "riskTier": "High",
+          "priority": "HIGH",
+          "urgency": "VISIT SOON"
+        },
+        {
+          "projectId": "PROJ-2023-0503",
+          "name": "PROJ-2023-0503",
+          "location": "Tubungan",
+          "type": "Infrastructure",
+          "riskScore": 0.7375,
           "riskTier": "High",
           "priority": "HIGH",
           "urgency": "VISIT SOON"
@@ -271,16 +281,6 @@
           "projectId": "PROJ-2018-0202",
           "name": "PROJ-2018-0202",
           "location": "Ajuy",
-          "type": "Infrastructure",
-          "riskScore": 0.6962,
-          "riskTier": "Medium",
-          "priority": "MEDIUM",
-          "urgency": "CHECK IN A WEEK"
-        },
-        {
-          "projectId": "PROJ-2022-1596",
-          "name": "PROJ-2022-1596",
-          "location": "Balasan",
           "type": "Infrastructure",
           "riskScore": 0.6583,
           "riskTier": "Medium",
@@ -303,17 +303,7 @@
           "name": "PROJ-2024-2883",
           "location": "Leon",
           "type": "Infrastructure",
-          "riskScore": 0.935,
-          "riskTier": "Critical",
-          "priority": "HIGH",
-          "urgency": "VISIT ASAP"
-        },
-        {
-          "projectId": "PROJ-2023-1686",
-          "name": "PROJ-2023-1686",
-          "location": "Ajuy",
-          "type": "Infrastructure",
-          "riskScore": 0.8989,
+          "riskScore": 0.8964,
           "riskTier": "High",
           "priority": "HIGH",
           "urgency": "VISIT SOON"
@@ -323,7 +313,17 @@
           "name": "PROJ-2021-1029",
           "location": "Guimbal",
           "type": "Infrastructure",
-          "riskScore": 0.8745,
+          "riskScore": 0.862,
+          "riskTier": "High",
+          "priority": "HIGH",
+          "urgency": "VISIT SOON"
+        },
+        {
+          "projectId": "PROJ-2023-1686",
+          "name": "PROJ-2023-1686",
+          "location": "Ajuy",
+          "type": "Infrastructure",
+          "riskScore": 0.8479,
           "riskTier": "High",
           "priority": "HIGH",
           "urgency": "VISIT SOON"
@@ -333,27 +333,7 @@
           "name": "PROJ-2023-1307",
           "location": "Lemery",
           "type": "Infrastructure",
-          "riskScore": 0.8458,
-          "riskTier": "High",
-          "priority": "HIGH",
-          "urgency": "VISIT SOON"
-        },
-        {
-          "projectId": "PROJ-2023-0503",
-          "name": "PROJ-2023-0503",
-          "location": "Tubungan",
-          "type": "Infrastructure",
-          "riskScore": 0.7758,
-          "riskTier": "High",
-          "priority": "HIGH",
-          "urgency": "VISIT SOON"
-        },
-        {
-          "projectId": "PROJ-2023-2857",
-          "name": "PROJ-2023-2857",
-          "location": "Anilao",
-          "type": "Infrastructure",
-          "riskScore": 0.7371,
+          "riskScore": 0.8329,
           "riskTier": "High",
           "priority": "HIGH",
           "urgency": "VISIT SOON"
@@ -363,17 +343,37 @@
           "name": "PROJ-2018-2136",
           "location": "Alimodian",
           "type": "Infrastructure",
-          "riskScore": 0.7346,
+          "riskScore": 0.7132,
           "riskTier": "High",
           "priority": "HIGH",
           "urgency": "VISIT SOON"
+        },
+        {
+          "projectId": "PROJ-2023-2857",
+          "name": "PROJ-2023-2857",
+          "location": "Anilao",
+          "type": "Infrastructure",
+          "riskScore": 0.686,
+          "riskTier": "Medium",
+          "priority": "MEDIUM",
+          "urgency": "CHECK IN A WEEK"
         },
         {
           "projectId": "PROJ-2018-0022",
           "name": "PROJ-2018-0022",
           "location": "Barotac Nuevo",
           "type": "Infrastructure",
-          "riskScore": 0.6678,
+          "riskScore": 0.6573,
+          "riskTier": "Medium",
+          "priority": "MEDIUM",
+          "urgency": "CHECK IN A WEEK"
+        },
+        {
+          "projectId": "PROJ-2018-0607",
+          "name": "PROJ-2018-0607",
+          "location": "Balasan",
+          "type": "Infrastructure",
+          "riskScore": 0.6377,
           "riskTier": "Medium",
           "priority": "MEDIUM",
           "urgency": "CHECK IN A WEEK"
@@ -394,7 +394,7 @@
           "name": "PROJ-2016-1891",
           "location": "Maasin",
           "type": "Infrastructure",
-          "riskScore": 0.8201,
+          "riskScore": 0.7883,
           "riskTier": "High",
           "priority": "HIGH",
           "urgency": "VISIT SOON"
@@ -404,17 +404,17 @@
           "name": "PROJ-2024-2140",
           "location": "Carles",
           "type": "Infrastructure",
-          "riskScore": 0.7094,
+          "riskScore": 0.7003,
           "riskTier": "High",
           "priority": "HIGH",
           "urgency": "VISIT SOON"
         },
         {
-          "projectId": "PROJ-2016-0198",
-          "name": "PROJ-2016-0198",
-          "location": "Barotac Nuevo",
+          "projectId": "PROJ-2022-1596",
+          "name": "PROJ-2022-1596",
+          "location": "Balasan",
           "type": "Infrastructure",
-          "riskScore": 0.6489,
+          "riskScore": 0.6451,
           "riskTier": "Medium",
           "priority": "MEDIUM",
           "urgency": "CHECK IN A WEEK"
@@ -435,7 +435,7 @@
           "name": "PROJ-2022-1009",
           "location": "Leganes",
           "type": "Infrastructure",
-          "riskScore": 0.8734,
+          "riskScore": 0.8718,
           "riskTier": "High",
           "priority": "HIGH",
           "urgency": "VISIT SOON"
@@ -445,7 +445,7 @@
           "name": "PROJ-2016-2236",
           "location": "Barotac Viejo",
           "type": "Infrastructure",
-          "riskScore": 0.8395,
+          "riskScore": 0.8236,
           "riskTier": "High",
           "priority": "HIGH",
           "urgency": "VISIT SOON"
@@ -455,7 +455,7 @@
           "name": "PROJ-2024-1480",
           "location": "Carles",
           "type": "Infrastructure",
-          "riskScore": 0.7372,
+          "riskScore": 0.7002,
           "riskTier": "High",
           "priority": "HIGH",
           "urgency": "VISIT SOON"
@@ -465,7 +465,7 @@
           "name": "PROJ-2020-1116",
           "location": "Miagao",
           "type": "Infrastructure",
-          "riskScore": 0.6984,
+          "riskScore": 0.6791,
           "riskTier": "Medium",
           "priority": "MEDIUM",
           "urgency": "CHECK IN A WEEK"
@@ -475,7 +475,7 @@
           "name": "PROJ-2019-1680",
           "location": "Lemery",
           "type": "Infrastructure",
-          "riskScore": 0.6979,
+          "riskScore": 0.6708,
           "riskTier": "Medium",
           "priority": "MEDIUM",
           "urgency": "CHECK IN A WEEK"

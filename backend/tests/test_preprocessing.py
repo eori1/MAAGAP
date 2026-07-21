@@ -11,9 +11,10 @@ from maagap.config import MODELS_DIR
 
 
 @pytest.fixture(scope="module")
-def sample_data():
+def sample_data(tmp_path_factory):
     gen = SyntheticDataGenerator(seed=42)
-    df_proj, df_qtr = gen.generate_synthetic_dataset(n_projects=50)
+    out_dir = tmp_path_factory.mktemp("test_preprocessing_data")
+    df_proj, df_qtr = gen.generate_synthetic_dataset(n_projects=50, output_dir=str(out_dir))
     return df_proj, df_qtr
 
 

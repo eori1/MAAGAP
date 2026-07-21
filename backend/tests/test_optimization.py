@@ -10,9 +10,10 @@ from maagap.optimization import ResourceOptimizer
 
 
 @pytest.fixture(scope="module")
-def sample_projects():
+def sample_projects(tmp_path_factory):
     gen = SyntheticDataGenerator(seed=42)
-    df_proj, _ = gen.generate_synthetic_dataset(n_projects=60)
+    out_dir = tmp_path_factory.mktemp("test_optimization_data")
+    df_proj, _ = gen.generate_synthetic_dataset(n_projects=60, output_dir=str(out_dir))
     p_delay = df_proj["delay_probability"].values
     p_overrun = df_proj["overrun_probability"].values
     scores = compute_all_risk_scores(p_delay, p_overrun)

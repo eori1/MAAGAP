@@ -29,6 +29,7 @@ from maagap.preprocessing_pipeline import MAAGAPPreprocessor
 from maagap.models import TreeModelTrainer, LSTMTrainer, MetaEnsembleTrainer, RegressionModelTrainer
 from maagap.risk_scoring import compute_all_risk_scores, get_risk_tier, check_logic_consistency
 from maagap.optimization import InspectorAssignmentOptimizer
+from maagap import database as db
 from maagap.explainability import ExplanationService
 from maagap.evaluation import Evaluator, Visualizer
 
@@ -306,6 +307,98 @@ class MainPipeline:
             json.dump(alerts, f, indent=2)
 
         logger.info(f"Exported timeline/reports/inspectors/alerts JSON to {data_dir}")
+
+    def _sync_to_supabase(
+        self,
+        df_projects: pd.DataFrame,
+        inspectors_df: pd.DataFrame,
+        df_predictions_tbl: pd.DataFrame,
+        df_assignments: pd.DataFrame,
+        df_test_projects: pd.DataFrame,
+        risk_scores_test: np.ndarray,
+        risk_tiers_test: np.ndarray,
+    ) -> None:
+        """Push pipeline outputs to Supabase so the Next.js API routes can
+        query a real database instead of reading CSV/JSON files. No-op if
+        backend/.env is not configured."""
+        client = db.get_client()
+        if client is None:
+            return
+
+        # Snapshot the previous run's risk tiers before they are overwritten,
+        # for tier-escalation alert diffing.
+        prev_predictions = db.fetch_table(client, "predictions", columns="project_id,risk_tier")
+        prev_tier_by_id = {r["project_id"]: r["risk_tier"] for r in prev_predictions}
+
+        df_contractors_db = pd.read_csv(os.path.join(DATA_PROCESSED_DIR, "tbl_contractor.csv"))
+        df_external_ctx_db = pd.read_csv(os.path.join(DATA_PROCESSED_DIR, "tbl_external_context.csv"))
+        df_inspection_log_db = pd.read_csv(os.path.join(DATA_PROCESSED_DIR, "tbl_inspection_log.csv"))
+
+        start_by_pid = dict(zip(df_projects["project_id"], pd.to_datetime(df_projects["start_date"])))
+        df_inspection_log_db["report_date"] = [
+            (start_by_pid[pid] + pd.DateOffset(months=3 * int(q))).strftime("%Y-%m-%d")
+            for pid, q in zip(df_inspection_log_db["project_id"], df_inspection_log_db["quarter"])
+        ]
+
+        df_projects_db = df_projects.rename(columns={
+            "implementing_agency": "category",
+            "approved_budget": "budget_allocated",
+            "year": "project_year",
+            "delay_days": "actual_delay_days",
+        })[[
+            "project_id", "project_type", "category", "location", "budget_allocated",
+            "planned_duration_months", "start_date", "planned_end_date", "funding_source",
+            "project_year", "is_delayed", "actual_delay_days",
+        ]].copy()
+        df_projects_db["status"] = "Active"
+        df_projects_db["is_delayed"] = df_projects_db["is_delayed"].astype(bool)
+
+        df_inspectors_db = inspectors_df.copy()
+        df_inspectors_db["capacity"] = InspectorAssignmentOptimizer.compute_capacities(inspectors_df)
+        df_inspectors_db["vehicle_access"] = df_inspectors_db["vehicle_access"].astype(bool)
+
+        db.sync_all(client, {
+            "contractors": df_contractors_db,
+            "inspectors": df_inspectors_db,
+            "projects": df_projects_db,
+            "external_context": df_external_ctx_db,
+            "inspection_logs": df_inspection_log_db,
+            "predictions": df_predictions_tbl,
+            # inspector_name is looked up via join to `inspectors` in Supabase
+            "assignments": df_assignments.drop(columns=["inspector_name"]),
+        })
+
+        # Tier-escalation + critical-risk alerts, computed from the pre-sync snapshot.
+        tier_rank = {"Low": 0, "Medium": 1, "High": 2, "Critical": 3}
+        today_str = pd.Timestamp.now().strftime("%Y-%m-%d")
+        alerts_rows = []
+        for pid, new_tier, score in zip(df_test_projects["project_id"], risk_tiers_test, risk_scores_test):
+            old_tier = prev_tier_by_id.get(pid)
+            if old_tier is not None and tier_rank.get(new_tier, 0) > tier_rank.get(old_tier, 0):
+                alerts_rows.append({
+                    "type": "TIER_ESCALATION", "project_id": pid,
+                    "from_tier": old_tier, "to_tier": new_tier,
+                    "risk_score": round(float(score), 4),
+                    "message": f"{pid} escalated from {old_tier} to {new_tier} risk",
+                    "alert_date": today_str,
+                })
+            if new_tier == "Critical":
+                alerts_rows.append({
+                    "type": "CRITICAL_RISK", "project_id": pid,
+                    "from_tier": None, "to_tier": "Critical",
+                    "risk_score": round(float(score), 4),
+                    "message": f"{pid} is at Critical risk ({score:.0%}) — immediate inspection required",
+                    "alert_date": today_str,
+                })
+        alerts_rows.sort(key=lambda a: (a["type"] != "TIER_ESCALATION", -a["risk_score"]))
+        for k, a in enumerate(alerts_rows):
+            a["id"] = f"ALERT-{k+1:04d}"
+
+        df_risk_alerts_db = pd.DataFrame(alerts_rows) if alerts_rows else pd.DataFrame(
+            columns=["id", "type", "project_id", "from_tier", "to_tier", "risk_score", "message", "alert_date"]
+        )
+        db.sync_table(client, "risk_alerts", df_risk_alerts_db, pk_col="id")
+        logger.info("Supabase sync complete.")
 
     def run(self) -> None:
         """Execute the full pipeline."""
@@ -595,6 +688,14 @@ class MainPipeline:
                 risk_scores_test, risk_tiers_test,
                 reg_delay_days.predict(X_static[test_idx]),
                 df_prev_predictions,
+            )
+
+            # Sync results to Supabase (real database backing the Next.js API
+            # routes); no-op if backend/.env is not configured.
+            banner(logger, "SYNCING RESULTS TO SUPABASE")
+            self._sync_to_supabase(
+                df_projects, inspectors_df, df_predictions_tbl, df_assignments,
+                df_test_projects, risk_scores_test, risk_tiers_test,
             )
 
             banner(logger, "MAAGAP EXECUTION COMPLETE!")

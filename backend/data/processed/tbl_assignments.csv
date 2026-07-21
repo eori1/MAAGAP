@@ -1,42 +1,42 @@
 assignment_id,project_id,project_type,location,inspector_id,inspector_name,risk_score,risk_tier,priority,urgency
-ASSIGN-00026,PROJ-2024-0864,Infrastructure,Passi City,INSP-001,Engr. Juan Dela Cruz,0.9337,Critical,HIGH,VISIT ASAP
-ASSIGN-00004,PROJ-2023-0005,Infrastructure,Barotac Viejo,INSP-001,Engr. Juan Dela Cruz,0.8469,High,HIGH,VISIT SOON
-ASSIGN-00003,PROJ-2018-1013,Infrastructure,Dingle,INSP-001,Engr. Juan Dela Cruz,0.8079,High,HIGH,VISIT SOON
-ASSIGN-00020,PROJ-2025-1760,Infrastructure,San Enrique,INSP-001,Engr. Juan Dela Cruz,0.771,High,HIGH,VISIT SOON
-ASSIGN-00017,PROJ-2020-0624,Infrastructure,Oton,INSP-001,Engr. Juan Dela Cruz,0.7582,High,HIGH,VISIT SOON
-ASSIGN-00008,PROJ-2023-0972,Infrastructure,Igbaras,INSP-001,Engr. Juan Dela Cruz,0.7579,High,HIGH,VISIT SOON
-ASSIGN-00006,PROJ-2024-1824,Infrastructure,Zarraga,INSP-001,Engr. Juan Dela Cruz,0.7459,High,HIGH,VISIT SOON
-ASSIGN-00031,PROJ-2025-1163,Infrastructure,Concepcion,INSP-001,Engr. Juan Dela Cruz,0.7309,High,HIGH,VISIT SOON
-ASSIGN-00041,PROJ-2016-0861,Infrastructure,Maasin,INSP-001,Engr. Juan Dela Cruz,0.6986,Medium,MEDIUM,CHECK IN A WEEK
-ASSIGN-00034,PROJ-2020-2344,Infrastructure,Carles,INSP-001,Engr. Juan Dela Cruz,0.6819,Medium,MEDIUM,CHECK IN A WEEK
-ASSIGN-00012,PROJ-2024-2332,Infrastructure,Estancia,INSP-002,Engr. Maria Santos,0.955,Critical,HIGH,VISIT ASAP
-ASSIGN-00016,PROJ-2024-2845,Infrastructure,Barotac Nuevo,INSP-002,Engr. Maria Santos,0.8976,High,HIGH,VISIT SOON
-ASSIGN-00030,PROJ-2017-2089,Infrastructure,Dumangas,INSP-002,Engr. Maria Santos,0.8892,High,HIGH,VISIT SOON
-ASSIGN-00021,PROJ-2016-1637,Infrastructure,Leganes,INSP-002,Engr. Maria Santos,0.8809,High,HIGH,VISIT SOON
-ASSIGN-00025,PROJ-2024-0096,Infrastructure,Carles,INSP-002,Engr. Maria Santos,0.8282,High,HIGH,VISIT SOON
-ASSIGN-00037,PROJ-2016-2613,Infrastructure,Igbaras,INSP-002,Engr. Maria Santos,0.8048,High,HIGH,VISIT SOON
-ASSIGN-00014,PROJ-2020-0470,Infrastructure,Oton,INSP-002,Engr. Maria Santos,0.7821,High,HIGH,VISIT SOON
-ASSIGN-00019,PROJ-2016-0294,Infrastructure,Tubungan,INSP-002,Engr. Maria Santos,0.7597,High,HIGH,VISIT SOON
-ASSIGN-00010,PROJ-2023-1244,Infrastructure,Alimodian,INSP-002,Engr. Maria Santos,0.749,High,HIGH,VISIT SOON
-ASSIGN-00013,PROJ-2019-1046,Infrastructure,Lambunao,INSP-003,Engr. Antonio Reyes,0.9546,Critical,HIGH,VISIT ASAP
-ASSIGN-00015,PROJ-2019-2256,Infrastructure,Estancia,INSP-003,Engr. Antonio Reyes,0.8615,High,HIGH,VISIT SOON
-ASSIGN-00032,PROJ-2019-1368,Infrastructure,Carles,INSP-003,Engr. Antonio Reyes,0.8443,High,HIGH,VISIT SOON
-ASSIGN-00011,PROJ-2025-2705,Infrastructure,Tubungan,INSP-003,Engr. Antonio Reyes,0.8189,High,HIGH,VISIT SOON
-ASSIGN-00035,PROJ-2018-0202,Infrastructure,Ajuy,INSP-003,Engr. Antonio Reyes,0.6962,Medium,MEDIUM,CHECK IN A WEEK
-ASSIGN-00005,PROJ-2022-1596,Infrastructure,Balasan,INSP-003,Engr. Antonio Reyes,0.6583,Medium,MEDIUM,CHECK IN A WEEK
-ASSIGN-00027,PROJ-2024-2883,Infrastructure,Leon,INSP-004,Engr. Elena Gomez,0.935,Critical,HIGH,VISIT ASAP
-ASSIGN-00039,PROJ-2023-1686,Infrastructure,Ajuy,INSP-004,Engr. Elena Gomez,0.8989,High,HIGH,VISIT SOON
-ASSIGN-00028,PROJ-2021-1029,Infrastructure,Guimbal,INSP-004,Engr. Elena Gomez,0.8745,High,HIGH,VISIT SOON
-ASSIGN-00024,PROJ-2023-1307,Infrastructure,Lemery,INSP-004,Engr. Elena Gomez,0.8458,High,HIGH,VISIT SOON
-ASSIGN-00029,PROJ-2023-0503,Infrastructure,Tubungan,INSP-004,Engr. Elena Gomez,0.7758,High,HIGH,VISIT SOON
-ASSIGN-00022,PROJ-2023-2857,Infrastructure,Anilao,INSP-004,Engr. Elena Gomez,0.7371,High,HIGH,VISIT SOON
-ASSIGN-00040,PROJ-2018-2136,Infrastructure,Alimodian,INSP-004,Engr. Elena Gomez,0.7346,High,HIGH,VISIT SOON
-ASSIGN-00038,PROJ-2018-0022,Infrastructure,Barotac Nuevo,INSP-004,Engr. Elena Gomez,0.6678,Medium,MEDIUM,CHECK IN A WEEK
-ASSIGN-00009,PROJ-2016-1891,Infrastructure,Maasin,INSP-005,Engr. Roberto Garcia,0.8201,High,HIGH,VISIT SOON
-ASSIGN-00036,PROJ-2024-2140,Infrastructure,Carles,INSP-005,Engr. Roberto Garcia,0.7094,High,HIGH,VISIT SOON
-ASSIGN-00018,PROJ-2016-0198,Infrastructure,Barotac Nuevo,INSP-005,Engr. Roberto Garcia,0.6489,Medium,MEDIUM,CHECK IN A WEEK
-ASSIGN-00001,PROJ-2022-1009,Infrastructure,Leganes,INSP-006,Engr. Teresa Aquino,0.8734,High,HIGH,VISIT SOON
-ASSIGN-00033,PROJ-2016-2236,Infrastructure,Barotac Viejo,INSP-006,Engr. Teresa Aquino,0.8395,High,HIGH,VISIT SOON
-ASSIGN-00023,PROJ-2024-1480,Infrastructure,Carles,INSP-006,Engr. Teresa Aquino,0.7372,High,HIGH,VISIT SOON
-ASSIGN-00007,PROJ-2020-1116,Infrastructure,Miagao,INSP-006,Engr. Teresa Aquino,0.6984,Medium,MEDIUM,CHECK IN A WEEK
-ASSIGN-00002,PROJ-2019-1680,Infrastructure,Lemery,INSP-006,Engr. Teresa Aquino,0.6979,Medium,MEDIUM,CHECK IN A WEEK
+ASSIGN-00026,PROJ-2024-0864,Infrastructure,Passi City,INSP-001,Engr. Juan Dela Cruz,0.926,Critical,HIGH,VISIT ASAP
+ASSIGN-00004,PROJ-2023-0005,Infrastructure,Barotac Viejo,INSP-001,Engr. Juan Dela Cruz,0.8021,High,HIGH,VISIT SOON
+ASSIGN-00003,PROJ-2018-1013,Infrastructure,Dingle,INSP-001,Engr. Juan Dela Cruz,0.7924,High,HIGH,VISIT SOON
+ASSIGN-00018,PROJ-2020-0624,Infrastructure,Oton,INSP-001,Engr. Juan Dela Cruz,0.7274,High,HIGH,VISIT SOON
+ASSIGN-00020,PROJ-2025-1760,Infrastructure,San Enrique,INSP-001,Engr. Juan Dela Cruz,0.7246,High,HIGH,VISIT SOON
+ASSIGN-00008,PROJ-2023-0972,Infrastructure,Igbaras,INSP-001,Engr. Juan Dela Cruz,0.7205,High,HIGH,VISIT SOON
+ASSIGN-00006,PROJ-2024-1824,Infrastructure,Zarraga,INSP-001,Engr. Juan Dela Cruz,0.7174,High,HIGH,VISIT SOON
+ASSIGN-00041,PROJ-2016-0861,Infrastructure,Maasin,INSP-001,Engr. Juan Dela Cruz,0.6911,Medium,MEDIUM,CHECK IN A WEEK
+ASSIGN-00034,PROJ-2020-2344,Infrastructure,Carles,INSP-001,Engr. Juan Dela Cruz,0.6758,Medium,MEDIUM,CHECK IN A WEEK
+ASSIGN-00031,PROJ-2025-1163,Infrastructure,Concepcion,INSP-001,Engr. Juan Dela Cruz,0.6729,Medium,MEDIUM,CHECK IN A WEEK
+ASSIGN-00013,PROJ-2024-2332,Infrastructure,Estancia,INSP-002,Engr. Maria Santos,0.9535,Critical,HIGH,VISIT ASAP
+ASSIGN-00030,PROJ-2017-2089,Infrastructure,Dumangas,INSP-002,Engr. Maria Santos,0.8734,High,HIGH,VISIT SOON
+ASSIGN-00021,PROJ-2016-1637,Infrastructure,Leganes,INSP-002,Engr. Maria Santos,0.8686,High,HIGH,VISIT SOON
+ASSIGN-00017,PROJ-2024-2845,Infrastructure,Barotac Nuevo,INSP-002,Engr. Maria Santos,0.8243,High,HIGH,VISIT SOON
+ASSIGN-00025,PROJ-2024-0096,Infrastructure,Carles,INSP-002,Engr. Maria Santos,0.7787,High,HIGH,VISIT SOON
+ASSIGN-00037,PROJ-2016-2613,Infrastructure,Igbaras,INSP-002,Engr. Maria Santos,0.7716,High,HIGH,VISIT SOON
+ASSIGN-00015,PROJ-2020-0470,Infrastructure,Oton,INSP-002,Engr. Maria Santos,0.7515,High,HIGH,VISIT SOON
+ASSIGN-00019,PROJ-2016-0294,Infrastructure,Tubungan,INSP-002,Engr. Maria Santos,0.7464,High,HIGH,VISIT SOON
+ASSIGN-00011,PROJ-2023-1244,Infrastructure,Alimodian,INSP-002,Engr. Maria Santos,0.7119,High,HIGH,VISIT SOON
+ASSIGN-00014,PROJ-2019-1046,Infrastructure,Lambunao,INSP-003,Engr. Antonio Reyes,0.9456,Critical,HIGH,VISIT ASAP
+ASSIGN-00016,PROJ-2019-2256,Infrastructure,Estancia,INSP-003,Engr. Antonio Reyes,0.8541,High,HIGH,VISIT SOON
+ASSIGN-00032,PROJ-2019-1368,Infrastructure,Carles,INSP-003,Engr. Antonio Reyes,0.8144,High,HIGH,VISIT SOON
+ASSIGN-00012,PROJ-2025-2705,Infrastructure,Tubungan,INSP-003,Engr. Antonio Reyes,0.7532,High,HIGH,VISIT SOON
+ASSIGN-00029,PROJ-2023-0503,Infrastructure,Tubungan,INSP-003,Engr. Antonio Reyes,0.7375,High,HIGH,VISIT SOON
+ASSIGN-00035,PROJ-2018-0202,Infrastructure,Ajuy,INSP-003,Engr. Antonio Reyes,0.6583,Medium,MEDIUM,CHECK IN A WEEK
+ASSIGN-00027,PROJ-2024-2883,Infrastructure,Leon,INSP-004,Engr. Elena Gomez,0.8964,High,HIGH,VISIT SOON
+ASSIGN-00028,PROJ-2021-1029,Infrastructure,Guimbal,INSP-004,Engr. Elena Gomez,0.862,High,HIGH,VISIT SOON
+ASSIGN-00039,PROJ-2023-1686,Infrastructure,Ajuy,INSP-004,Engr. Elena Gomez,0.8479,High,HIGH,VISIT SOON
+ASSIGN-00024,PROJ-2023-1307,Infrastructure,Lemery,INSP-004,Engr. Elena Gomez,0.8329,High,HIGH,VISIT SOON
+ASSIGN-00040,PROJ-2018-2136,Infrastructure,Alimodian,INSP-004,Engr. Elena Gomez,0.7132,High,HIGH,VISIT SOON
+ASSIGN-00022,PROJ-2023-2857,Infrastructure,Anilao,INSP-004,Engr. Elena Gomez,0.686,Medium,MEDIUM,CHECK IN A WEEK
+ASSIGN-00038,PROJ-2018-0022,Infrastructure,Barotac Nuevo,INSP-004,Engr. Elena Gomez,0.6573,Medium,MEDIUM,CHECK IN A WEEK
+ASSIGN-00010,PROJ-2018-0607,Infrastructure,Balasan,INSP-004,Engr. Elena Gomez,0.6377,Medium,MEDIUM,CHECK IN A WEEK
+ASSIGN-00009,PROJ-2016-1891,Infrastructure,Maasin,INSP-005,Engr. Roberto Garcia,0.7883,High,HIGH,VISIT SOON
+ASSIGN-00036,PROJ-2024-2140,Infrastructure,Carles,INSP-005,Engr. Roberto Garcia,0.7003,High,HIGH,VISIT SOON
+ASSIGN-00005,PROJ-2022-1596,Infrastructure,Balasan,INSP-005,Engr. Roberto Garcia,0.6451,Medium,MEDIUM,CHECK IN A WEEK
+ASSIGN-00001,PROJ-2022-1009,Infrastructure,Leganes,INSP-006,Engr. Teresa Aquino,0.8718,High,HIGH,VISIT SOON
+ASSIGN-00033,PROJ-2016-2236,Infrastructure,Barotac Viejo,INSP-006,Engr. Teresa Aquino,0.8236,High,HIGH,VISIT SOON
+ASSIGN-00023,PROJ-2024-1480,Infrastructure,Carles,INSP-006,Engr. Teresa Aquino,0.7002,High,HIGH,VISIT SOON
+ASSIGN-00007,PROJ-2020-1116,Infrastructure,Miagao,INSP-006,Engr. Teresa Aquino,0.6791,Medium,MEDIUM,CHECK IN A WEEK
+ASSIGN-00002,PROJ-2019-1680,Infrastructure,Lemery,INSP-006,Engr. Teresa Aquino,0.6708,Medium,MEDIUM,CHECK IN A WEEK

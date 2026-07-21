@@ -123,7 +123,7 @@
     "status": "Validated",
     "inspectorId": "INSP-004",
     "inspectorName": "Engr. Elena Gomez",
-    "riskTier": "Medium"
+    "riskTier": "Low"
   },
   {
     "projectId": "PROJ-2025-0878",
@@ -249,7 +249,7 @@
     "status": "Flagged",
     "inspectorId": "INSP-002",
     "inspectorName": "Engr. Maria Santos",
-    "riskTier": "Medium"
+    "riskTier": "Low"
   },
   {
     "projectId": "PROJ-2025-1664",
@@ -431,7 +431,7 @@
     "status": "Pending Review",
     "inspectorId": "INSP-006",
     "inspectorName": "Engr. Teresa Aquino",
-    "riskTier": "High"
+    "riskTier": "Medium"
   },
   {
     "projectId": "PROJ-2025-0664",
@@ -501,7 +501,7 @@
     "status": "Pending Review",
     "inspectorId": "INSP-006",
     "inspectorName": "Engr. Teresa Aquino",
-    "riskTier": "Critical"
+    "riskTier": "High"
   },
   {
     "projectId": "PROJ-2024-2140",
@@ -1397,7 +1397,7 @@
     "status": "Flagged",
     "inspectorId": "INSP-002",
     "inspectorName": "Engr. Maria Santos",
-    "riskTier": "High"
+    "riskTier": "Medium"
   },
   {
     "projectId": "PROJ-2023-1795",
@@ -2391,7 +2391,7 @@
     "status": "Pending Review",
     "inspectorId": "INSP-006",
     "inspectorName": "Engr. Teresa Aquino",
-    "riskTier": "Medium"
+    "riskTier": "Low"
   },
   {
     "projectId": "PROJ-2022-1410",
@@ -4281,7 +4281,7 @@
     "status": "Validated",
     "inspectorId": "INSP-004",
     "inspectorName": "Engr. Elena Gomez",
-    "riskTier": "Medium"
+    "riskTier": "Low"
   },
   {
     "projectId": "PROJ-2019-0263",
