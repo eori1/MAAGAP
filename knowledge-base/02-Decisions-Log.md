@@ -86,3 +86,17 @@ Chronological record of non-obvious choices and why they were made. Each entry: 
 **Why**: The current page designs (wide multi-column tables, dense stat rows, Gantt charts) were built mockup-first without mobile in mind; incremental CSS patches (horizontal scroll, stacking, wrapping) improve things but don't fundamentally solve the mismatch between "desktop dashboard density" and "phone screen." A future revamp can redesign these views mobile-first (e.g. card-based lists instead of tables) rather than continuing to retrofit.
 
 **Consequence**: Don't re-attempt incremental mobile CSS fixes on the current page designs unless explicitly asked — the baseline (`e11ee9b`) is considered "good enough for now," and the user wants a redesign, not further patching, when this comes up again. Loading states (a related, smaller polish item) were also left unstarted for the same reason — likely folds into the same future revamp.
+
+## Branch renamed before opening the PR
+
+**Decision**: Renamed `fix/inspector-assignment-alignment` → `feat/supabase-migration-and-operational-workflow` before pushing/opening the PR.
+
+**Why**: The branch name was accurate for its first commit only. By the time it was ready to merge it carried 16 commits spanning the entire Supabase migration, Auth/RBAC, password self-service, the operational workflow, Reports-page merge, mobile responsiveness, and the PRD — "inspector assignment" would have badly undersold the PR's actual scope to a reviewer. Safe to rename locally since the branch hadn't been pushed to `origin` yet at the time.
+
+## PR #1 merged via squash-and-merge
+
+**Decision**: Merged PR #1 (the entire branch above, 16 commits) into `main` using GitHub's "Squash and merge," collapsing everything into a single commit (`7932d3e`) on `main`.
+
+**Why**: The branch's 16 commits mixed real feature commits with small `docs: update knowledge-base vault` housekeeping commits after nearly every feature — squashing avoids `main`'s log being cluttered with those interstitial doc-sync commits, at the cost of losing per-feature `git bisect`/`git blame` granularity for this PR.
+
+**Consequence**: The squash commit's message follows the template (Description + a trimmed "Changes made" bullet list) — not a copy-paste of the full PR body (no how-to-test steps, no screenshot links, no files-changed list; those either don't render in a terminal or are already available via `git log --stat`). No `Co-Authored-By` trailer on this or future commits — the user asked for it to be dropped.

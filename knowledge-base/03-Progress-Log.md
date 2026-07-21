@@ -110,3 +110,13 @@ Sidebar off-canvas drawer + hamburger, `.main` margin collapse on all 8 authenti
 First pass didn't actually fix table scrolling: `.table { width: 100% }` forced tables to compress to fit rather than overflow, so `overflow-x: auto` on the parent had nothing to scroll — columns were squishing/truncating instead. Fixed with a mobile-only `min-width` on `.table`. Also fixed the Projects page's action-button row overflowing off-screen (`.pageHeader`/`.actionBtns` needed `flex-wrap`).
 
 **User tested again and found table/chart rendering still not fully satisfactory on mobile.** Decision: stop iterating on the current design's mobile behavior and defer to a planned full UI revamp later — see [[02-Decisions-Log]] and [[06-Current-State-and-Next-Steps]]. User then redirected focus to backend/core-workflow items instead of further frontend polish.
+
+## Commit `86910b9` — docs: add PRD/system specification document
+
+Created `07-PRD.md`: 15 functional requirements (FR-1 to FR-15), each tagged Built/Partial/Planned, plus stakeholders/roles, non-functional requirements, out-of-scope items, data model reference, and open questions. Requested by the user before scoping further backend work, "so that we will not be confused or get lost on the development." Cross-linked from `00-Overview.md`, `06-Current-State-and-Next-Steps.md`, and root `CLAUDE.md`.
+
+## PR #1 — merged into `main` (2026-07-21)
+
+All 16 commits from `5ddfdf4` through `86910b9` (the entire Supabase migration, Auth/RBAC, password self-service, operational workflow, Reports-page merge, mobile-responsiveness baseline, and the knowledge-base vault + PRD) were opened as a single PR and merged into `main` via **squash-and-merge** as one commit, `7932d3e`. See [[02-Decisions-Log]] for why the branch was renamed before opening the PR and why squash (not a real merge commit) was chosen.
+
+`main` is now up to date with all of this work; the feature branch `feat/supabase-migration-and-operational-workflow` still exists on `origin` post-merge (not deleted).

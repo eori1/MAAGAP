@@ -24,8 +24,9 @@ Source: `UG-CICT-THESIS-MANUSCRIPT.md` (repo root). Objectives as renumbered aft
 | PostgreSQL database (Figure 4 ERD) | ✅ Done | Supabase-hosted Postgres, not local — see [[02-Decisions-Log]] for why |
 | Next.js dashboard (manuscript originally said Streamlit/Flask) | ✅ Done, manuscript corrected | Manuscript text updated to describe the actual Next.js stack built |
 
-## Known remaining gaps (as of this vault's creation)
+## Known remaining gaps (updated 2026-07-21, post-merge)
 
-1. **ISO/IEC 25010 evaluation (Objective 5)** — entirely unaddressed. Would need a UAT plan/survey with real PPDO stakeholders or faculty, not just code.
-2. **Password self-service** — accounts are currently Admin-managed only (create + set initial password). No "forgot password" email flow or self-service "change my password" UI. Discussed as a candidate next task, not yet built.
+1. **ISO/IEC 25010 evaluation (Objective 5)** — entirely unaddressed. Would need a UAT plan/survey with real PPDO stakeholders or faculty, not just code. See [[07-PRD]] FR-15.
+2. ~~Password self-service~~ — **built and merged** (`/account`, `/reset-password`), no longer a gap.
 3. **`/api/projects` scope note** — Dashboard/Projects/Forecast Engine show the ~450-project *monitored cohort*, not the full 3000-row historical registry. This is an intentional, documented choice (see [[02-Decisions-Log]]), not a bug, but worth remembering if someone asks "why don't I see project X" for a project outside the current pipeline run's test split.
+4. **Report review/approval and ML feedback loop** — see [[07-PRD]] FR-13/FR-14, planned but not scoped.

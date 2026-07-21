@@ -1,6 +1,6 @@
 # Current State and Next Steps
 
-**Last updated:** 2026-07-21, end of the mobile-responsiveness pass.
+**Last updated:** 2026-07-21, after PR #1 merged into `main`.
 
 Related: [[03-Progress-Log]] · [[05-Manuscript-Alignment]] · [[04-Workflows-and-Gotchas]] · [[07-PRD]]
 
@@ -8,7 +8,9 @@ Related: [[03-Progress-Log]] · [[05-Manuscript-Alignment]] · [[04-Workflows-an
 
 ## Current state
 
-Branch `fix/inspector-assignment-alignment` (off `main`, not yet merged, not confirmed pushed to remote — check `git status`/`git log` at session start). Commits in order: `5ddfdf4`, `1c796c6`, `ecf666a`, `637bc00`, `100c360`, `6b422a9` (knowledge-base vault), `ea3ff1a` (password self-service), `06ef5cd` (Dashboard mock-data cleanup), `00836f6` (operational workflow), `1308faf` (vault update), `89c5de6` (Reports-page real-data merge), `f623eae` (vault update), `e11ee9b` (mobile responsiveness baseline).
+**Merged.** All work described below landed on `main` via PR #1 (`https://github.com/eori1/MAAGAP/pull/1`), merged via **squash-and-merge** as a single commit, `7932d3e` — see [[02-Decisions-Log]]. The feature branch was renamed from `fix/inspector-assignment-alignment` to `feat/supabase-migration-and-operational-workflow` before opening the PR, since its scope had grown far beyond the original name. That branch still exists on `origin` post-merge (not deleted), but since the merge was a squash, `main`'s history is now one clean commit, not 16 — don't expect `git log` on `main` to show the individual commits below; they only exist on the feature branch. Local and remote `main` are in sync as of this update — start a new session by checking out `main` fresh, not the old feature branch, unless there's a specific reason to keep working on it.
+
+Commits that were on the feature branch (now squashed into `7932d3e` on `main`), in order: `5ddfdf4`, `1c796c6`, `ecf666a`, `637bc00`, `100c360`, `6b422a9` (knowledge-base vault), `ea3ff1a` (password self-service), `06ef5cd` (Dashboard mock-data cleanup), `00836f6` (operational workflow), `1308faf` (vault update), `89c5de6` (Reports-page real-data merge), `f623eae` (vault update), `e11ee9b` (mobile responsiveness baseline), `c3332b0` (UI-revamp deferral decision), `86910b9` (PRD).
 
 The system is fully functional end-to-end and manually verified:
 - Full ML pipeline runs (`python main.py`, ~5-8 min) and syncs to Supabase.
