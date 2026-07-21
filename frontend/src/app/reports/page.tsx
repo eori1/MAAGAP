@@ -5,18 +5,21 @@ import Sidebar from "@/components/Sidebar";
 import TopRight from "@/components/TopRight";
 import styles from "./page.module.css";
 
-/* ─── Types (mirror backend reports.json payload) ─────── */
+/* ─── Types (mirror /api/reports payload) ─────── */
 interface InspectionReport {
   projectId: string;
-  quarter: number;
-  totalQuarters: number;
-  plannedProgress: number;
-  actualProgress: number;
-  slippage: number;
-  issues: number;
+  source: "inspector" | "pipeline";
+  quarter: number | null;
+  totalQuarters: number | null;
+  plannedProgress: number | null;
+  actualProgress: number | null;
+  slippage: number | null;
+  issuesSummary: string;
+  notes: string;
+  photoUrls: string[];
   date: string;
-  status: "Validated" | "Pending Review" | "Flagged";
-  inspectorId: string;
+  status: "Validated" | "Pending Review" | "Flagged" | "Submitted";
+  inspectorId: string | null;
   inspectorName: string;
   riskTier: "Low" | "Medium" | "High" | "Critical";
 }
@@ -25,9 +28,16 @@ const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
   Validated:        { bg: "#27ae60", color: "#fff" },
   "Pending Review":  { bg: "#f59e0b", color: "#fff" },
   Flagged:          { bg: "#e74c3c", color: "#fff" },
+  Submitted:        { bg: "#2756c5", color: "#fff" },
+};
+
+const SOURCE_STYLE: Record<string, { bg: string; color: string; label: string }> = {
+  inspector: { bg: "#e0f0ff", color: "#1a6ed8", label: "Field Report" },
+  pipeline:  { bg: "#f1f5f9", color: "#64748b", label: "Pipeline Estimate" },
 };
 
 const QUARTER_OPTIONS = ["All Quarters", "Q1", "Q2", "Q3", "Q4"];
+const SOURCE_OPTIONS = ["All Sources", "Field Report", "Pipeline Estimate"];
 
 /* ─── Page Component ──────────────────────────────────── */
 export default function ReportsPage() {
@@ -36,6 +46,7 @@ export default function ReportsPage() {
   const [search,  setSearch]  = useState("");
   const [quarter, setQuarter] = useState("All Quarters");
   const [status,  setStatus]  = useState("All Status");
+  const [source,  setSource]  = useState("All Sources");
   const [sortBy,  setSortBy]  = useState("Most Recent");
   const [orderBy, setOrderBy] = useState("Descending");
 
@@ -54,18 +65,19 @@ export default function ReportsPage() {
     if (search)                     list = list.filter(r => r.projectId.toLowerCase().includes(search.toLowerCase()) || r.inspectorName.toLowerCase().includes(search.toLowerCase()));
     if (quarter !== "All Quarters") list = list.filter(r => `Q${r.quarter}` === quarter);
     if (status  !== "All Status")   list = list.filter(r => r.status === status);
+    if (source  !== "All Sources")  list = list.filter(r => SOURCE_STYLE[r.source].label === source);
 
     const dir = orderBy === "Ascending" ? 1 : -1;
     list.sort((a, b) => {
-      if (sortBy === "Progress")  return (a.actualProgress - b.actualProgress) * dir;
-      if (sortBy === "Quarter")   return (a.quarter - b.quarter) * dir;
+      if (sortBy === "Progress")  return ((a.actualProgress ?? -1) - (b.actualProgress ?? -1)) * dir;
+      if (sortBy === "Quarter")   return ((a.quarter ?? 0) - (b.quarter ?? 0)) * dir;
       if (sortBy === "Name")      return a.projectId.localeCompare(b.projectId) * dir;
       return (new Date(a.date).getTime() - new Date(b.date).getTime()) * dir;
     });
     return list;
-  }, [reports, search, quarter, status, sortBy, orderBy]);
+  }, [reports, search, quarter, status, source, sortBy, orderBy]);
 
-  const clearFilters = () => { setSearch(""); setQuarter("All Quarters"); setStatus("All Status"); };
+  const clearFilters = () => { setSearch(""); setQuarter("All Quarters"); setStatus("All Status"); setSource("All Sources"); };
   const exportPdf = () => window.print();
 
   return (
@@ -92,7 +104,7 @@ export default function ReportsPage() {
               <h1 className={styles.cardTitle}>
                 Project <span className={styles.accent}>Reports</span>
               </h1>
-              <p className={styles.cardSub}>Latest quarterly inspection log per project ({filtered.length} of {reports.length})</p>
+              <p className={styles.cardSub}>Latest inspection per project — real field reports where submitted, pipeline estimate otherwise ({filtered.length} of {reports.length})</p>
             </div>
             <button className={styles.exportBtn} onClick={exportPdf} data-print-hide>
               Export Report (PDF)
@@ -130,7 +142,17 @@ export default function ReportsPage() {
               <div className={styles.selectWrap}>
                 <select className={styles.select} value={status} onChange={e => setStatus(e.target.value)}>
                   <option>All Status</option>
-                  <option>Validated</option><option>Pending Review</option><option>Flagged</option>
+                  <option>Validated</option><option>Pending Review</option><option>Flagged</option><option>Submitted</option>
+                </select>
+                <svg className={styles.selectChevron} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+              </div>
+            </div>
+
+            <div className={styles.filterGroup}>
+              <label className={styles.filterLabel}>Source</label>
+              <div className={styles.selectWrap}>
+                <select className={styles.select} value={source} onChange={e => setSource(e.target.value)}>
+                  {SOURCE_OPTIONS.map(s => <option key={s}>{s}</option>)}
                 </select>
                 <svg className={styles.selectChevron} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
               </div>
@@ -160,7 +182,7 @@ export default function ReportsPage() {
               <thead>
                 <tr>
                   <th className={styles.th}>Project</th>
-                  <th className={styles.th} style={{ textAlign:"center" }}>Quarter</th>
+                  <th className={styles.th} style={{ textAlign:"center" }}>Source</th>
                   <th className={styles.th} style={{ textAlign:"center" }}>Progress</th>
                   <th className={styles.th} style={{ textAlign:"center" }}>Slippage</th>
                   <th className={styles.th} style={{ textAlign:"center" }}>Date</th>
@@ -175,19 +197,35 @@ export default function ReportsPage() {
 
                 {!loadError && filtered.map((r) => {
                   const st = STATUS_STYLE[r.status] ?? { bg:"#94a3b8", color:"#fff" };
+                  const src = SOURCE_STYLE[r.source];
                   return (
-                    <tr key={`${r.projectId}-${r.quarter}`} className={styles.row}>
+                    <tr key={`${r.projectId}-${r.date}`} className={styles.row}>
                       <td className={styles.td}>
                         <div className={styles.projectName}>{r.projectId}</div>
-                        <div className={styles.projectId}>{r.riskTier} risk · {r.issues} issue{r.issues === 1 ? "" : "s"} noted</div>
+                        <div className={styles.projectId}>{r.riskTier} risk · {r.issuesSummary}</div>
+                        {r.notes && <div className={styles.projectId} style={{ fontStyle: "italic" }}>{r.notes}</div>}
+                        {r.photoUrls.length > 0 && (
+                          <div style={{ display: "flex", gap: 4, marginTop: 4 }}>
+                            {r.photoUrls.map((url, i) => (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+                                <img src={url} alt={`Site photo ${i + 1}`} style={{ width: 32, height: 32, borderRadius: 6, objectFit: "cover", border: "1px solid #e0eaf5" }} />
+                              </a>
+                            ))}
+                          </div>
+                        )}
                         <div className={styles.progressBarBg}>
-                          <div className={styles.progressBar} style={{ width:`${r.actualProgress}%` }} />
+                          <div className={styles.progressBar} style={{ width:`${r.actualProgress ?? 0}%` }} />
                         </div>
                       </td>
-                      <td className={`${styles.td} ${styles.tdCenter}`}>Q{r.quarter}/{r.totalQuarters}</td>
-                      <td className={`${styles.td} ${styles.tdCenter}`}>{r.actualProgress.toFixed(0)}%</td>
-                      <td className={`${styles.td} ${styles.tdCenter}`} style={{ color: r.slippage > 5 ? "#e74c3c" : "#27ae60", fontWeight: 700 }}>
-                        {r.slippage > 0 ? "-" : "+"}{Math.abs(r.slippage).toFixed(1)} pts
+                      <td className={`${styles.td} ${styles.tdCenter}`}>
+                        <span className={styles.statusBadge} style={{ background: src.bg, color: src.color }}>
+                          {r.source === "pipeline" && r.quarter ? `Q${r.quarter}/${r.totalQuarters}` : src.label}
+                        </span>
+                      </td>
+                      <td className={`${styles.td} ${styles.tdCenter}`}>{r.actualProgress !== null ? `${r.actualProgress.toFixed(0)}%` : "—"}</td>
+                      <td className={`${styles.td} ${styles.tdCenter}`} style={r.slippage !== null ? { color: r.slippage > 5 ? "#e74c3c" : "#27ae60", fontWeight: 700 } : { color: "#94a3b8" }}>
+                        {r.slippage !== null ? `${r.slippage > 0 ? "-" : "+"}${Math.abs(r.slippage).toFixed(1)} pts` : "Not reported"}
                       </td>
                       <td className={`${styles.td} ${styles.tdCenter}`}>{r.date}</td>
                       <td className={`${styles.td} ${styles.tdCenter}`}>

@@ -19,6 +19,24 @@ interface InspectionLogRow {
   report_date: string;
 }
 
+interface InspectionReportRow {
+  report_id: string;
+  project_id: string;
+  inspector_id: string;
+  physical_accomplishment_pct: number | null;
+  financial_accomplishment_pct: number | null;
+  issues_noted: string | null;
+  notes: string | null;
+  photo_urls: string[] | null;
+  submitted_at: string;
+}
+
+interface ProjectRow {
+  project_id: string;
+  start_date: string;
+  planned_duration_months: number;
+}
+
 interface AssignmentRow {
   project_id: string;
   inspector_id: string;
@@ -29,9 +47,16 @@ interface InspectorNameRow {
   inspector_name: string;
 }
 
-// Serves the latest quarterly inspection log entry per monitored project,
-// joining inspection_logs with predictions (risk tier) and inspectors (name).
-// Inspectors only see reports for projects assigned to them.
+function statusFromSlippage(slippage: number): "Validated" | "Pending Review" | "Flagged" | "Submitted" {
+  if (slippage > 20) return "Flagged";
+  if (slippage > 5) return "Pending Review";
+  return "Validated";
+}
+
+// Serves one report per monitored project: a real, inspector-submitted
+// report (from inspection_reports) when one exists, falling back to the
+// latest synthetic quarterly inspection_logs entry otherwise. Inspectors
+// only see reports for projects assigned to them.
 export async function GET() {
   const profile = await getSessionProfile();
   if (!profile) {
@@ -64,11 +89,14 @@ export async function GET() {
     const tierByProject = new Map(predictions.map((p) => [p.project_id, p.risk_tier]));
     if (projectIds.length === 0) return NextResponse.json([]);
 
-    const [logs, { data: asgData, error: asgErr2 }, { data: insData, error: insErr }] = await Promise.all([
-      fetchAllRowsIn<InspectionLogRow>(supabase, "inspection_logs", "*", "project_id", projectIds),
-      supabase.from("assignments").select("project_id, inspector_id").in("project_id", projectIds),
-      supabase.from("inspectors").select("inspector_id, inspector_name"),
-    ]);
+    const [logs, realReports, projData, { data: asgData, error: asgErr2 }, { data: insData, error: insErr }] =
+      await Promise.all([
+        fetchAllRowsIn<InspectionLogRow>(supabase, "inspection_logs", "*", "project_id", projectIds),
+        fetchAllRowsIn<InspectionReportRow>(supabase, "inspection_reports", "*", "project_id", projectIds),
+        fetchAllRowsIn<ProjectRow>(supabase, "projects", "project_id, start_date, planned_duration_months", "project_id", projectIds),
+        supabase.from("assignments").select("project_id, inspector_id").in("project_id", projectIds),
+        supabase.from("inspectors").select("inspector_id, inspector_name"),
+      ]);
     if (asgErr2) throw asgErr2;
     if (insErr) throw insErr;
 
@@ -81,33 +109,87 @@ export async function GET() {
     const assignments = (asgData ?? []) as unknown as AssignmentRow[];
     const assignedInspectorByProject = new Map(assignments.map((a) => [a.project_id, a.inspector_id]));
 
-    // Keep only the latest quarter per project (mirrors the backend's
-    // sort-by-quarter + groupby-tail(1) used when these were JSON files).
-    const latestByProject = new Map<string, InspectionLogRow>();
+    const projectById = new Map((projData as unknown as ProjectRow[]).map((p) => [p.project_id, p]));
+
+    // Latest synthetic quarter per project (pipeline baseline).
+    const latestLogByProject = new Map<string, InspectionLogRow>();
     for (const log of logs) {
-      const existing = latestByProject.get(log.project_id);
-      if (!existing || log.quarter > existing.quarter) latestByProject.set(log.project_id, log);
+      const existing = latestLogByProject.get(log.project_id);
+      if (!existing || log.quarter > existing.quarter) latestLogByProject.set(log.project_id, log);
     }
 
-    const reports = Array.from(latestByProject.values()).map((q) => {
-      const slippage = Number(q.slippage_pct);
-      const status = slippage > 20 ? "Flagged" : slippage > 5 ? "Pending Review" : "Validated";
-      const assignedInspectorId = assignedInspectorByProject.get(q.project_id) ?? null;
+    // Latest real inspector-submitted report per project, if any.
+    const latestRealByProject = new Map<string, InspectionReportRow>();
+    for (const r of realReports as unknown as InspectionReportRow[]) {
+      const existing = latestRealByProject.get(r.project_id);
+      if (!existing || new Date(r.submitted_at) > new Date(existing.submitted_at)) {
+        latestRealByProject.set(r.project_id, r);
+      }
+    }
+
+    function expectedProgressPct(projectId: string, asOf: Date): number | null {
+      const p = projectById.get(projectId);
+      if (!p || !p.start_date || !p.planned_duration_months) return null;
+      const start = new Date(p.start_date);
+      const elapsedMonths = (asOf.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 30);
+      return Math.max(0, Math.min(100, (elapsedMonths / p.planned_duration_months) * 100));
+    }
+
+    const reports = projectIds.map((projectId) => {
+      const real = latestRealByProject.get(projectId);
+      const assignedInspectorId = assignedInspectorByProject.get(projectId) ?? null;
+      const inspectorName = assignedInspectorId ? (nameByInspector.get(assignedInspectorId) ?? assignedInspectorId) : "Unassigned";
+      const riskTier = tierByProject.get(projectId) ?? "Low";
+
+      if (real) {
+        const submittedAt = new Date(real.submitted_at);
+        const expected = expectedProgressPct(projectId, submittedAt);
+        // physical_accomplishment_pct is an optional field on the report
+        // form -- null means "not reported", not "reported as zero". Only
+        // compute a slippage/status when the inspector actually gave a
+        // number; otherwise there's nothing to compare against.
+        const actual = real.physical_accomplishment_pct;
+        const slippage = actual !== null && expected !== null ? expected - actual : null;
+        return {
+          projectId,
+          source: "inspector" as const,
+          quarter: null,
+          totalQuarters: null,
+          plannedProgress: expected,
+          actualProgress: actual,
+          slippage,
+          issuesSummary: real.issues_noted?.trim() ? real.issues_noted : "No issues noted",
+          notes: real.notes ?? "",
+          photoUrls: real.photo_urls ?? [],
+          date: real.submitted_at.slice(0, 10),
+          status: slippage !== null ? statusFromSlippage(slippage) : "Submitted",
+          inspectorId: real.inspector_id,
+          inspectorName: nameByInspector.get(real.inspector_id) ?? real.inspector_id,
+          riskTier,
+        };
+      }
+
+      const log = latestLogByProject.get(projectId);
+      if (!log) return null;
+      const slippage = Number(log.slippage_pct);
       return {
-        projectId: q.project_id,
-        quarter: q.quarter,
-        totalQuarters: q.total_quarters,
-        plannedProgress: q.target_physical_pct,
-        actualProgress: q.actual_physical_pct,
+        projectId,
+        source: "pipeline" as const,
+        quarter: log.quarter,
+        totalQuarters: log.total_quarters,
+        plannedProgress: log.target_physical_pct,
+        actualProgress: log.actual_physical_pct,
         slippage,
-        issues: q.issues_noted,
-        date: q.report_date,
-        status,
+        issuesSummary: `${log.issues_noted} issue${log.issues_noted === 1 ? "" : "s"} noted`,
+        notes: "",
+        photoUrls: [],
+        date: log.report_date,
+        status: statusFromSlippage(slippage),
         inspectorId: assignedInspectorId,
-        inspectorName: assignedInspectorId ? (nameByInspector.get(assignedInspectorId) ?? assignedInspectorId) : "Unassigned",
-        riskTier: tierByProject.get(q.project_id) ?? "Low",
+        inspectorName,
+        riskTier,
       };
-    });
+    }).filter((r): r is NonNullable<typeof r> => r !== null);
 
     reports.sort((a, b) => (a.date < b.date ? 1 : -1));
     return NextResponse.json(reports);
