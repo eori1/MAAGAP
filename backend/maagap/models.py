@@ -69,7 +69,7 @@ class TreeModelTrainer:
     }
 
     @classmethod
-    def train_random_forest(cls, X_train: np.ndarray, y_train: np.ndarray, task: str = "binary", tune: bool = True) -> RandomForestClassifier:
+    def train_random_forest(cls, X_train: np.ndarray, y_train: np.ndarray, task: str = "binary", tune: bool = True, models_dir: Optional[str] = None) -> RandomForestClassifier:
         n_classes = len(np.unique(y_train))
         scoring = "f1" if n_classes == 2 else "f1_macro"
         
@@ -95,11 +95,11 @@ class TreeModelTrainer:
             )
             rf.fit(X_train, y_train)
 
-        joblib.dump(rf, os.path.join(MODELS_DIR, f"rf_{task}.pkl"))
+        joblib.dump(rf, os.path.join(models_dir or MODELS_DIR, f"rf_{task}.pkl"))
         return rf
 
     @classmethod
-    def train_xgboost(cls, X_train: np.ndarray, y_train: np.ndarray, X_val: np.ndarray = None, y_val: np.ndarray = None, task: str = "binary", tune: bool = True) -> Tuple[XGBClassifier, Dict[str, Any]]:
+    def train_xgboost(cls, X_train: np.ndarray, y_train: np.ndarray, X_val: np.ndarray = None, y_val: np.ndarray = None, task: str = "binary", tune: bool = True, models_dir: Optional[str] = None) -> Tuple[XGBClassifier, Dict[str, Any]]:
         n_classes = len(np.unique(y_train))
         scoring = "f1" if n_classes == 2 else "f1_macro"
 
@@ -187,8 +187,28 @@ class TreeModelTrainer:
 
         evals_result = xgb.evals_result() if hasattr(xgb, "evals_result") else {}
 
-        joblib.dump(xgb, os.path.join(MODELS_DIR, f"xgb_{task}.pkl"))
+        joblib.dump(xgb, os.path.join(models_dir or MODELS_DIR, f"xgb_{task}.pkl"))
         return xgb, evals_result
+
+
+class RegressionModelTrainer:
+    """XGBoost regressors quantifying magnitudes (Objective 2 MAE metric):
+    delay duration in days and cost overrun percentage."""
+
+    @staticmethod
+    def train_xgboost_regressor(X_train: np.ndarray, y_train: np.ndarray, task: str = "delay_days") -> Any:
+        from xgboost import XGBRegressor
+        logger.info(f"Training XGBoost Regressor (task={task})...")
+        reg = XGBRegressor(
+            n_estimators=model_params.xgb_n_estimators,
+            max_depth=model_params.xgb_max_depth,
+            learning_rate=model_params.xgb_learning_rate,
+            objective="reg:absoluteerror",
+            random_state=SEED, n_jobs=-1,
+        )
+        reg.fit(X_train, y_train)
+        joblib.dump(reg, os.path.join(MODELS_DIR, f"xgb_reg_{task}.pkl"))
+        return reg
 
 
 class LSTMTrainer:
@@ -243,7 +263,7 @@ class LSTMTrainer:
         return model
 
     @classmethod
-    def train_lstm(cls, X_train: np.ndarray, y_train: np.ndarray, X_val: np.ndarray, y_val: np.ndarray, task: str = "binary", tune: bool = True) -> Tuple[Any, Any, Dict[str, Any]]:
+    def train_lstm(cls, X_train: np.ndarray, y_train: np.ndarray, X_val: np.ndarray, y_val: np.ndarray, task: str = "binary", tune: bool = True, models_dir: Optional[str] = None) -> Tuple[Any, Any, Dict[str, Any]]:
         n_features = X_train.shape[2]
         n_classes = len(np.unique(y_train))
         nc = n_classes if n_classes > 2 else 2
@@ -291,7 +311,7 @@ class LSTMTrainer:
                     best_params = params
 
             logger.info(f"    LSTM best params: {best_params} (val_loss={best_loss:.4f})")
-            best_model.save(os.path.join(MODELS_DIR, f"lstm_{task}.keras"))
+            best_model.save(os.path.join(models_dir or MODELS_DIR, f"lstm_{task}.keras"))
             return best_model, best_history, best_params
         else:
             default_params = {
@@ -299,7 +319,7 @@ class LSTMTrainer:
                 "dropout": 0.35, "lr": 1e-3, "batch_size": model_params.lstm_batch_size,
             }
             model, history, _ = _train_one(default_params)
-            model.save(os.path.join(MODELS_DIR, f"lstm_{task}.keras"))
+            model.save(os.path.join(models_dir or MODELS_DIR, f"lstm_{task}.keras"))
             return model, history, default_params
 
 
@@ -307,12 +327,12 @@ class MetaEnsembleTrainer:
     """Logistic-regression meta-learner on stacked Stage 1 + Stage 2 outputs."""
 
     @staticmethod
-    def train_meta_ensemble(rf_proba: np.ndarray, xgb_proba: np.ndarray, lstm_proba: np.ndarray, y_train: np.ndarray, artifact_name: str = "meta_ensemble.pkl") -> LogisticRegression:
+    def train_meta_ensemble(rf_proba: np.ndarray, xgb_proba: np.ndarray, lstm_proba: np.ndarray, y_train: np.ndarray, artifact_name: str = "meta_ensemble.pkl", models_dir: Optional[str] = None) -> LogisticRegression:
         logger.info(f"Training Meta-Ensemble (artifact={artifact_name})...")
         meta_X = np.column_stack([rf_proba, xgb_proba, lstm_proba])
         meta = LogisticRegression(max_iter=500, random_state=SEED)
         meta.fit(meta_X, y_train)
-        joblib.dump(meta, os.path.join(MODELS_DIR, artifact_name))
+        joblib.dump(meta, os.path.join(models_dir or MODELS_DIR, artifact_name))
         return meta
 
     @staticmethod

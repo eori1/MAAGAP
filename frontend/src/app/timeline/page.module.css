@@ -15,6 +15,13 @@
   background: #f0f4f9;
 }
 
+@media (max-width: 768px) {
+  .main {
+    margin-left: 0;
+    padding-top: 3rem;
+  }
+}
+
 /* ── Top Bar ─────────────────────────────────────────── */
 .topbar {
   display: flex;
@@ -111,6 +118,7 @@
 
 /* ── Filters Row ─────────────────────────────────────── */
 .filtersRow {
+  flex-wrap: wrap;
   display: flex;
   align-items: flex-end;
   gap: 0.9rem;
@@ -311,7 +319,7 @@
 .ganttGridHeader {
   flex: 1;
   display: grid;
-  grid-template-columns: repeat(8, 1fr);
+  grid-template-columns: repeat(12, 1fr);
   gap: 0.5rem;
   padding: 0 0.5rem;
   align-items: center;
@@ -344,7 +352,7 @@
   position: absolute;
   top: 0; bottom: 0; left: 260px; right: 0;
   display: grid;
-  grid-template-columns: repeat(8, 1fr);
+  grid-template-columns: repeat(12, 1fr);
   pointer-events: none;
   z-index: 0;
 }
@@ -430,4 +438,10 @@
   font-size: 0.82rem;
   position: relative;
   z-index: 2;
+}
+
+@media (max-width: 900px) {
+  .ganttContainer { overflow-x: auto; }
+  .ganttHeaderRow, .ganttBody { min-width: 780px; }
+  .ganttBgGrid { min-width: 780px; }
 }

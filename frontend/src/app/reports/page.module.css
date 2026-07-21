@@ -15,6 +15,13 @@
   background: #f0f4f9;
 }
 
+@media (max-width: 768px) {
+  .main {
+    margin-left: 0;
+    padding-top: 3rem;
+  }
+}
+
 /* ── Top Bar ─────────────────────────────────────────── */
 .topbar {
   display: flex;
@@ -85,7 +92,26 @@
 .cardHeader {
   padding: 1.1rem 1.5rem 0.75rem;
   flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
 }
+
+.exportBtn {
+  padding: 0.55rem 1.1rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #fff;
+  background: #2756c5;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.exportBtn:hover { background: #1b3a5e; }
 
 .cardTitle {
   font-size: 1.4rem;
@@ -111,6 +137,7 @@
 
 /* ── Filters Row ─────────────────────────────────────── */
 .filtersRow {
+  flex-wrap: wrap;
   display: flex;
   align-items: flex-end;
   gap: 0.9rem;
@@ -261,6 +288,7 @@
 
 /* ── Table ───────────────────────────────────────────── */
 .tableWrap {
+  overflow-x: auto;
   flex: 1;
   overflow-y: auto;
   min-height: 0;
@@ -352,4 +380,8 @@
   text-align: center;
   color: #94a3b8;
   font-size: 0.82rem;
+}
+
+@media (max-width: 900px) {
+  .table { min-width: 720px; }
 }

@@ -1,28 +1,48 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Sidebar from "@/components/Sidebar";
 import TopRight from "@/components/TopRight";
 import styles from "./page.module.css";
 
-/* ─── Mock User Data ──────────────────────────────────── */
-const USERS = [
-  { id: "EMP - 321", name: "Juan de la Cruz",   email: "jdlc@iloilo.gov.ph",      position: "Civil Engineer III",               role: "Inspector", assigned: 12, status: "Active" },
-  { id: "EMP - 322", name: "Maria Santos",      email: "msantos@iloilo.gov.ph",   position: "Planning Officer II",              role: "Inspector", assigned: 13, status: "Active" },
-  { id: "EMP - 323", name: "Jose Rizal",        email: "jrizar@iloilo.gov.ph",    position: "Urban Planner I",                  role: "Inspector", assigned: 14, status: "Active" },
-  { id: "EMP - 324", name: "Liza Soberano",     email: "lsoberano@iloilo.gov.ph", position: "Environmental Analyst II",         role: "Inspector", assigned: 15, status: "Active" },
-  { id: "EMP - 325", name: "Anthony Gonzales",  email: "agonzales@iloilo.gov.ph", position: "Urban Planner III",                role: "Inspector", assigned: 16, status: "Active" },
-  { id: "EMP - 326", name: "Carmen Reyes",      email: "creyes@iloilo.gov.ph",    position: "Regional Development Officer",     role: "Auditor",   assigned: 17, status: "Active" },
-  { id: "EMP - 327", name: "Miguel Alonzo",     email: "malonzo@iloilo.gov.ph",   position: "Building Code Compliance Officer", role: "Inspector", assigned: 18, status: "Active" },
-  { id: "EMP - 328", name: "Veronica Cruz",     email: "vcruz@iloilo.gov.ph",     position: "Transportation Planning Associate",role: "Analyst",   assigned: 19, status: "Active" },
-  { id: "EMP - 329", name: "Daniel Padilla",    email: "dpadilla@iloilo.gov.ph",  position: "Development Coordinator",          role: "Inspector", assigned: 20, status: "On Leave" },
-  { id: "EMP - 330", name: "Julia Barretto",    email: "jbarretto@iloilo.gov.ph", position: "Land Use Planner",                 role: "Inspector", assigned: 21, status: "Inactive" },
-];
+/* ─── Types ────────────────────────────────────────────── */
+interface InspectorRecord {
+  id: string;
+  name: string;
+  email: string;
+  position: string;
+  role: string;
+  status: "Active" | "On Duty";
+  vehicleAccess: boolean;
+  capacity: number;
+  assigned: number;
+}
+
+type AccountRole = "manager" | "inspector" | "admin";
+
+interface AccountRecord {
+  id: string;
+  email: string;
+  full_name: string | null;
+  role: AccountRole;
+  inspector_id: string | null;
+  created_at: string;
+}
+
+interface SessionProfile {
+  role: AccountRole;
+}
 
 const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
-  "Active":   { bg: "#d4efdf", color: "#27ae60" },
-  "On Leave": { bg: "#fcf3cf", color: "#f39c12" },
-  "Inactive": { bg: "#e2e8f0", color: "#94a3b8" },
+  "Active":  { bg: "#d4efdf", color: "#27ae60" },
+  "On Duty": { bg: "#fcf3cf", color: "#f39c12" },
+};
+
+const ROLE_STYLE: Record<AccountRole, { bg: string; color: string }> = {
+  admin:     { bg: "#e8e0fb", color: "#6c3fc5" },
+  manager:   { bg: "#d4e0f5", color: "#2756c5" },
+  inspector: { bg: "#e2e8f0", color: "#4a5a6a" },
 };
 
 /* ─── Icons ───────────────────────────────────────────── */
@@ -45,22 +65,129 @@ function PlusIcon() {
   );
 }
 
+/* ─── Create Account Form (Admin only) ───────────────────── */
+function CreateAccountForm({ inspectors, onCreated }: { inspectors: InspectorRecord[]; onCreated: () => void }) {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [role, setRole] = useState<AccountRole>("inspector");
+  const [inspectorId, setInspectorId] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    const res = await fetch("/api/admin/users", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        email, password, fullName,
+        role,
+        inspectorId: role === "inspector" ? (inspectorId || null) : null,
+      }),
+    });
+    setBusy(false);
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      setError(body.error ?? "Failed to create account");
+      return;
+    }
+    setEmail(""); setPassword(""); setFullName(""); setInspectorId("");
+    onCreated();
+  }
+
+  return (
+    <form className={styles.createForm} onSubmit={handleSubmit}>
+      {error && <div className={styles.formError}>{error}</div>}
+      <div className={styles.createFormRow}>
+        <input className={styles.searchInput} placeholder="Full name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+        <input className={styles.searchInput} type="email" placeholder="Email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+        <input className={styles.searchInput} type="password" placeholder="Temporary password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
+        <select className={styles.select} value={role} onChange={(e) => setRole(e.target.value as AccountRole)}>
+          <option value="inspector">Inspector</option>
+          <option value="manager">Manager</option>
+          <option value="admin">Admin</option>
+        </select>
+        {role === "inspector" && (
+          <select className={styles.select} value={inspectorId} onChange={(e) => setInspectorId(e.target.value)}>
+            <option value="">Link to roster entry...</option>
+            {inspectors.map((i) => (
+              <option key={i.id} value={i.id}>{i.name} ({i.id})</option>
+            ))}
+          </select>
+        )}
+        <button className={styles.addBtn} type="submit" disabled={busy}>
+          <PlusIcon /> {busy ? "Creating..." : "Create Account"}
+        </button>
+      </div>
+    </form>
+  );
+}
+
 /* ─── Page Component ──────────────────────────────────── */
 export default function UserManagementPage() {
+  const router = useRouter();
+  const [sessionProfile, setSessionProfile] = useState<SessionProfile | null>(null);
+  const [inspectors, setInspectors] = useState<InspectorRecord[]>([]);
+  const [accounts, setAccounts] = useState<AccountRecord[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [role, setRole] = useState("All Roles");
-  const [dept, setDept] = useState("All Departments");
+  const [status, setStatus] = useState("All Status");
   const [sortBy, setSortBy] = useState("Alphabetical (A-Z)");
   const [orderBy, setOrderBy] = useState("Ascending");
 
-  const filtered = useMemo(() => {
-    let list = [...USERS];
-    if (search) list = list.filter(u => u.name.toLowerCase().includes(search.toLowerCase()));
-    if (role !== "All Roles") list = list.filter(u => u.role === role);
-    return list;
-  }, [search, role]);
+  const loadAccounts = () => {
+    fetch("/api/admin/users")
+      .then((res) => (res.ok ? res.json() : []))
+      .then(setAccounts)
+      .catch(() => setAccounts([]));
+  };
 
-  const clearFilters = () => { setSearch(""); setRole("All Roles"); setDept("All Departments"); };
+  useEffect(() => {
+    fetch("/api/me")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((profile: SessionProfile | null) => {
+        if (!profile || profile.role === "inspector") {
+          router.replace("/dashboard");
+          return;
+        }
+        setSessionProfile(profile);
+      });
+
+    fetch("/api/inspectors")
+      .then((res) => (res.ok ? res.json() : []))
+      .then(setInspectors)
+      .catch(() => setLoadError("No inspector roster found. Run the backend pipeline (python main.py) to generate it."));
+
+    loadAccounts();
+  }, [router]);
+
+  async function handleRoleChange(id: string, role: AccountRole) {
+    setAccounts((prev) => prev.map((a) => (a.id === id ? { ...a, role } : a)));
+    await fetch(`/api/admin/users/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ role }),
+    });
+  }
+
+  const filtered = useMemo(() => {
+    let list = [...inspectors];
+    if (search) list = list.filter(u => u.name.toLowerCase().includes(search.toLowerCase()) || u.id.toLowerCase().includes(search.toLowerCase()));
+    if (status !== "All Status") list = list.filter(u => u.status === status);
+    const dir = orderBy === "Ascending" ? 1 : -1;
+    list.sort((a, b) => sortBy === "Most Assigned"
+      ? (a.assigned - b.assigned) * -dir
+      : a.name.localeCompare(b.name) * dir);
+    return list;
+  }, [inspectors, search, status, sortBy, orderBy]);
+
+  const clearFilters = () => { setSearch(""); setStatus("All Status"); };
+  const isAdmin = sessionProfile?.role === "admin";
+
+  if (!sessionProfile) return null;
 
   return (
     <div className={styles.shell}>
@@ -77,20 +204,80 @@ export default function UserManagementPage() {
           <TopRight />
         </div>
 
-        {/* ── Main white card ── */}
+        {/* ── Account Access (login accounts / AuthService) ── */}
+        <div className={styles.card} style={{ marginBottom: "1rem" }}>
+          <div className={styles.cardHeader}>
+            <div>
+              <h1 className={styles.cardTitle}>
+                Account <span className={styles.accent}>Access</span>
+              </h1>
+              <p className={styles.cardSub}>
+                {isAdmin ? "Manage login accounts and role assignments" : "View login accounts (role changes require Admin)"}
+              </p>
+            </div>
+          </div>
+          <div className={styles.divider} />
+
+          {isAdmin && <CreateAccountForm inspectors={inspectors} onCreated={loadAccounts} />}
+
+          <div className={styles.tableWrap}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th className={styles.th}>Account</th>
+                  <th className={styles.th}>Linked Inspector</th>
+                  <th className={styles.th} style={{ textAlign: "center" }}>Role</th>
+                </tr>
+              </thead>
+              <tbody>
+                {accounts.map((a) => (
+                  <tr key={a.id} className={styles.row}>
+                    <td className={styles.td}>
+                      <div className={styles.employeeCell}>
+                        <AvatarIcon />
+                        <div>
+                          <div className={styles.employeeName}>{a.full_name || a.email}</div>
+                          <div className={styles.employeeId}>{a.email}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className={styles.td}>{a.inspector_id ?? "—"}</td>
+                    <td className={`${styles.td} ${styles.tdCenter}`}>
+                      {isAdmin ? (
+                        <select
+                          className={styles.select}
+                          value={a.role}
+                          onChange={(e) => handleRoleChange(a.id, e.target.value as AccountRole)}
+                        >
+                          <option value="inspector">Inspector</option>
+                          <option value="manager">Manager</option>
+                          <option value="admin">Admin</option>
+                        </select>
+                      ) : (
+                        <span className={styles.statusBadge} style={ROLE_STYLE[a.role]}>{a.role}</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+                {accounts.length === 0 && (
+                  <tr><td colSpan={3} className={styles.emptyRow}>No accounts yet.</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* ── Main white card: Inspector Roster ── */}
         <div className={styles.card}>
 
           {/* Card header */}
           <div className={styles.cardHeader}>
             <div>
               <h1 className={styles.cardTitle}>
-                Role <span className={styles.accent}>Management</span>
+                Inspector <span className={styles.accent}>Roster</span>
               </h1>
-              <p className={styles.cardSub}>Manage user access and permissions</p>
+              <p className={styles.cardSub}>PPDO field inspectors and LP-computed visit capacity ({filtered.length} of {inspectors.length})</p>
             </div>
-            <button className={styles.addBtn}>
-              <PlusIcon /> Add Employee
-            </button>
           </div>
           <div className={styles.divider} />
 
@@ -110,20 +297,10 @@ export default function UserManagementPage() {
             </div>
 
             <div className={styles.filterGroup}>
-              <label className={styles.filterLabel}>Roles</label>
+              <label className={styles.filterLabel}>Status</label>
               <div className={styles.selectWrap}>
-                <select className={styles.select} value={role} onChange={e => setRole(e.target.value)}>
-                  <option>All Roles</option><option>Inspector</option><option>Auditor</option><option>Analyst</option>
-                </select>
-                <svg className={styles.selectChevron} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
-              </div>
-            </div>
-
-            <div className={styles.filterGroup}>
-              <label className={styles.filterLabel}>Departments</label>
-              <div className={styles.selectWrap}>
-                <select className={styles.select} value={dept} onChange={e => setDept(e.target.value)}>
-                  <option>All Departments</option><option>Engineering</option><option>Planning</option>
+                <select className={styles.select} value={status} onChange={e => setStatus(e.target.value)}>
+                  <option>All Status</option><option>Active</option><option>On Duty</option>
                 </select>
                 <svg className={styles.selectChevron} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
               </div>
@@ -137,7 +314,7 @@ export default function UserManagementPage() {
             <div className={styles.sortControls}>
               <span className={styles.sortLabel}>Sort by:</span>
               <select className={styles.sortSelect} value={sortBy} onChange={e => setSortBy(e.target.value)}>
-                <option>Alphabetical (A-Z)</option><option>Most Recent</option>
+                <option>Alphabetical (A-Z)</option><option>Most Assigned</option>
               </select>
               <span className={styles.sortLabel} style={{ marginLeft: "1rem" }}>Order by:</span>
               <select className={styles.sortSelect} value={orderBy} onChange={e => setOrderBy(e.target.value)}>
@@ -151,18 +328,21 @@ export default function UserManagementPage() {
             <table className={styles.table}>
               <thead>
                 <tr>
-                  <th className={styles.th}>Employee</th>
+                  <th className={styles.th}>Inspector</th>
                   <th className={styles.th}>Position</th>
-                  <th className={styles.th}>Role</th>
-                  <th className={styles.th} style={{ textAlign: "center" }}>Projects Assigned</th>
+                  <th className={styles.th} style={{ textAlign: "center" }}>Vehicle</th>
+                  <th className={styles.th} style={{ textAlign: "center" }}>Assigned / Capacity</th>
                   <th className={styles.th} style={{ textAlign: "center" }}>Status</th>
-                  <th className={styles.th} style={{ textAlign: "center" }}>Assign</th>
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(u => {
+                {loadError && (
+                  <tr><td colSpan={5} className={styles.emptyRow}>{loadError}</td></tr>
+                )}
+
+                {!loadError && filtered.map(u => {
                   const st = STATUS_STYLE[u.status];
-                  const isActive = u.status === "Active";
+                  const utilPct = u.capacity > 0 ? Math.min(100, (u.assigned / u.capacity) * 100) : 0;
                   return (
                     <tr key={u.id} className={styles.row}>
                       <td className={styles.td}>
@@ -175,21 +355,25 @@ export default function UserManagementPage() {
                         </div>
                       </td>
                       <td className={styles.td}>{u.position}</td>
-                      <td className={styles.td}>{u.role}</td>
-                      <td className={`${styles.td} ${styles.tdCenter}`}>{u.assigned}</td>
+                      <td className={`${styles.td} ${styles.tdCenter}`}>{u.vehicleAccess ? "Yes" : "No"}</td>
+                      <td className={`${styles.td} ${styles.tdCenter}`}>
+                        {u.assigned} / {u.capacity}
+                        <div className={styles.progressBarBg} style={{ marginTop: 4 }}>
+                          <div className={styles.progressBar} style={{ width: `${utilPct}%` }} />
+                        </div>
+                      </td>
                       <td className={`${styles.td} ${styles.tdCenter}`}>
                         <span className={styles.statusBadge} style={{ background: st.bg, color: st.color }}>
                           {u.status}
                         </span>
                       </td>
-                      <td className={`${styles.td} ${styles.tdCenter}`}>
-                        <button className={`${styles.assignBtn} ${!isActive ? styles.assignBtnDisabled : ""}`}>
-                          Assign
-                        </button>
-                      </td>
                     </tr>
                   );
                 })}
+
+                {!loadError && filtered.length === 0 && (
+                  <tr><td colSpan={5} className={styles.emptyRow}>No inspectors match your filters.</td></tr>
+                )}
               </tbody>
             </table>
           </div>

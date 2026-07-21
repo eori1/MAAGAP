@@ -15,6 +15,13 @@
   background: #f0f4f9;
 }
 
+@media (max-width: 768px) {
+  .main {
+    margin-left: 0;
+    padding-top: 3rem;
+  }
+}
+
 /* ── Top Bar ─────────────────────────────────────────── */
 .topbar {
   display: flex;
@@ -132,8 +139,39 @@
   flex-shrink: 0;
 }
 
+/* Create Account Form */
+.createForm {
+  padding: 0.85rem 1.5rem;
+  border-bottom: 1px solid #eaeff6;
+}
+
+.createFormRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.createFormRow .searchInput,
+.createFormRow .select {
+  width: auto;
+  min-width: 150px;
+  flex: 1 1 150px;
+}
+
+.formError {
+  background: #fff2f2;
+  border: 1px solid #f5c6c6;
+  color: #c0392b;
+  font-size: 0.78rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  margin-bottom: 0.6rem;
+}
+
 /* ── Filters Row ─────────────────────────────────────── */
 .filtersRow {
+  flex-wrap: wrap;
   display: flex;
   align-items: flex-end;
   gap: 0.9rem;
@@ -267,6 +305,7 @@
 
 /* ── Table ───────────────────────────────────────────── */
 .tableWrap {
+  overflow-x: auto;
   flex: 1;
   overflow-y: auto;
   min-height: 0;
@@ -341,6 +380,32 @@
   white-space: nowrap;
 }
 
+/* Capacity Progress Bar */
+.progressBarBg {
+  width: 100%;
+  max-width: 140px;
+  height: 4px;
+  background: #e8f0fb;
+  border-radius: 50px;
+  overflow: hidden;
+  margin: 4px auto 0;
+}
+
+.progressBar {
+  height: 100%;
+  background: linear-gradient(90deg, #2756c5, #1a6ed8);
+  border-radius: 50px;
+  transition: width 0.4s ease;
+}
+
+/* Empty State */
+.emptyRow {
+  padding: 3rem;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.82rem;
+}
+
 /* Assign Button */
 .assignBtn {
   background: #1a6ed8;
@@ -362,3 +427,7 @@
   cursor: not-allowed;
 }
 .assignBtnDisabled:hover { opacity: 1; }
+
+@media (max-width: 900px) {
+  .table { min-width: 720px; }
+}

@@ -18,6 +18,52 @@
   padding-bottom: 0;
 }
 
+/* ── Mobile: off-canvas drawer ────────────────────── */
+.mobileToggle {
+  display: none;
+}
+
+.backdrop {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
+    box-shadow: 0 0 24px rgba(0, 0, 0, 0.15);
+  }
+
+  .sidebarOpen {
+    transform: translateX(0);
+  }
+
+  .mobileToggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: 0.65rem;
+    left: 1rem;
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    border: 1.5px solid #dde4f0;
+    background: #fff;
+    color: #1b3a5e;
+    cursor: pointer;
+    z-index: 110;
+  }
+
+  .backdropOpen {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 39, 68, 0.45);
+    z-index: 99;
+  }
+}
+
 /* ── LOGO ─────────────────────────────────────────── */
 .logoArea {
   display: flex;

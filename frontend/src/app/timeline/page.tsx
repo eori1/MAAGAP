@@ -1,58 +1,79 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
 import TopRight from "@/components/TopRight";
 import styles from "./page.module.css";
 
-/* ─── Mock Timeline Data ──────────────────────────────── */
-// Timeline spans 8 months: May 2025 (index 0) to Dec 2025 (index 7)
-const MONTHS = [
-  "May 2025", "June 2025", "July 2025", "August 2025",
-  "September 2025", "October 2025", "November 2025", "December 2025"
-];
+/* ─── Types (mirror backend timeline.json payload) ────── */
+interface TimelineProject {
+  id: string;
+  name: string;
+  location: string;
+  type: string;
+  year: number;
+  startDate: string;
+  plannedEndDate: string;
+  plannedMonths: number;
+  actualDelayDays: number;
+  predictedDelayDays: number;
+  riskTier: "Low" | "Medium" | "High" | "Critical";
+  status: "Completed" | "Ongoing" | "Delayed";
+}
 
-const PROJECTS = [
-  { id: "PPS - 124", name: "Aganan Flyover, Brgy. Aganan",           status: "Delayed",   start: 0,   duration: 2.5, overdue: 3.5 },
-  { id: "PPS - 125", name: "Jibao-an Bridge, Brgy. Jibao-an",        status: "Completed", start: 3.5, duration: 1.5, overdue: 0.8 }, // Completed uses green, overdue part is light green
-  { id: "PPS - 126", name: "Iloilo River Esplanade Phase 3, M...",   status: "Completed", start: 0,   duration: 2.8, overdue: 0.5 },
-  { id: "PPS - 127", name: "Diversion Road Upgrade, Iloilo City",    status: "Ongoing",   start: 5.5, duration: 2.5, overdue: 0   },
-  { id: "PPS - 128", name: "San Jose de Buenavista Road Impr...",    status: "Ongoing",   start: 0,   duration: 5.5, overdue: 2.5 },
-  { id: "PPS - 129", name: "Terminal Market, Iloilo City",           status: "Delayed",   start: 0,   duration: 2.5, overdue: 1.0 },
-  { id: "PPS - 130", name: "Road Rehabilitation, Leganes",           status: "Delayed",   start: 0,   duration: 4.5, overdue: 1.5 },
-  { id: "PPS - 131", name: "Cabatangan, Cabatuan",                   status: "Delayed",   start: 3.2, duration: 3.8, overdue: 0.8 },
-  { id: "PPS - 132", name: "Complex Development, Pavia",             status: "Completed", start: 0,   duration: 5.5, overdue: 1.5 },
-  { id: "PPS - 133", name: "Sampaguita Farm, San Miguel",            status: "Completed", start: 0,   duration: 0.8, overdue: 0   },
-  { id: "PPS - 134", name: "Port Expansion, Dumangas",               status: "Planned",   start: 0,   duration: 1.8, overdue: 2.2 },
-];
+// Elapsed-months-since-start view: the manuscript delimits standard
+// durations to 6 months (non-infrastructure) or 12 months (infrastructure),
+// so every project is plotted on a shared 0-12 month window instead of a
+// calendar axis (test projects span 2016-2025 and would not align).
+const GRID_MONTHS = 12;
+const MONTH_LABELS = Array.from({ length: GRID_MONTHS }, (_, i) => `Month ${i + 1}`);
 
 const STATUS_COLORS: Record<string, { solid: string; light: string; border: string }> = {
   Completed: { solid: "#27ae60", light: "#d4efdf", border: "#27ae60" },
   Ongoing:   { solid: "#2756c5", light: "#d4e0f5", border: "#2756c5" },
   Delayed:   { solid: "#e74c3c", light: "#fadbd8", border: "#e74c3c" },
-  Planned:   { solid: "#94a3b8", light: "#e2e8f0", border: "#94a3b8" },
 };
 
 /* ─── Page Component ──────────────────────────────────── */
 export default function TimelinePage() {
+  const [projects, setProjects] = useState<TimelineProject[]>([]);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [quarter, setQuarter] = useState("All Quarters");
   const [status, setStatus] = useState("All Status");
-  const [sortBy, setSortBy] = useState("Most Recent");
-  const [orderBy, setOrderBy] = useState("Ascending");
+  const [sortBy, setSortBy] = useState("Delay (Worst First)");
+  const [orderBy, setOrderBy] = useState("Descending");
+
+  useEffect(() => {
+    fetch("/api/timeline")
+      .then(res => {
+        if (!res.ok) throw new Error("no data");
+        return res.json();
+      })
+      .then(setProjects)
+      .catch(() => setLoadError("No timeline data found. Run the backend pipeline (python main.py) to generate it."));
+  }, []);
 
   const filtered = useMemo(() => {
-    let list = [...PROJECTS];
+    let list = [...projects];
     if (search) {
       list = list.filter(p => p.name.toLowerCase().includes(search.toLowerCase()) || p.id.toLowerCase().includes(search.toLowerCase()));
     }
     if (status !== "All Status") {
       list = list.filter(p => p.status === status);
     }
+    const dir = orderBy === "Ascending" ? 1 : -1;
+    list.sort((a, b) => {
+      if (sortBy === "Delay (Worst First)") {
+        const da = a.status === "Completed" ? a.actualDelayDays : a.predictedDelayDays;
+        const db = b.status === "Completed" ? b.actualDelayDays : b.predictedDelayDays;
+        return (da - db) * -dir;
+      }
+      return a.name.localeCompare(b.name) * dir;
+    });
     return list;
-  }, [search, status]);
+  }, [projects, search, status, sortBy, orderBy]);
 
-  const clearFilters = () => { setSearch(""); setQuarter("All Quarters"); setStatus("All Status"); };
+  const clearFilters = () => { setSearch(""); setStatus("All Status"); };
 
   return (
     <div className={styles.shell}>
@@ -77,7 +98,9 @@ export default function TimelinePage() {
             <h1 className={styles.cardTitle}>
               Project <span className={styles.accent}>Timelines</span>
             </h1>
-            <p className={styles.cardSub}>View projects timelines in a GANTT Chart</p>
+            <p className={styles.cardSub}>
+              Actual vs. scheduled progress, elapsed months since project start ({filtered.length} of {projects.length} projects)
+            </p>
           </div>
           <div className={styles.divider} />
 
@@ -89,20 +112,10 @@ export default function TimelinePage() {
                 <svg className={styles.searchIcon} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
                 <input
                   className={styles.searchInput}
-                  placeholder="Search Reports ..."
+                  placeholder="Search Projects ..."
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                 />
-              </div>
-            </div>
-
-            <div className={styles.filterGroup}>
-              <label className={styles.filterLabel}>Quarter</label>
-              <div className={styles.selectWrap}>
-                <select className={styles.select} value={quarter} onChange={e => setQuarter(e.target.value)}>
-                  <option>All Quarters</option><option>Q1</option><option>Q2</option><option>Q3</option><option>Q4</option>
-                </select>
-                <svg className={styles.selectChevron} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
               </div>
             </div>
 
@@ -111,7 +124,7 @@ export default function TimelinePage() {
               <div className={styles.selectWrap}>
                 <select className={styles.select} value={status} onChange={e => setStatus(e.target.value)}>
                   <option>All Status</option><option>Completed</option><option>Ongoing</option>
-                  <option>Delayed</option><option>Planned</option>
+                  <option>Delayed</option>
                 </select>
                 <svg className={styles.selectChevron} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
               </div>
@@ -125,14 +138,14 @@ export default function TimelinePage() {
             <div className={styles.sortControls}>
               <span className={styles.sortLabel}>Sort by:</span>
               <select className={styles.sortSelect} value={sortBy} onChange={e => setSortBy(e.target.value)}>
-                <option>Most Recent</option><option>Name</option>
+                <option>Delay (Worst First)</option><option>Name</option>
               </select>
               <span className={styles.sortLabel} style={{ marginLeft: "1rem" }}>Order by:</span>
               <select className={styles.sortSelect} value={orderBy} onChange={e => setOrderBy(e.target.value)}>
                 <option>Ascending</option><option>Descending</option>
               </select>
             </div>
-            
+
             <div className={styles.legend}>
               <span className={styles.legendLabel}>Legend</span>
               <div className={styles.legendItem}>
@@ -145,22 +158,19 @@ export default function TimelinePage() {
                 <div className={styles.legendColor} style={{ background: "#e74c3c" }} /> Delayed
               </div>
               <div className={styles.legendItem}>
-                <div className={styles.legendColor} style={{ background: "#94a3b8" }} /> Planned
-              </div>
-              <div className={styles.legendItem}>
-                <div className={styles.legendColorOutline} style={{ borderColor: "#e74c3c" }} /> Overdue (Red Border)
+                <div className={styles.legendColorOutline} style={{ borderColor: "#e74c3c" }} /> Slippage (predicted/actual)
               </div>
             </div>
           </div>
 
           {/* Gantt Chart Area */}
           <div className={styles.ganttContainer}>
-            
+
             {/* Header row */}
             <div className={styles.ganttHeaderRow}>
               <div className={styles.ganttLeftHeader}>Project Name</div>
               <div className={styles.ganttGridHeader}>
-                {MONTHS.map(m => (
+                {MONTH_LABELS.map(m => (
                   <div key={m} className={styles.ganttMonthBadge}>{m}</div>
                 ))}
               </div>
@@ -170,45 +180,52 @@ export default function TimelinePage() {
             <div className={styles.ganttBody}>
               {/* Background vertical grid lines */}
               <div className={styles.ganttBgGrid}>
-                {MONTHS.map((_, i) => (
+                {MONTH_LABELS.map((_, i) => (
                   <div key={i} className={styles.ganttGridCol} />
                 ))}
               </div>
 
-              {filtered.map(p => {
+              {loadError && <div className={styles.emptyState}>{loadError}</div>}
+
+              {!loadError && filtered.map(p => {
                 const colors = STATUS_COLORS[p.status];
+                const duration = Math.min(p.plannedMonths, GRID_MONTHS);
+                const delayDays = p.status === "Completed" ? p.actualDelayDays : p.predictedDelayDays;
+                const overdueMonths = Math.max(0, Math.min(delayDays / 30, GRID_MONTHS - duration));
                 return (
                   <div key={p.id} className={styles.ganttRow}>
                     {/* Left: Name and ID */}
                     <div className={styles.ganttLeftCol}>
-                      <div className={styles.ganttProjName}>{p.name}</div>
-                      <div className={styles.ganttProjId}>{p.id}</div>
+                      <div className={styles.ganttProjName}>{p.name} — {p.location}</div>
+                      <div className={styles.ganttProjId}>{p.type} · {p.riskTier} risk</div>
                     </div>
 
                     {/* Right: Timeline Grid */}
                     <div className={styles.ganttGridColWrapper}>
                       <div className={styles.ganttBarContainer}>
-                        {/* Solid portion */}
-                        <div 
+                        {/* Solid portion: scheduled duration */}
+                        <div
                           className={styles.ganttBarSolid}
                           style={{
-                            left: `${(p.start / 8) * 100}%`,
-                            width: `${(p.duration / 8) * 100}%`,
+                            left: "0%",
+                            width: `${(duration / GRID_MONTHS) * 100}%`,
                             background: colors.solid,
-                            borderTopRightRadius: p.overdue ? 0 : 50,
-                            borderBottomRightRadius: p.overdue ? 0 : 50,
+                            borderTopRightRadius: overdueMonths ? 0 : 50,
+                            borderBottomRightRadius: overdueMonths ? 0 : 50,
                           }}
+                          title={`Scheduled: ${p.plannedMonths} months`}
                         />
-                        {/* Overdue/Light portion */}
-                        {p.overdue > 0 && (
-                          <div 
+                        {/* Overdue/light portion: actual or predicted slippage */}
+                        {overdueMonths > 0 && (
+                          <div
                             className={styles.ganttBarLight}
                             style={{
-                              left: `${((p.start + p.duration) / 8) * 100}%`,
-                              width: `${(p.overdue / 8) * 100}%`,
+                              left: `${(duration / GRID_MONTHS) * 100}%`,
+                              width: `${(overdueMonths / GRID_MONTHS) * 100}%`,
                               background: colors.light,
-                              borderColor: p.status === "Delayed" ? "#e74c3c" : colors.border,
+                              borderColor: colors.border,
                             }}
+                            title={`${p.status === "Completed" ? "Actual" : "Predicted"} slippage: ${delayDays.toFixed(0)} days`}
                           />
                         )}
                       </div>
@@ -216,8 +233,8 @@ export default function TimelinePage() {
                   </div>
                 );
               })}
-              
-              {filtered.length === 0 && (
+
+              {!loadError && filtered.length === 0 && (
                 <div className={styles.emptyState}>No projects match your filters.</div>
               )}
             </div>

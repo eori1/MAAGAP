@@ -1,8 +1,9 @@
 "use client";
 
 import styles from "./page.module.css";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { getSupabaseBrowserClient } from "@/lib/supabaseBrowserClient";
 
 /* ─── SVG Icons ─────────────────────────────────── */
 const EmailIcon = () => (
@@ -36,14 +37,62 @@ const EyeOffIcon = () => (
 
 /* ─── Page ───────────────────────────────────────── */
 export default function LoginPage() {
-  const router = useRouter();
-  const [showPassword, setShowPassword] = useState(false);
-  const [email, setEmail] = useState("admin@iloilo.gov.ph");
-  const [password, setPassword] = useState("maagap2026");
+  return (
+    <Suspense fallback={null}>
+      <LoginForm />
+    </Suspense>
+  );
+}
 
-  const handleLogin = (e: React.FormEvent) => {
+function LoginForm() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+
+  const handleForgotPassword = async () => {
+    if (!email) {
+      setError("Enter your email address above, then click \"Forgot Password?\"");
+      return;
+    }
+    setResetLoading(true);
+    setError(null);
+
+    const supabase = getSupabaseBrowserClient();
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+
+    setResetLoading(false);
+    if (resetError) {
+      setError(resetError.message);
+      return;
+    }
+    setResetSent(true);
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    router.push("/dashboard");
+    setLoading(true);
+    setError(null);
+
+    const supabase = getSupabaseBrowserClient();
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
+
+    if (signInError) {
+      setError(signInError.message);
+      setLoading(false);
+      return;
+    }
+
+    const next = searchParams.get("next") || "/dashboard";
+    router.push(next);
+    router.refresh();
   };
 
   return (
@@ -98,6 +147,13 @@ export default function LoginPage() {
               Access real-time governance insights and predictive project analytics.
             </p>
 
+            {error && <p className={styles.disclaimer} style={{ color: "#c0392b" }}>{error}</p>}
+            {resetSent && (
+              <p className={styles.disclaimer} style={{ color: "#27ae60" }}>
+                If an account exists for that email, a password reset link has been sent.
+              </p>
+            )}
+
             <form onSubmit={handleLogin}>
               {/* Email */}
               <div className={styles.formGroup}>
@@ -140,14 +196,20 @@ export default function LoginPage() {
                   </button>
                 </div>
                 <div className={styles.forgotRow}>
-                  <button type="button" id="btn-forgot-password" className={styles.forgotLink}>
-                    Forgot Password?
+                  <button
+                    type="button"
+                    id="btn-forgot-password"
+                    className={styles.forgotLink}
+                    onClick={handleForgotPassword}
+                    disabled={resetLoading}
+                  >
+                    {resetLoading ? "Sending..." : "Forgot Password?"}
                   </button>
                 </div>
               </div>
 
-              <button id="btn-continue" type="submit" className={styles.btnSubmit}>
-                Continue →
+              <button id="btn-continue" type="submit" className={styles.btnSubmit} disabled={loading}>
+                {loading ? "Signing in..." : "Continue →"}
               </button>
             </form>
 

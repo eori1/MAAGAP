@@ -27,3 +27,18 @@ body {
   color: #333333;
   line-height: 1.5;
 }
+
+/* Automated PDF report export: pages mark chrome (sidebar, top bar, filter
+   controls, action buttons) with data-print-hide so window.print() produces
+   a clean, table-only report the browser can save as PDF. */
+@media print {
+  [data-print-hide] { display: none !important; }
+  body, html { overflow: visible !important; height: auto !important; }
+  [data-print-area] {
+    overflow: visible !important;
+    height: auto !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+  }
+}
