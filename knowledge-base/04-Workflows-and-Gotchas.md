@@ -24,6 +24,16 @@ If you (or the user) copy the Supabase project URL from somewhere that includes 
 
 **Fixed**: `frontend/src/lib/supabasePaging.ts::fetchAllRowsIn()` — loops `.range()` in pages of 1000 until an empty page comes back. **Use this helper for any query that could plausibly exceed 1000 rows** (anything joined against `inspection_logs` or `external_context`, which have ~7944 rows total).
 
+## `risk_alerts` is fully wiped and rebuilt on every pipeline run — never persist app-driven alerts there
+
+`backend/maagap/database.py::sync_all()` deletes-then-inserts every table it syncs, `risk_alerts` included, on every `python main.py` run. That's fine for tier-escalation/critical-risk alerts (they're recomputed fresh each run anyway), but it means **any alert an app workflow inserts directly into `risk_alerts` will silently disappear the next time the pipeline runs** — not a hypothetical, this is the same category of bug as the URL-normalization and row-cap gotchas above (a shared resource written by two different processes with different lifetimes).
+
+Found while scoping FR-13 (report review): a naive "insert a REPORT_NEEDS_REVISION row into `risk_alerts` when a Manager requests revision" design would have been wiped on the next pipeline sync. **Fixed by design, not by code**: `/api/alerts` (`frontend/src/app/api/alerts/route.ts`) *derives* that alert type on every read, from `inspection_reports.review_status`, and merges it into the response alongside the real `risk_alerts` rows — nothing new is ever written to `risk_alerts` itself. **If you're tempted to add a new alert type driven by user action (not the pipeline), derive it on read from whatever table the action already writes to — don't add a row to `risk_alerts`.**
+
+## `inspection_reports` can have multiple rows per project/assignment — always pick the latest
+
+A project (or assignment) can accumulate more than one `inspection_reports` row over time: an inspector resubmitting after a "needs revision" review is the main case, but it was already true before FR-13 (nothing ever prevented multiple submissions). `/api/reports`, `/api/assignments`, and `/api/alerts` all need "the current one," not "all of them" — they share `frontend/src/lib/inspectionReports.ts::pickLatestByKey()` for this (keyed by `project_id` or `assignment_id`, compares `submitted_at`). **If you add a new route reading `inspection_reports`, use this helper rather than assuming one row per project/assignment.**
+
 ## Next.js 16 renamed Middleware to Proxy
 
 This repo's `frontend/AGENTS.md` warns "this is NOT the Next.js you know" for a reason. `middleware.ts` doesn't exist in this version — it's `src/proxy.ts`, exporting a function named `proxy` (or default export), same `config.matcher` convention. If you're about to write `middleware.ts`, stop and check `node_modules/next/dist/docs/01-app/01-getting-started/16-proxy.md` first.

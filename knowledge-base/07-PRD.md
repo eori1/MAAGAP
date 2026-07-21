@@ -94,9 +94,12 @@ This is the core PPDO-facing loop and the most important functional area. Requir
 - Baseline done: off-canvas sidebar drawer, tables scroll horizontally, stat rows/layouts stack on narrow viewports.
 - User-tested and found still unsatisfactory for dense tables/charts specifically. **Decision: defer further polish to a planned full UI revamp** rather than keep patching the current design — see [[02-Decisions-Log]].
 
-### FR-13: Report review / approval workflow — **Planned, not scoped**
-- Proposed: Manager/Admin can review a submitted report and mark it approved or needing revision (a `review_status` on `inspection_reports`).
-- Not yet scoped: who exactly can act (Manager only, or Admin too?), whether "needs revision" notifies the Inspector or just shows as a status they see next time, and whether this should wait for more real report volume before designing around it. See [[06-Current-State-and-Next-Steps]].
+### FR-13: Report review / approval workflow — **Built**
+- Manager and Admin can approve or request revision on a submitted report (`inspection_reports.review_status`: `pending`/`approved`/`needs_revision`, plus `review_comment`, `reviewed_by`, `reviewed_at`).
+- "Needs revision" surfaces to the affected Inspector via the existing notification bell (derived on read from `inspection_reports`, not persisted into `risk_alerts` — see [[04-Workflows-and-Gotchas]]) and a "Needs Revision" badge/Resubmit button on the Allocation page.
+- An Inspector can resubmit after "needs revision," which resets review to pending (a fresh row, no explicit reset logic needed).
+- Review happens via a dedicated `ReportDetailModal` on the Reports page (full-size photos, complete notes/issues text, physical **and** financial accomplishment % side-by-side) rather than inline table buttons — the table row alone doesn't have room to actually judge a submission.
+- See [[02-Decisions-Log]] for the scoping decisions and [[03-Progress-Log]] for what was built.
 
 ### FR-14: ML feedback loop using real report data — **Planned, not scoped**
 - Currently, `inspection_reports` (real, inspector-submitted data) is never read by the ML pipeline — models only ever train on synthetic data. Closing this loop (real accomplishment data informing future risk predictions / model retraining) would be a genuine improvement to the "predictive" half of the system but has not been designed.
@@ -127,7 +130,6 @@ See [[01-Architecture#Supabase schema]] for the full table list. Core entities: 
 
 ## 8. Open questions (resolve before building the corresponding feature)
 
-- FR-13: exact approval-workflow actors and notification behavior.
 - FR-14: whether/how real report data should influence retraining, and on what cadence.
 - FR-15: is this a coding deliverable at all, or purely a research-methodology task for the manuscript's defense?
 - Full UI revamp (referenced in FR-12's deferral): no scope, timeline, or design direction agreed yet — a future conversation, not implied by this document.

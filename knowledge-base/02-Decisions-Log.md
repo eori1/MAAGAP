@@ -99,4 +99,28 @@ Chronological record of non-obvious choices and why they were made. Each entry: 
 
 **Why**: The branch's 16 commits mixed real feature commits with small `docs: update knowledge-base vault` housekeeping commits after nearly every feature — squashing avoids `main`'s log being cluttered with those interstitial doc-sync commits, at the cost of losing per-feature `git bisect`/`git blame` granularity for this PR.
 
-**Consequence**: The squash commit's message follows the template (Description + a trimmed "Changes made" bullet list) — not a copy-paste of the full PR body (no how-to-test steps, no screenshot links, no files-changed list; those either don't render in a terminal or are already available via `git log --stat`). No `Co-Authored-By` trailer on this or future commits — the user asked for it to be dropped.
+**Consequence**: The squash commit's message follows the template (Description + a trimmed "Changes made" bullet list) — not a copy-paste of the full PR body (no how-to-test steps, no screenshot links, no files-changed list; those either don't render in a terminal or are already available via `git log --stat`).
+
+## FR-13 (report review/approval): scope and design
+
+**Decision**: Chosen as the next priority after PR #1 merged, over FR-14 (ML feedback loop) and FR-15 (ISO/IEC 25010) — smallest, best-bounded scope, builds directly on the existing accept/submit workflow rather than needing more real data volume or being a non-coding deliverable. Scoped via explicit questions:
+1. **Who can act**: Manager and Admin both (matches their existing shared full-read-access pattern; only Inspector is excluded).
+2. **Notification**: reuse the existing notification-bell/`risk_alerts` system rather than building a new channel — but see [[04-Workflows-and-Gotchas]] for why this had to be *derived on read*, not stored in `risk_alerts` directly.
+3. **Resubmission**: allowed. An Inspector can resubmit after "needs revision," which resets review to pending.
+4. **Naming**: a new, separate "Review Status" badge (Awaiting Review/Approved/Needs Revision) rather than overloading the existing progress-based `status` field (Validated/Pending Review/Flagged/Submitted) — both use "Pending Review"-shaped language but mean different things, so keeping them visually and structurally distinct avoids confusing a reviewer who sees both on the same row.
+
+**Consequence**: Resubmission needed no explicit "reset review status" logic — a resubmission is just a new `inspection_reports` row, which defaults to `review_status = 'pending'` like any other insert, and the existing "latest report wins" merge (now `pickLatestByKey()`, see [[04-Workflows-and-Gotchas]]) naturally surfaces it as the current, actionable one.
+
+## FR-13 review actions moved from inline table buttons to a full detail modal
+
+**Decision**: The first pass put Approve/Request Revision buttons directly in the Reports table row (`ReportReviewModal` handled only the revision comment). After shipping it, the user asked how a Manager/Admin would actually see the notes and photos before deciding — and the honest answer was "barely": the row only had space for 32×32 thumbnails and truncated/italic text, disconnected from the review action next to it. Replaced with `ReportDetailModal`: a single modal showing full-size photos, complete text, and both accomplishment percentages, with Approve/Request Revision inline below the evidence. `ReportReviewModal` was deleted rather than kept alongside it, since its one job (the revision comment) is now a mode within the bigger modal — no reason to keep two overlapping components.
+
+**Why**: A review action needs to be next to what's being reviewed, not just next to a badge. Approve requires no comment (single click); Request Revision requires a non-empty comment, enforced both client-side (`ReportDetailModal`) and server-side (`PATCH /api/reports/[reportId]/review`).
+
+**Consequence**: Surfaced and fixed an unrelated pre-existing gap while at it — `financial_accomplishment_pct` was already being fetched by `/api/reports` from `inspection_reports` but never included in the API response, so it was invisible to every frontend page, not just the review flow. Now exposed alongside `actualProgress` (physical %).
+
+## Renamed the slippage-based Status value "Pending Review" to "At Risk"
+
+**Decision**: The user spotted, via a Reports-page screenshot, that the pre-existing slippage-based `status` column's "Pending Review" value read as the same concept as the new Review Status column's "Awaiting Review" — even though the deliberate distinction made when scoping FR-13 (see above) was to keep them structurally separate. Fixed by renaming the *older* value to "At Risk," rather than touching the new Review Status wording.
+
+**Why**: "At Risk" describes what it actually is — an automated slippage-severity heuristic — with no implication of human review at all, closing the wording gap the FR-13 naming decision didn't fully anticipate. No logic change: `statusFromSlippage()`'s thresholds (>20 Flagged, >5 previously-"Pending Review"-now-"At Risk", else Validated) are unchanged, only the label. No `Co-Authored-By` trailer on this or future commits — the user asked for it to be dropped.

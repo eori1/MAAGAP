@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabaseServer";
 import { getSessionProfile } from "@/lib/supabaseSessionServer";
+import { pickLatestByKey } from "@/lib/inspectionReports";
 
 interface InspectorRow {
   inspector_id: string;
@@ -27,6 +28,7 @@ interface AssignmentRow {
 interface ReportRow {
   assignment_id: string;
   submitted_at: string;
+  review_status: "pending" | "approved" | "needs_revision";
 }
 
 // Serves the LP-optimized inspector deployment schedule from Supabase
@@ -61,15 +63,15 @@ export async function GET() {
     }
 
     const assignmentIds = assignments.map((a) => a.assignment_id);
-    let reportedAssignmentIds = new Set<string>();
+    let latestReportByAssignment = new Map<string, ReportRow>();
     if (assignmentIds.length > 0) {
       const { data: reportData, error: reportErr } = await supabase
         .from("inspection_reports")
-        .select("assignment_id, submitted_at")
+        .select("assignment_id, submitted_at, review_status")
         .in("assignment_id", assignmentIds);
       if (reportErr) throw reportErr;
       const reports = (reportData ?? []) as unknown as ReportRow[];
-      reportedAssignmentIds = new Set(reports.map((r) => r.assignment_id));
+      latestReportByAssignment = pickLatestByKey(reports, (r) => r.assignment_id, (r) => r.submitted_at);
     }
 
     const byInspector = new Map<string, AssignmentRow[]>();
@@ -100,7 +102,8 @@ export async function GET() {
           priority: r.priority,
           urgency: r.urgency,
           status: r.status ?? "pending",
-          hasReport: reportedAssignmentIds.has(r.assignment_id),
+          hasReport: latestReportByAssignment.has(r.assignment_id),
+          reviewStatus: latestReportByAssignment.get(r.assignment_id)?.review_status ?? null,
         })),
       };
     });

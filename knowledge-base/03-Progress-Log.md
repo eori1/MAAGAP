@@ -120,3 +120,27 @@ Created `07-PRD.md`: 15 functional requirements (FR-1 to FR-15), each tagged Bui
 All 16 commits from `5ddfdf4` through `86910b9` (the entire Supabase migration, Auth/RBAC, password self-service, operational workflow, Reports-page merge, mobile-responsiveness baseline, and the knowledge-base vault + PRD) were opened as a single PR and merged into `main` via **squash-and-merge** as one commit, `7932d3e`. See [[02-Decisions-Log]] for why the branch was renamed before opening the PR and why squash (not a real merge commit) was chosen.
 
 `main` is now up to date with all of this work; the feature branch `feat/supabase-migration-and-operational-workflow` still exists on `origin` post-merge (not deleted).
+
+## FR-13 — report review/approval workflow
+
+Built directly after PR #1, per the PRD's flagged "Planned, not scoped" items. See [[02-Decisions-Log]] for the scoping decisions and [[04-Workflows-and-Gotchas]] for the `risk_alerts`-overwrite gotcha this surfaced.
+
+- `backend/supabase/schema_review.sql` (additive): `inspection_reports.review_status` (`pending`/`approved`/`needs_revision`, default `pending`), `review_comment`, `reviewed_by`, `reviewed_at`.
+- New `frontend/src/lib/inspectionReports.ts::pickLatestByKey()` — shared "latest report wins" dedup, now used by `/api/reports`, `/api/assignments`, and `/api/alerts` (previously each route had its own copy of this logic, or in `/api/assignments`' case, didn't need it until now).
+- New `PATCH /api/reports/[reportId]/review` — Manager/Admin only; `approve` (no comment) or `request_revision` (comment required, 400 otherwise).
+- `/api/reports` GET: exposes `reportId`/`reviewStatus`/`reviewComment` per row (`null` for pipeline-estimate rows — nothing to review).
+- `/api/assignments` GET: exposes `reviewStatus` per project, keyed off the latest report per assignment.
+- `/api/alerts` GET: derives a `REPORT_NEEDS_REVISION` alert on read for an Inspector's own `needs_revision` reports — not stored in `risk_alerts` (see gotcha).
+- Allocation page: a `needs_revision` report now shows **Resubmit Report** (Inspector) or a **Needs Revision** badge (Manager/Admin) instead of the old terminal "✓ Reported" — resubmission reuses the existing `SubmitReportModal` unchanged.
+- Reports page: new **Review Status** column (Awaiting Review/Approved/Needs Revision, kept visually distinct from the existing progress-based Status column).
+- `TopRight.tsx` notification bell: new alert type with a distinct dot color, alongside the existing tier-escalation/critical-risk alerts.
+- Committed to `feat/report-review-workflow` (`313976d`), pushed, PR #2 opened against `main`. Verified: `npx tsc --noEmit` clean, `pytest` still 25/25 (no Python touched), ESLint clean (two pre-existing `<img>` warnings unrelated to this change).
+
+### Follow-up (same PR, commit `47b3c44`) — full report detail modal
+
+User caught a real gap after the first pass: the Reports table row only has room for 32×32 photo thumbnails and truncated notes — not enough for a Manager/Admin to actually judge a submission before approving or requesting revision. Fixed:
+
+- Added `financialAccomplishmentPct` to the `/api/reports` response (the field was already being fetched from `inspection_reports` but had never been surfaced to the frontend at all — a pre-existing gap, not something FR-13 introduced).
+- New `ReportDetailModal` (+ `.module.css`) replaces the removed `ReportReviewModal`: full-size photos, complete issues/notes text, physical **and** financial accomplishment % side-by-side, and Approve/Request Revision live inline right below the evidence — folding the revision-comment flow into the same read-first surface instead of stacking two separate modals.
+- Reports page: the Review Status column now shows one **Review Report** (Manager/Admin, pending) / **View Report** (everyone else, or already decided) button that opens the modal, instead of separate inline Approve/Request Revision buttons disconnected from the report content.
+- `tsc`/lint re-verified clean after this change.

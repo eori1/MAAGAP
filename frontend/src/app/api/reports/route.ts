@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getSupabaseServerClient } from "@/lib/supabaseServer";
 import { getSessionProfile } from "@/lib/supabaseSessionServer";
 import { fetchAllRowsIn } from "@/lib/supabasePaging";
+import { pickLatestByKey } from "@/lib/inspectionReports";
 
 interface PredictionRow {
   project_id: string;
@@ -29,6 +30,8 @@ interface InspectionReportRow {
   notes: string | null;
   photo_urls: string[] | null;
   submitted_at: string;
+  review_status: "pending" | "approved" | "needs_revision";
+  review_comment: string | null;
 }
 
 interface ProjectRow {
@@ -47,9 +50,9 @@ interface InspectorNameRow {
   inspector_name: string;
 }
 
-function statusFromSlippage(slippage: number): "Validated" | "Pending Review" | "Flagged" | "Submitted" {
+function statusFromSlippage(slippage: number): "Validated" | "At Risk" | "Flagged" | "Submitted" {
   if (slippage > 20) return "Flagged";
-  if (slippage > 5) return "Pending Review";
+  if (slippage > 5) return "At Risk";
   return "Validated";
 }
 
@@ -118,14 +121,14 @@ export async function GET() {
       if (!existing || log.quarter > existing.quarter) latestLogByProject.set(log.project_id, log);
     }
 
-    // Latest real inspector-submitted report per project, if any.
-    const latestRealByProject = new Map<string, InspectionReportRow>();
-    for (const r of realReports as unknown as InspectionReportRow[]) {
-      const existing = latestRealByProject.get(r.project_id);
-      if (!existing || new Date(r.submitted_at) > new Date(existing.submitted_at)) {
-        latestRealByProject.set(r.project_id, r);
-      }
-    }
+    // Latest real inspector-submitted report per project, if any (a project
+    // can have more than one row over time -- resubmissions after a "needs
+    // revision" review).
+    const latestRealByProject = pickLatestByKey(
+      realReports as unknown as InspectionReportRow[],
+      (r) => r.project_id,
+      (r) => r.submitted_at,
+    );
 
     function expectedProgressPct(projectId: string, asOf: Date): number | null {
       const p = projectById.get(projectId);
@@ -166,6 +169,10 @@ export async function GET() {
           inspectorId: real.inspector_id,
           inspectorName: nameByInspector.get(real.inspector_id) ?? real.inspector_id,
           riskTier,
+          reportId: real.report_id,
+          reviewStatus: real.review_status,
+          reviewComment: real.review_comment,
+          financialAccomplishmentPct: real.financial_accomplishment_pct,
         };
       }
 
@@ -188,6 +195,10 @@ export async function GET() {
         inspectorId: assignedInspectorId,
         inspectorName,
         riskTier,
+        reportId: null,
+        reviewStatus: null,
+        reviewComment: null,
+        financialAccomplishmentPct: null,
       };
     }).filter((r): r is NonNullable<typeof r> => r !== null);
 

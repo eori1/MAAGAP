@@ -352,6 +352,16 @@
   white-space: nowrap;
 }
 
+.statusBadgeRevision {
+  padding: 0.35rem 0.7rem;
+  border-radius: 50px;
+  background: #fde2e2;
+  color: #c0392b;
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .editBtn {
   padding: 0.62rem 1.1rem;
   border-radius: 10px;
