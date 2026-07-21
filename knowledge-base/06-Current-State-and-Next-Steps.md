@@ -2,7 +2,7 @@
 
 **Last updated:** 2026-07-21, end of the mobile-responsiveness pass.
 
-Related: [[03-Progress-Log]] · [[05-Manuscript-Alignment]] · [[04-Workflows-and-Gotchas]]
+Related: [[03-Progress-Log]] · [[05-Manuscript-Alignment]] · [[04-Workflows-and-Gotchas]] · [[07-PRD]]
 
 > This is the one file in the vault meant to change often. Update the "Current state" and "Next steps" sections after each significant task; leave the rest of the vault's structure alone unless something structural actually changed.
 

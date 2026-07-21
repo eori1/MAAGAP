@@ -25,7 +25,8 @@ This vault exists so a new Claude Code session (after `/compact` or a fresh star
 2. [[06-Current-State-and-Next-Steps]] — what's done, what's pending, right now
 3. [[04-Workflows-and-Gotchas]] — things that will bite you if you don't know them
 4. [[01-Architecture]] — how the pieces fit together
-5. [[02-Decisions-Log]] and [[03-Progress-Log]] — why things are the way they are, when needed
+5. [[07-PRD]] — **check this before scoping any new feature** — the authoritative requirements reference (Built/Partial/Planned per feature), so discussions start from an agreed spec instead of re-litigating scope
+6. [[02-Decisions-Log]] and [[03-Progress-Log]] — why things are the way they are, when needed
 
 ## Branch and remote state
 

@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "02-Decisions-Log.md",
+                "file": "07-PRD.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "02-Decisions-Log"
+              "title": "07-PRD"
             }
           }
         ]
@@ -94,7 +94,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "02-Decisions-Log.md",
+                "file": "07-PRD.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -104,7 +104,7 @@
                 "unlinkedCollapsed": true
               },
               "icon": "links-coming-in",
-              "title": "Backlinks for 02-Decisions-Log"
+              "title": "Backlinks for 07-PRD"
             }
           },
           {
@@ -113,12 +113,12 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "02-Decisions-Log.md",
+                "file": "07-PRD.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               },
               "icon": "links-going-out",
-              "title": "Outgoing links from 02-Decisions-Log"
+              "title": "Outgoing links from 07-PRD"
             }
           },
           {
@@ -156,13 +156,13 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "02-Decisions-Log.md",
+                "file": "07-PRD.md",
                 "followCursor": false,
                 "showSearch": false,
                 "searchQuery": ""
               },
               "icon": "lucide-list",
-              "title": "Outline of 02-Decisions-Log"
+              "title": "Outline of 07-PRD"
             }
           }
         ]
@@ -185,6 +185,10 @@
   },
   "active": "19e73d3fc4b27806",
   "lastOpenFiles": [
+    "00-Overview.md",
+    "02-Decisions-Log.md",
+    "06-Current-State-and-Next-Steps.md.tmp.14708.730ae6026819",
+    "07-PRD.md",
     "06-Current-State-and-Next-Steps.md.tmp.14708.f1871a0a5ef1",
     "06-Current-State-and-Next-Steps.md.tmp.14708.1ea62cb6c2e3",
     "01-Architecture.md.tmp.14708.605f21961450",
@@ -198,10 +202,6 @@
     "05-Manuscript-Alignment.md.tmp.14708.ba6033adf402",
     "04-Workflows-and-Gotchas.md",
     "03-Progress-Log.md",
-    "03-Progress-Log.md.tmp.14708.eb5be4f613a2",
-    "02-Decisions-Log.md",
-    "01-Architecture.md",
-    "00-Overview.md",
-    "02-Decisions-Log.md.tmp.14708.098aa45296ff"
+    "01-Architecture.md"
   ]
 }
