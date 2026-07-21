@@ -132,6 +132,15 @@ Built directly after PR #1, per the PRD's flagged "Planned, not scoped" items. S
 - `/api/assignments` GET: exposes `reviewStatus` per project, keyed off the latest report per assignment.
 - `/api/alerts` GET: derives a `REPORT_NEEDS_REVISION` alert on read for an Inspector's own `needs_revision` reports — not stored in `risk_alerts` (see gotcha).
 - Allocation page: a `needs_revision` report now shows **Resubmit Report** (Inspector) or a **Needs Revision** badge (Manager/Admin) instead of the old terminal "✓ Reported" — resubmission reuses the existing `SubmitReportModal` unchanged.
-- Reports page: new **Review Status** column (Awaiting Review/Approved/Needs Revision, kept visually distinct from the existing progress-based Status column); Manager/Admin see inline Approve/Request Revision actions while a report is pending review. New `ReportReviewModal` component handles the required comment for a revision request.
+- Reports page: new **Review Status** column (Awaiting Review/Approved/Needs Revision, kept visually distinct from the existing progress-based Status column).
 - `TopRight.tsx` notification bell: new alert type with a distinct dot color, alongside the existing tier-escalation/critical-risk alerts.
-- Verified: `npx tsc --noEmit` clean, `pytest` still 25/25 (no Python touched), ESLint clean (two pre-existing `<img>` warnings unrelated to this change).
+- Committed to `feat/report-review-workflow` (`313976d`), pushed, PR #2 opened against `main`. Verified: `npx tsc --noEmit` clean, `pytest` still 25/25 (no Python touched), ESLint clean (two pre-existing `<img>` warnings unrelated to this change).
+
+### Follow-up (same PR, commit `47b3c44`) — full report detail modal
+
+User caught a real gap after the first pass: the Reports table row only has room for 32×32 photo thumbnails and truncated notes — not enough for a Manager/Admin to actually judge a submission before approving or requesting revision. Fixed:
+
+- Added `financialAccomplishmentPct` to the `/api/reports` response (the field was already being fetched from `inspection_reports` but had never been surfaced to the frontend at all — a pre-existing gap, not something FR-13 introduced).
+- New `ReportDetailModal` (+ `.module.css`) replaces the removed `ReportReviewModal`: full-size photos, complete issues/notes text, physical **and** financial accomplishment % side-by-side, and Approve/Request Revision live inline right below the evidence — folding the revision-comment flow into the same read-first surface instead of stacking two separate modals.
+- Reports page: the Review Status column now shows one **Review Report** (Manager/Admin, pending) / **View Report** (everyone else, or already decided) button that opens the modal, instead of separate inline Approve/Request Revision buttons disconnected from the report content.
+- `tsc`/lint re-verified clean after this change.

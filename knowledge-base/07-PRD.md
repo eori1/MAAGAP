@@ -98,6 +98,7 @@ This is the core PPDO-facing loop and the most important functional area. Requir
 - Manager and Admin can approve or request revision on a submitted report (`inspection_reports.review_status`: `pending`/`approved`/`needs_revision`, plus `review_comment`, `reviewed_by`, `reviewed_at`).
 - "Needs revision" surfaces to the affected Inspector via the existing notification bell (derived on read from `inspection_reports`, not persisted into `risk_alerts` — see [[04-Workflows-and-Gotchas]]) and a "Needs Revision" badge/Resubmit button on the Allocation page.
 - An Inspector can resubmit after "needs revision," which resets review to pending (a fresh row, no explicit reset logic needed).
+- Review happens via a dedicated `ReportDetailModal` on the Reports page (full-size photos, complete notes/issues text, physical **and** financial accomplishment % side-by-side) rather than inline table buttons — the table row alone doesn't have room to actually judge a submission.
 - See [[02-Decisions-Log]] for the scoping decisions and [[03-Progress-Log]] for what was built.
 
 ### FR-14: ML feedback loop using real report data — **Planned, not scoped**

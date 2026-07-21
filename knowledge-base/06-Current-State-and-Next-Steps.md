@@ -1,6 +1,6 @@
 # Current State and Next Steps
 
-**Last updated:** 2026-07-21, after FR-13 (report review/approval) implementation.
+**Last updated:** 2026-07-21, after FR-13 (report review/approval) + detail-modal follow-up, PR #2 opened.
 
 Related: [[03-Progress-Log]] · [[05-Manuscript-Alignment]] · [[04-Workflows-and-Gotchas]] · [[07-PRD]]
 
@@ -21,17 +21,16 @@ The system is fully functional end-to-end and manually verified:
 - Reports page now shows real inspector-submitted reports (with a "Field Report" badge, photos, notes) in preference to the synthetic pipeline baseline, per project.
 - 25/25 backend tests passing, frontend builds clean, no known type errors.
 
-**FR-13 (report review/approval) is implemented** on top of the merged PR #1 baseline, currently **uncommitted, sitting directly on `main`** (see `git status` — not yet committed/branched/PR'd as of this note). See [[03-Progress-Log]] for what was built and [[02-Decisions-Log]] for the scoping decisions. `npx tsc --noEmit` clean, `pytest` 25/25. **Still needs**: applying `backend/supabase/schema_review.sql` in the Supabase dashboard (manual step), and the in-browser verification walkthrough (Manager approve/request-revision → Inspector sees alert + resubmit → Manager sees it pending again) — not yet done as of this note, since the schema migration hasn't been applied yet.
+**FR-13 (report review/approval) is implemented and in PR #2** (`https://github.com/eori1/MAAGAP/pull/2`, branch `feat/report-review-workflow`, commits `313976d` + `47b3c44`), not yet merged. See [[03-Progress-Log]] for what was built and [[02-Decisions-Log]] for the scoping decisions, including the follow-up that replaced inline table review actions with a full `ReportDetailModal` (full-size photos, complete notes, both accomplishment percentages) after the user asked how a reviewer would actually see the evidence before deciding. `npx tsc --noEmit` clean, `pytest` 25/25, ESLint clean. The Supabase schema migration (`schema_review.sql`) **has been applied** by the user. **Still needs**: the in-browser verification walkthrough (Manager approve/request-revision → Inspector sees alert + resubmit → Manager sees it pending again) — not yet confirmed done as of this note.
 
 See [[05-Manuscript-Alignment]] for the objective-by-objective status.
 
 ## Immediate next steps
 
-1. **Apply `schema_review.sql`** in the Supabase SQL editor, then run the in-browser verification walkthrough for FR-13 described in [[03-Progress-Log]].
-2. **Decide how to land FR-13**: commit directly to `main`, or branch + PR (matching the pattern used for PR #1) — not yet decided as of this note, ask the user rather than assuming either way.
-3. **Mobile responsiveness** — ✅ baseline done (`e11ee9b`): sidebar off-canvas drawer, tables scroll horizontally, stat rows/two-column layouts stack, Projects header wraps. **User tested and confirmed it's a real improvement but tables/charts still aren't fully resolved on mobile.** **Decision: defer further polish to a planned full UI revamp later.** Don't re-attempt incremental mobile CSS fixes on the current design unless explicitly asked.
-4. **Loading states** — no page shows a spinner/skeleton while its initial fetch is in flight. Not started; likely folds into the same future UI revamp.
-5. **FR-14 (ML feedback loop)** and **FR-15 (ISO/IEC 25010 evaluation)** — still "Planned, not scoped" per [[07-PRD]]; ask the user before starting either.
+1. **Run the in-browser verification walkthrough** for FR-13 (see PR #2's "How to Test" section or [[03-Progress-Log]]), then merge PR #2 into `main`.
+2. **Mobile responsiveness** — ✅ baseline done (`e11ee9b`): sidebar off-canvas drawer, tables scroll horizontally, stat rows/two-column layouts stack, Projects header wraps. **User tested and confirmed it's a real improvement but tables/charts still aren't fully resolved on mobile.** **Decision: defer further polish to a planned full UI revamp later.** Don't re-attempt incremental mobile CSS fixes on the current design unless explicitly asked.
+3. **Loading states** — no page shows a spinner/skeleton while its initial fetch is in flight. Not started; likely folds into the same future UI revamp.
+4. **FR-14 (ML feedback loop)** and **FR-15 (ISO/IEC 25010 evaluation)** — still "Planned, not scoped" per [[07-PRD]]; ask the user before starting either.
 
 ## Things that are known-fine, don't re-litigate
 
