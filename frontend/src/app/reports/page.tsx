@@ -49,6 +49,7 @@ const SOURCE_STYLE: Record<string, { bg: string; color: string; label: string }>
 
 const QUARTER_OPTIONS = ["All Quarters", "Q1", "Q2", "Q3", "Q4"];
 const SOURCE_OPTIONS = ["All Sources", "Field Report", "Pipeline Estimate"];
+const REVIEW_STATUS_OPTIONS = ["All Review Status", "Awaiting Review", "Approved", "Needs Revision", "No Report"];
 
 /* ─── Page Component ──────────────────────────────────── */
 export default function ReportsPage() {
@@ -58,6 +59,7 @@ export default function ReportsPage() {
   const [quarter, setQuarter] = useState("All Quarters");
   const [status,  setStatus]  = useState("All Status");
   const [source,  setSource]  = useState("All Sources");
+  const [reviewStatus, setReviewStatus] = useState("All Review Status");
   const [sortBy,  setSortBy]  = useState("Most Recent");
   const [orderBy, setOrderBy] = useState("Descending");
   const [viewerRole, setViewerRole] = useState<"manager" | "inspector" | "admin" | null>(null);
@@ -94,6 +96,9 @@ export default function ReportsPage() {
     if (quarter !== "All Quarters") list = list.filter(r => `Q${r.quarter}` === quarter);
     if (status  !== "All Status")   list = list.filter(r => r.status === status);
     if (source  !== "All Sources")  list = list.filter(r => SOURCE_STYLE[r.source].label === source);
+    if (reviewStatus !== "All Review Status") {
+      list = list.filter(r => (r.reviewStatus === null ? "No Report" : REVIEW_STYLE[r.reviewStatus].label) === reviewStatus);
+    }
 
     const dir = orderBy === "Ascending" ? 1 : -1;
     list.sort((a, b) => {
@@ -103,9 +108,9 @@ export default function ReportsPage() {
       return (new Date(a.date).getTime() - new Date(b.date).getTime()) * dir;
     });
     return list;
-  }, [reports, search, quarter, status, source, sortBy, orderBy]);
+  }, [reports, search, quarter, status, source, reviewStatus, sortBy, orderBy]);
 
-  const clearFilters = () => { setSearch(""); setQuarter("All Quarters"); setStatus("All Status"); setSource("All Sources"); };
+  const clearFilters = () => { setSearch(""); setQuarter("All Quarters"); setStatus("All Status"); setSource("All Sources"); setReviewStatus("All Review Status"); };
   const exportPdf = () => window.print();
 
   return (
@@ -181,6 +186,16 @@ export default function ReportsPage() {
               <div className={styles.selectWrap}>
                 <select className={styles.select} value={source} onChange={e => setSource(e.target.value)}>
                   {SOURCE_OPTIONS.map(s => <option key={s}>{s}</option>)}
+                </select>
+                <svg className={styles.selectChevron} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+              </div>
+            </div>
+
+            <div className={styles.filterGroup}>
+              <label className={styles.filterLabel}>Review Status</label>
+              <div className={styles.selectWrap}>
+                <select className={styles.select} value={reviewStatus} onChange={e => setReviewStatus(e.target.value)}>
+                  {REVIEW_STATUS_OPTIONS.map(r => <option key={r}>{r}</option>)}
                 </select>
                 <svg className={styles.selectChevron} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
               </div>

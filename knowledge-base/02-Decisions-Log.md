@@ -117,4 +117,10 @@ Chronological record of non-obvious choices and why they were made. Each entry: 
 
 **Why**: A review action needs to be next to what's being reviewed, not just next to a badge. Approve requires no comment (single click); Request Revision requires a non-empty comment, enforced both client-side (`ReportDetailModal`) and server-side (`PATCH /api/reports/[reportId]/review`).
 
-**Consequence**: Surfaced and fixed an unrelated pre-existing gap while at it — `financial_accomplishment_pct` was already being fetched by `/api/reports` from `inspection_reports` but never included in the API response, so it was invisible to every frontend page, not just the review flow. Now exposed alongside `actualProgress` (physical %). No `Co-Authored-By` trailer on this or future commits — the user asked for it to be dropped.
+**Consequence**: Surfaced and fixed an unrelated pre-existing gap while at it — `financial_accomplishment_pct` was already being fetched by `/api/reports` from `inspection_reports` but never included in the API response, so it was invisible to every frontend page, not just the review flow. Now exposed alongside `actualProgress` (physical %).
+
+## Renamed the slippage-based Status value "Pending Review" to "At Risk"
+
+**Decision**: The user spotted, via a Reports-page screenshot, that the pre-existing slippage-based `status` column's "Pending Review" value read as the same concept as the new Review Status column's "Awaiting Review" — even though the deliberate distinction made when scoping FR-13 (see above) was to keep them structurally separate. Fixed by renaming the *older* value to "At Risk," rather than touching the new Review Status wording.
+
+**Why**: "At Risk" describes what it actually is — an automated slippage-severity heuristic — with no implication of human review at all, closing the wording gap the FR-13 naming decision didn't fully anticipate. No logic change: `statusFromSlippage()`'s thresholds (>20 Flagged, >5 previously-"Pending Review"-now-"At Risk", else Validated) are unchanged, only the label. No `Co-Authored-By` trailer on this or future commits — the user asked for it to be dropped.
