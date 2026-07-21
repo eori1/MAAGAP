@@ -67,6 +67,29 @@ Confirmed gitignored via `git check-ignore -v` — re-check this if `.gitignore`
 
 I (Claude) cannot run `CREATE TABLE`/`ALTER TABLE` against Supabase directly — the service-role key only grants REST/data access (PostgREST), not DDL. Any schema change means: write/update the `.sql` file in `backend/supabase/`, tell the user to paste-and-run it in the Supabase SQL Editor, then verify with a `SELECT` before proceeding. Don't assume a schema file matches the live database until confirmed.
 
+## How to write a PR title, body, and merge/squash commit description
+
+Established during PR #1 (Supabase migration + operational workflow, merged 2026-07-21) — follow this template for future PRs on this repo rather than improvising.
+
+**PR title**: Conventional Commit format — `type(scope): summary`, e.g. `feat(maagap): migrate to Supabase, add auth/RBAC, and close the assign-accept-report workflow`.
+
+**PR body** (full detail, since GitHub renders markdown and reviewers read it before merging):
+1. `### Description` — high-level summary of what the PR does and why.
+2. `### 🛠️ Changes Made` — bulleted list of specific changes.
+3. `### 📁 Files Changed/Added/Deleted` — a tree/list of major files with one-line comments (not exhaustive — highlight what matters).
+4. `### 📸 Screenshots` — before/after UI shots if applicable (placeholder is fine if none yet).
+5. `### 🧪 How to Test` — numbered, step-by-step reviewer instructions.
+
+**Merge/squash commit description** — this is the permanent `git log` record, so it must be trimmed, not a copy-paste of the PR body:
+- **Include**: the Description section's high-level summary, and the Changes Made bullets.
+- **Exclude**: How to Test steps (useless post-merge), screenshot links (terminals can't render images), and Files Changed lists (redundant with `git log --stat`).
+- **Bullet marker**: use `-`, not `.`, for each changed-item line.
+- **No `Co-Authored-By` trailer** — the user explicitly asked for this to be dropped from commits/merges in this repo, overriding the general git-commit default.
+- Add `Closes #N` only if there's an actual linked tracker issue — don't invent one.
+- Add co-author credits only if `git log <base>..<branch> --format='%an <%ae>' | sort -u` shows more than one real author on the branch.
+
+**Squash vs. merge commit**: this repo has used squash-and-merge so far (PR #1) — collapses the whole branch into one commit on `main`. Ask the user which they want per-PR rather than assuming; don't default silently. See [[02-Decisions-Log]] for the reasoning recorded for PR #1 specifically.
+
 ## General process notes
 
 - Full pipeline run (`python main.py`) takes ~5–8 minutes (mostly LSTM/XGBoost training). Run it in the background and wait for the actual completion notification — don't poll the output file repeatedly, and don't fabricate results while waiting.
