@@ -6,14 +6,20 @@ import styles from "./TopRight.module.css";
 
 interface Alert {
   id: string;
-  type: "TIER_ESCALATION" | "CRITICAL_RISK";
+  type: "TIER_ESCALATION" | "CRITICAL_RISK" | "REPORT_NEEDS_REVISION";
   projectId: string;
   fromTier: string | null;
-  toTier: string;
-  riskScore: number;
+  toTier: string | null;
+  riskScore: number | null;
   message: string;
   date: string;
 }
+
+const ALERT_DOT_COLOR: Record<Alert["type"], string> = {
+  CRITICAL_RISK: "#e74c3c",
+  TIER_ESCALATION: "#f59e0b",
+  REPORT_NEEDS_REVISION: "#8e44ad",
+};
 
 export default function TopRight() {
   const [alerts, setAlerts] = useState<Alert[]>([]);
@@ -67,7 +73,7 @@ export default function TopRight() {
               <div key={a.id} className={styles.alertItem}>
                 <span
                   className={styles.alertDot}
-                  style={{ background: a.type === "CRITICAL_RISK" ? "#e74c3c" : "#f59e0b" }}
+                  style={{ background: ALERT_DOT_COLOR[a.type] }}
                 />
                 <div>
                   <div className={styles.alertMsg}>{a.message}</div>

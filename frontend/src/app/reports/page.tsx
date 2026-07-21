@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from "react";
 import Sidebar from "@/components/Sidebar";
 import TopRight from "@/components/TopRight";
+import ReportReviewModal from "@/components/ReportReviewModal";
 import styles from "./page.module.css";
 
 /* ─── Types (mirror /api/reports payload) ─────── */
@@ -22,7 +23,16 @@ interface InspectionReport {
   inspectorId: string | null;
   inspectorName: string;
   riskTier: "Low" | "Medium" | "High" | "Critical";
+  reportId: string | null;
+  reviewStatus: "pending" | "approved" | "needs_revision" | null;
+  reviewComment: string | null;
 }
+
+const REVIEW_STYLE: Record<string, { bg: string; color: string; label: string }> = {
+  pending:        { bg: "#f1f5f9", color: "#7a8fa6", label: "Awaiting Review" },
+  approved:       { bg: "#d4efdf", color: "#1e8449", label: "Approved" },
+  needs_revision: { bg: "#fde2e2", color: "#c0392b", label: "Needs Revision" },
+};
 
 const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
   Validated:        { bg: "#27ae60", color: "#fff" },
@@ -49,8 +59,10 @@ export default function ReportsPage() {
   const [source,  setSource]  = useState("All Sources");
   const [sortBy,  setSortBy]  = useState("Most Recent");
   const [orderBy, setOrderBy] = useState("Descending");
+  const [viewerRole, setViewerRole] = useState<"manager" | "inspector" | "admin" | null>(null);
+  const [revisionTarget, setRevisionTarget] = useState<InspectionReport | null>(null);
 
-  useEffect(() => {
+  const loadReports = () => {
     fetch("/api/reports")
       .then(res => {
         if (!res.ok) throw new Error("no data");
@@ -58,7 +70,31 @@ export default function ReportsPage() {
       })
       .then(setReports)
       .catch(() => setLoadError("No inspection reports found. Run the backend pipeline (python main.py) to generate them."));
+  };
+
+  useEffect(() => {
+    loadReports();
+    fetch("/api/me")
+      .then(res => (res.ok ? res.json() : null))
+      .then(profile => setViewerRole(profile?.role ?? null))
+      .catch(() => setViewerRole(null));
   }, []);
+
+  const canReview = viewerRole === "manager" || viewerRole === "admin";
+
+  async function handleApprove(reportId: string) {
+    const res = await fetch(`/api/reports/${reportId}/review`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "approve" }),
+    });
+    if (res.ok) loadReports();
+  }
+
+  function handleRevisionRequested() {
+    setRevisionTarget(null);
+    loadReports();
+  }
 
   const filtered = useMemo(() => {
     let list = [...reports];
@@ -187,12 +223,13 @@ export default function ReportsPage() {
                   <th className={styles.th} style={{ textAlign:"center" }}>Slippage</th>
                   <th className={styles.th} style={{ textAlign:"center" }}>Date</th>
                   <th className={styles.th} style={{ textAlign:"center" }}>Status</th>
+                  <th className={styles.th} style={{ textAlign:"center" }}>Review Status</th>
                   <th className={styles.th}>Inspector</th>
                 </tr>
               </thead>
               <tbody>
                 {loadError && (
-                  <tr><td colSpan={7} className={styles.emptyRow}>{loadError}</td></tr>
+                  <tr><td colSpan={8} className={styles.emptyRow}>{loadError}</td></tr>
                 )}
 
                 {!loadError && filtered.map((r) => {
@@ -233,6 +270,24 @@ export default function ReportsPage() {
                           {r.status}
                         </span>
                       </td>
+                      <td className={`${styles.td} ${styles.tdCenter}`}>
+                        {r.reviewStatus ? (
+                          <>
+                            <span className={styles.statusBadge} style={{ background: REVIEW_STYLE[r.reviewStatus].bg, color: REVIEW_STYLE[r.reviewStatus].color }}>
+                              {REVIEW_STYLE[r.reviewStatus].label}
+                            </span>
+                            {r.reviewComment && <div className={styles.projectId} style={{ marginTop: 4 }}>{r.reviewComment}</div>}
+                            {canReview && r.reviewStatus === "pending" && r.reportId && (
+                              <div style={{ display: "flex", gap: 6, marginTop: 6, justifyContent: "center" }}>
+                                <button className={styles.clearBtn} onClick={() => handleApprove(r.reportId!)}>Approve</button>
+                                <button className={styles.clearBtn} onClick={() => setRevisionTarget(r)}>Request Revision</button>
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          "—"
+                        )}
+                      </td>
                       <td className={styles.td}>{r.inspectorName}</td>
                     </tr>
                   );
@@ -240,7 +295,7 @@ export default function ReportsPage() {
 
                 {!loadError && filtered.length === 0 && (
                   <tr>
-                    <td colSpan={7} className={styles.emptyRow}>No reports found matching your filters.</td>
+                    <td colSpan={8} className={styles.emptyRow}>No reports found matching your filters.</td>
                   </tr>
                 )}
               </tbody>
@@ -249,6 +304,15 @@ export default function ReportsPage() {
 
         </div>
       </div>
+
+      {revisionTarget && revisionTarget.reportId && (
+        <ReportReviewModal
+          reportId={revisionTarget.reportId}
+          projectName={revisionTarget.projectId}
+          onClose={() => setRevisionTarget(null)}
+          onReviewed={handleRevisionRequested}
+        />
+      )}
     </div>
   );
 }

@@ -99,4 +99,14 @@ Chronological record of non-obvious choices and why they were made. Each entry: 
 
 **Why**: The branch's 16 commits mixed real feature commits with small `docs: update knowledge-base vault` housekeeping commits after nearly every feature — squashing avoids `main`'s log being cluttered with those interstitial doc-sync commits, at the cost of losing per-feature `git bisect`/`git blame` granularity for this PR.
 
-**Consequence**: The squash commit's message follows the template (Description + a trimmed "Changes made" bullet list) — not a copy-paste of the full PR body (no how-to-test steps, no screenshot links, no files-changed list; those either don't render in a terminal or are already available via `git log --stat`). No `Co-Authored-By` trailer on this or future commits — the user asked for it to be dropped.
+**Consequence**: The squash commit's message follows the template (Description + a trimmed "Changes made" bullet list) — not a copy-paste of the full PR body (no how-to-test steps, no screenshot links, no files-changed list; those either don't render in a terminal or are already available via `git log --stat`).
+
+## FR-13 (report review/approval): scope and design
+
+**Decision**: Chosen as the next priority after PR #1 merged, over FR-14 (ML feedback loop) and FR-15 (ISO/IEC 25010) — smallest, best-bounded scope, builds directly on the existing accept/submit workflow rather than needing more real data volume or being a non-coding deliverable. Scoped via explicit questions:
+1. **Who can act**: Manager and Admin both (matches their existing shared full-read-access pattern; only Inspector is excluded).
+2. **Notification**: reuse the existing notification-bell/`risk_alerts` system rather than building a new channel — but see [[04-Workflows-and-Gotchas]] for why this had to be *derived on read*, not stored in `risk_alerts` directly.
+3. **Resubmission**: allowed. An Inspector can resubmit after "needs revision," which resets review to pending.
+4. **Naming**: a new, separate "Review Status" badge (Awaiting Review/Approved/Needs Revision) rather than overloading the existing progress-based `status` field (Validated/Pending Review/Flagged/Submitted) — both use "Pending Review"-shaped language but mean different things, so keeping them visually and structurally distinct avoids confusing a reviewer who sees both on the same row.
+
+**Consequence**: Resubmission needed no explicit "reset review status" logic — a resubmission is just a new `inspection_reports` row, which defaults to `review_status = 'pending'` like any other insert, and the existing "latest report wins" merge (now `pickLatestByKey()`, see [[04-Workflows-and-Gotchas]]) naturally surfaces it as the current, actionable one. Approve is a single-click action (no comment); Request Revision requires a non-empty comment, enforced both client-side (`ReportReviewModal`) and server-side (`PATCH /api/reports/[reportId]/review`). No `Co-Authored-By` trailer on this or future commits — the user asked for it to be dropped.

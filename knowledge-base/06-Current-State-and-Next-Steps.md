@@ -1,6 +1,6 @@
 # Current State and Next Steps
 
-**Last updated:** 2026-07-21, after PR #1 merged into `main`.
+**Last updated:** 2026-07-21, after FR-13 (report review/approval) implementation.
 
 Related: [[03-Progress-Log]] · [[05-Manuscript-Alignment]] · [[04-Workflows-and-Gotchas]] · [[07-PRD]]
 
@@ -21,19 +21,17 @@ The system is fully functional end-to-end and manually verified:
 - Reports page now shows real inspector-submitted reports (with a "Field Report" badge, photos, notes) in preference to the synthetic pipeline baseline, per project.
 - 25/25 backend tests passing, frontend builds clean, no known type errors.
 
+**FR-13 (report review/approval) is implemented** on top of the merged PR #1 baseline, currently **uncommitted, sitting directly on `main`** (see `git status` — not yet committed/branched/PR'd as of this note). See [[03-Progress-Log]] for what was built and [[02-Decisions-Log]] for the scoping decisions. `npx tsc --noEmit` clean, `pytest` 25/25. **Still needs**: applying `backend/supabase/schema_review.sql` in the Supabase dashboard (manual step), and the in-browser verification walkthrough (Manager approve/request-revision → Inspector sees alert + resubmit → Manager sees it pending again) — not yet done as of this note, since the schema migration hasn't been applied yet.
+
 See [[05-Manuscript-Alignment]] for the objective-by-objective status.
 
 ## Immediate next steps
 
-A full codebase audit against the PPDO's described operational workflow and general frontend UI/UX turned up several items. Status:
-
-1. **Mobile responsiveness** — ✅ baseline done (`e11ee9b`): sidebar off-canvas drawer, tables scroll horizontally, stat rows/two-column layouts stack, Projects header wraps. **User tested and confirmed it's a real improvement but tables/charts still aren't fully resolved on mobile** (e.g. horizontal table scroll works but isn't a great mobile experience for 7-column tables). **Decision: defer further polish to a planned full UI revamp later, rather than keep iterating now.** Don't re-attempt incremental mobile CSS fixes on the current design unless explicitly asked — the user wants to redesign, not patch further.
-2. **Loading states** — no page shows a spinner/skeleton while its initial fetch is in flight; tables/lists just render empty until data arrives. Not started; likely folds into the same future UI revamp rather than being worth doing separately now.
-3. **ISO/IEC 25010 evaluation (manuscript Objective 5)** — entirely unaddressed, see [[05-Manuscript-Alignment]]. Likely a UAT/survey-design task, not a coding task — clarify scope with the user before assuming it's a dev task.
-
-**User's explicit direction at this point (2026-07-21)**: pause frontend/UI work, focus on "other backend stuff and the core workflow of the system" instead. Next session should ask what specifically that means (options include: the deferred report approve/comment workflow, model retraining feedback loop using real `inspection_reports` data, other backend/ML work) rather than assume — the user hadn't specified further when this note was written.
-
-**Explicitly discussed and deferred, not forgotten**: a Manager-facing report approve/comment workflow (click a report row → approve or request revision) was proposed by the user as a possible next feature after the Reports-page merge. Needs its own scoping pass (a `review_status` on `inspection_reports`, who can act on it, whether "needs revision" surfaces back to the inspector) once there's more real report data to design around.
+1. **Apply `schema_review.sql`** in the Supabase SQL editor, then run the in-browser verification walkthrough for FR-13 described in [[03-Progress-Log]].
+2. **Decide how to land FR-13**: commit directly to `main`, or branch + PR (matching the pattern used for PR #1) — not yet decided as of this note, ask the user rather than assuming either way.
+3. **Mobile responsiveness** — ✅ baseline done (`e11ee9b`): sidebar off-canvas drawer, tables scroll horizontally, stat rows/two-column layouts stack, Projects header wraps. **User tested and confirmed it's a real improvement but tables/charts still aren't fully resolved on mobile.** **Decision: defer further polish to a planned full UI revamp later.** Don't re-attempt incremental mobile CSS fixes on the current design unless explicitly asked.
+4. **Loading states** — no page shows a spinner/skeleton while its initial fetch is in flight. Not started; likely folds into the same future UI revamp.
+5. **FR-14 (ML feedback loop)** and **FR-15 (ISO/IEC 25010 evaluation)** — still "Planned, not scoped" per [[07-PRD]]; ask the user before starting either.
 
 ## Things that are known-fine, don't re-litigate
 

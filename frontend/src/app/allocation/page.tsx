@@ -23,6 +23,7 @@ interface AssignedProject {
   urgency: Urgency;
   status: "pending" | "accepted";
   hasReport: boolean;
+  reviewStatus: "pending" | "approved" | "needs_revision" | null;
 }
 
 interface Inspector {
@@ -107,6 +108,19 @@ function ProjectAction({
   onSubmitReport: (project: AssignedProject) => void;
 }) {
   if (project.hasReport) {
+    if (project.reviewStatus === "needs_revision") {
+      if (isViewerInspector) {
+        return (
+          <button className={styles.rowSubmitBtn} onClick={() => onSubmitReport(project)}>
+            Resubmit Report
+          </button>
+        );
+      }
+      return <span className={styles.statusBadgeRevision}>Needs Revision</span>;
+    }
+    if (project.reviewStatus === "approved") {
+      return <span className={styles.statusBadgeDone}>✓ Approved</span>;
+    }
     return <span className={styles.statusBadgeDone}>✓ Reported</span>;
   }
   if (!isViewerInspector) {
