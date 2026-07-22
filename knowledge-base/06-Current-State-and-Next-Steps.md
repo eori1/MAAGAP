@@ -1,6 +1,6 @@
 # Current State and Next Steps
 
-**Last updated:** 2026-07-22, UI revamp Phase 1 (Dashboard flagship) built and approved, not yet committed/merged.
+**Last updated:** 2026-07-22, after PR #4 (UI revamp Phase 1) merged into `main`.
 
 Related: [[03-Progress-Log]] · [[05-Manuscript-Alignment]] · [[04-Workflows-and-Gotchas]] · [[07-PRD]]
 
@@ -25,15 +25,14 @@ The system is fully functional end-to-end and manually verified:
 
 **FR-14 (model validation, reframed from "ML feedback loop") is merged.** PR #3 (`https://github.com/eori1/MAAGAP/pull/3`, branch `feat/model-validation`) squash-merged into `main` as `b13857d`. See [[03-Progress-Log]] for what was built and [[02-Decisions-Log]] for why the original "retraining loop" framing was rejected (no real outcome labels + manuscript delimitation conflict). `npx tsc --noEmit` clean, `pytest` 25/25, ESLint clean (one pre-existing unrelated error in `Sidebar.tsx` confirmed via `git stash` to predate this branch). User checked the new Model Validation page in-browser and reviewed the PR before merging. The `feat/model-validation` branch still exists on `origin` post-merge (not deleted), same pattern as PR #1/#2.
 
-**UI revamp Phase 1 (design system + Dashboard flagship) is built and user-approved**, on branch `feat/ui-revamp-dashboard`, not yet committed/pushed/PR'd as of this note. See [[03-Progress-Log]] for everything built (tokens, primitives, motion, Dashboard triage-layout rebuild, Sidebar/TopRight re-skin) and [[02-Decisions-Log]] for the palette/motion/rollout rationale and the two layout bugs found+fixed during review. `npx tsc --noEmit` clean, `pytest` 25/25, ESLint clean (same pre-existing unrelated `Sidebar.tsx` error as always). This directly answers the "loading states" and "further mobile/UI polish" items below — this phase *is* that work, for Dashboard specifically.
+**UI revamp Phase 1 (design system + Dashboard flagship) is merged.** PR #4 (`https://github.com/eori1/MAAGAP/pull/4`, branch `feat/ui-revamp-dashboard`) squash-merged into `main` as `0373793`. See [[03-Progress-Log]] for everything built (tokens, primitives, motion, Dashboard triage-layout rebuild, Sidebar/TopRight re-skin) and [[02-Decisions-Log]] for the palette/motion/rollout rationale and the two layout bugs found+fixed during review. `npx tsc --noEmit` clean, `pytest` 25/25, ESLint clean (same pre-existing unrelated `Sidebar.tsx` error as always). User reviewed and approved both in-browser and the PR before merging. The `feat/ui-revamp-dashboard` branch still exists on `origin` post-merge (not deleted), same pattern as PR #1-#3.
 
 See [[05-Manuscript-Alignment]] for the objective-by-objective status.
 
 ## Immediate next steps
 
-1. **Commit/push/open a PR for `feat/ui-revamp-dashboard`**, then merge once reviewed.
-2. **Decide whether/how to roll the new design system out to the other 8 pages** (Projects, Forecast Engine, Allocation, Reports, Model Validation, Timeline, Users, Account) + the login screen. They're all still on the old design. The Dashboard rebuild produced reusable primitives (`Skeleton`/`Badge`/`EmptyState`/`StatCard`, `frontend/src/components/ui/`) and tokens (`frontend/src/styles/tokens.css`) specifically so this rollout doesn't have to re-derive a design system per page — but each page's *layout* (not just its skin) may deserve the same "don't just reskin, rethink the structure" treatment Dashboard got, which needs its own scoping conversation per page (or a batch decision) rather than assuming a mechanical reskin.
-3. **FR-15 (ISO/IEC 25010 evaluation)** — still "Planned, not scoped" per [[07-PRD]]; likely a research-methodology task, not code — ask the user before assuming otherwise. Only remaining unbuilt PRD item besides the UI revamp rollout above.
+1. **Decide whether/how to roll the new design system out to the other 8 pages** (Projects, Forecast Engine, Allocation, Reports, Model Validation, Timeline, Users, Account) + the login screen. They're all still on the old design. The Dashboard rebuild produced reusable primitives (`Skeleton`/`Badge`/`EmptyState`/`StatCard`, `frontend/src/components/ui/`) and tokens (`frontend/src/styles/tokens.css`) specifically so this rollout doesn't have to re-derive a design system per page — but each page's *layout* (not just its skin) may deserve the same "don't just reskin, rethink the structure" treatment Dashboard got, which needs its own scoping conversation per page (or a batch decision) rather than assuming a mechanical reskin.
+2. **FR-15 (ISO/IEC 25010 evaluation)** — still "Planned, not scoped" per [[07-PRD]]; likely a research-methodology task, not code — ask the user before assuming otherwise. Only remaining unbuilt PRD item besides the UI revamp rollout above.
 
 ## Things that are known-fine, don't re-litigate
 

@@ -185,3 +185,7 @@ The deferred "full UI revamp" (see the mobile-responsiveness decision entries) s
 - Layout was iterated live with the user via a published HTML mockup (Artifact) before implementation, then two real bugs were found and fixed during in-browser review: a CSS grid `align-items: stretch` height mismatch (fixed by re-pairing which cards sit together, not just the CSS property), and a live-data-dependent height mismatch between the two attention-zone cards (fixed with a fixed card height + internally scrolling content, robust to future data changes).
 - Verified: `npx tsc --noEmit` clean, `pytest` 25/25 (no Python touched), ESLint clean except the same pre-existing unrelated `Sidebar.tsx` error confirmed on `main` before this branch. User approved the result in-browser.
 - Explicitly scoped to Dashboard + shared chrome only — the other 8 pages and the login screen are untouched, pending a decision on whether/how to roll this system out further.
+
+## PR #4 — merged into `main` (2026-07-22)
+
+Both commits (`bd3e137` feature + `b78301e` docs) squash-merged into `main` as one commit, `0373793`. The `feat/ui-revamp-dashboard` branch still exists on `origin` post-merge (not deleted), same as PR #1-#3. Next decision: whether/how to roll the design system out to the remaining 8 pages + login.
