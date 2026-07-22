@@ -1,14 +1,13 @@
 /* =====================================================
-   Shared Sidebar — Sidebar.module.css
-   Pixel-perfect match to reference UI
+   Shared Sidebar — formal/enterprise design-token pass
    ===================================================== */
 
 .sidebar {
   width: 210px;
   min-width: 210px;
   height: 100vh;
-  background: #ffffff;
-  border-right: 1px solid #eaeef4;
+  background: var(--surface-card);
+  border-right: 1px solid var(--border-subtle);
   display: flex;
   flex-direction: column;
   position: fixed;
@@ -18,24 +17,14 @@
   padding-bottom: 0;
 }
 
-/* ── Mobile: off-canvas drawer ────────────────────── */
+/* ── Mobile: off-canvas drawer (motion handled by Framer Motion in JS) ── */
 .mobileToggle {
-  display: none;
-}
-
-.backdrop {
   display: none;
 }
 
 @media (max-width: 768px) {
   .sidebar {
-    transform: translateX(-100%);
-    transition: transform 0.25s ease;
-    box-shadow: 0 0 24px rgba(0, 0, 0, 0.15);
-  }
-
-  .sidebarOpen {
-    transform: translateX(0);
+    box-shadow: var(--shadow-lg);
   }
 
   .mobileToggle {
@@ -47,19 +36,18 @@
     left: 1rem;
     width: 38px;
     height: 38px;
-    border-radius: 10px;
-    border: 1.5px solid #dde4f0;
-    background: #fff;
-    color: #1b3a5e;
+    border-radius: var(--radius-md);
+    border: 1.5px solid var(--border-default);
+    background: var(--surface-card);
+    color: var(--ink-900);
     cursor: pointer;
     z-index: 110;
   }
 
   .backdropOpen {
-    display: block;
     position: fixed;
     inset: 0;
-    background: rgba(15, 39, 68, 0.45);
+    background: rgba(16, 24, 40, 0.45);
     z-index: 99;
   }
 }
@@ -70,11 +58,10 @@
   align-items: center;
   gap: 0.55rem;
   padding: 1.5rem 1.25rem 1.2rem;
-  border-bottom: 1px solid #eaeef4;
+  border-bottom: 1px solid var(--border-subtle);
   flex-shrink: 0;
 }
 
-/* Icon mark — triangle/arrow shape in two-tone blue */
 .logoIcon {
   width: 34px;
   height: 34px;
@@ -86,10 +73,10 @@
   font-weight: 900;
   letter-spacing: -0.5px;
   line-height: 1;
-  color: #1b3a5e;
+  color: var(--ink-900);
 }
 
-.logoTextBlue { color: #1264ae; }
+.logoTextBlue { color: var(--accent-600); }
 
 /* ── NAV ──────────────────────────────────────────── */
 .nav {
@@ -102,18 +89,18 @@
 }
 
 .navItem {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 0.75rem;
   padding: 0.6rem 0.9rem;
-  border-radius: 50px;          /* pill shape like the reference */
+  border-radius: var(--radius-pill);
   font-size: 0.82rem;
   font-weight: 500;
-  color: #8a9ab5;
+  color: var(--ink-500);
   cursor: pointer;
   text-decoration: none;
-  transition: color 0.15s ease, border-color 0.15s ease, background 0.15s ease;
-  border: 1.5px solid transparent;
+  transition: color var(--duration-fast) var(--ease-standard), background var(--duration-fast) var(--ease-standard);
   background: none;
   width: 100%;
   font-family: inherit;
@@ -121,20 +108,32 @@
 }
 
 .navItem:hover {
-  color: #1b3a5e;
-  background: #f4f7fb;
+  color: var(--ink-900);
+  background: var(--surface-sunken);
 }
 
-/* Active = outlined pill, bold blue — matches reference exactly */
 .navItemActive {
-  border-color: #1264ae;
-  color: #1264ae;
+  color: var(--accent-600);
   font-weight: 700;
-  background: transparent;
 }
 
 .navItemActive:hover {
-  background: #eaf3fc;
+  background: none;
+}
+
+/* Animated pill (Framer Motion layoutId) that slides between items --
+   sits behind the icon/label, which get z-index above it. */
+.navActivePill {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid var(--accent-600);
+  z-index: 0;
+}
+
+.navIcon, .navLabel {
+  position: relative;
+  z-index: 1;
 }
 
 .navIcon {
@@ -152,7 +151,7 @@
 /* ── USER SECTION ─────────────────────────────────── */
 .userSection {
   padding: 0.9rem 1.1rem 1.1rem;
-  border-top: 1px solid #eaeef4;
+  border-top: 1px solid var(--border-subtle);
   flex-shrink: 0;
 }
 
@@ -163,21 +162,20 @@
   margin-bottom: 0.85rem;
 }
 
-/* Circular avatar — reference shows a photo, we use initials styled similarly */
 .userAvatar {
   width: 40px;
   height: 40px;
   border-radius: 50%;
-  background: linear-gradient(145deg, #64a0cc, #3a7fbd);
+  background: linear-gradient(145deg, var(--accent-500), var(--accent-600));
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 0.8rem;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--ink-inverse);
   flex-shrink: 0;
-  box-shadow: 0 2px 6px rgba(18,100,174,0.2);
-  border: 2px solid #e4eef7;
+  box-shadow: var(--shadow-sm);
+  border: 2px solid var(--accent-100);
 }
 
 .userInfo {
@@ -190,7 +188,7 @@
 .userName {
   font-size: 0.82rem;
   font-weight: 700;
-  color: #1b3a5e;
+  color: var(--ink-900);
   line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
@@ -199,29 +197,28 @@
 
 .userRole {
   font-size: 0.68rem;
-  color: #9aaabb;
+  color: var(--ink-500);
   font-weight: 400;
 }
 
-/* Log out — dark navy pill button, matches reference */
 .logoutBtn {
   width: 100%;
-  background: #1a3557;
-  color: #ffffff;
+  background: var(--ink-900);
+  color: var(--ink-inverse);
   border: none;
   padding: 0.65rem 1rem;
-  border-radius: 50px;
+  border-radius: var(--radius-pill);
   font-size: 0.82rem;
   font-weight: 600;
   cursor: pointer;
   font-family: inherit;
-  transition: background 0.2s ease, transform 0.1s ease;
+  transition: background var(--duration-base) var(--ease-standard), transform var(--duration-fast) var(--ease-standard);
   text-align: center;
   letter-spacing: 0.02em;
 }
 
 .logoutBtn:hover {
-  background: #0e2236;
+  background: var(--accent-600);
   transform: translateY(-1px);
 }
 

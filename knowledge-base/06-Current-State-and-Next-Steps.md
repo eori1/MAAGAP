@@ -1,6 +1,6 @@
 # Current State and Next Steps
 
-**Last updated:** 2026-07-22, after PR #3 (FR-14) merged into `main`.
+**Last updated:** 2026-07-22, UI revamp Phase 1 (Dashboard flagship) built and approved, not yet committed/merged.
 
 Related: [[03-Progress-Log]] · [[05-Manuscript-Alignment]] · [[04-Workflows-and-Gotchas]] · [[07-PRD]]
 
@@ -25,13 +25,15 @@ The system is fully functional end-to-end and manually verified:
 
 **FR-14 (model validation, reframed from "ML feedback loop") is merged.** PR #3 (`https://github.com/eori1/MAAGAP/pull/3`, branch `feat/model-validation`) squash-merged into `main` as `b13857d`. See [[03-Progress-Log]] for what was built and [[02-Decisions-Log]] for why the original "retraining loop" framing was rejected (no real outcome labels + manuscript delimitation conflict). `npx tsc --noEmit` clean, `pytest` 25/25, ESLint clean (one pre-existing unrelated error in `Sidebar.tsx` confirmed via `git stash` to predate this branch). User checked the new Model Validation page in-browser and reviewed the PR before merging. The `feat/model-validation` branch still exists on `origin` post-merge (not deleted), same pattern as PR #1/#2.
 
+**UI revamp Phase 1 (design system + Dashboard flagship) is built and user-approved**, on branch `feat/ui-revamp-dashboard`, not yet committed/pushed/PR'd as of this note. See [[03-Progress-Log]] for everything built (tokens, primitives, motion, Dashboard triage-layout rebuild, Sidebar/TopRight re-skin) and [[02-Decisions-Log]] for the palette/motion/rollout rationale and the two layout bugs found+fixed during review. `npx tsc --noEmit` clean, `pytest` 25/25, ESLint clean (same pre-existing unrelated `Sidebar.tsx` error as always). This directly answers the "loading states" and "further mobile/UI polish" items below — this phase *is* that work, for Dashboard specifically.
+
 See [[05-Manuscript-Alignment]] for the objective-by-objective status.
 
 ## Immediate next steps
 
-1. **Mobile responsiveness** — ✅ baseline done (`e11ee9b`): sidebar off-canvas drawer, tables scroll horizontally, stat rows/two-column layouts stack, Projects header wraps. **User tested and confirmed it's a real improvement but tables/charts still aren't fully resolved on mobile.** **Decision: defer further polish to a planned full UI revamp later.** Don't re-attempt incremental mobile CSS fixes on the current design unless explicitly asked.
-2. **Loading states** — no page shows a spinner/skeleton while its initial fetch is in flight. Not started; likely folds into the same future UI revamp.
-3. **FR-15 (ISO/IEC 25010 evaluation)** — still "Planned, not scoped" per [[07-PRD]]; likely a research-methodology task, not code — ask the user before assuming otherwise. This is the last unbuilt item in the PRD besides the deferred UI revamp/loading states.
+1. **Commit/push/open a PR for `feat/ui-revamp-dashboard`**, then merge once reviewed.
+2. **Decide whether/how to roll the new design system out to the other 8 pages** (Projects, Forecast Engine, Allocation, Reports, Model Validation, Timeline, Users, Account) + the login screen. They're all still on the old design. The Dashboard rebuild produced reusable primitives (`Skeleton`/`Badge`/`EmptyState`/`StatCard`, `frontend/src/components/ui/`) and tokens (`frontend/src/styles/tokens.css`) specifically so this rollout doesn't have to re-derive a design system per page — but each page's *layout* (not just its skin) may deserve the same "don't just reskin, rethink the structure" treatment Dashboard got, which needs its own scoping conversation per page (or a batch decision) rather than assuming a mechanical reskin.
+3. **FR-15 (ISO/IEC 25010 evaluation)** — still "Planned, not scoped" per [[07-PRD]]; likely a research-methodology task, not code — ask the user before assuming otherwise. Only remaining unbuilt PRD item besides the UI revamp rollout above.
 
 ## Things that are known-fine, don't re-litigate
 
@@ -45,6 +47,8 @@ See [[05-Manuscript-Alignment]] for the objective-by-objective status.
 - The Reports page now merges real `inspection_reports` with synthetic `inspection_logs` (real takes priority per project) — don't rebuild this if asked about "why does Reports still show fake data," check first whether the project actually has a real submission yet (most of the 450-project cohort still won't, since only test accounts have submitted so far).
 - FR-13 (report review/approval) exists and is verified working end-to-end (Manager/Admin approve/request-revision, Inspector notification + resubmit) — don't rebuild it if asked about "report approval" again; check [[02-Decisions-Log]] and [[03-Progress-Log]] first. Review happens via `ReportDetailModal` (full photos/notes/both accomplishment %s), not inline table buttons — that was a deliberate redesign after the first pass, not the current state to "simplify." The Reports page's older slippage-based status is "At Risk" (not "Pending Review") specifically to avoid colliding with the newer Review Status column.
 - FR-14 is deliberately **not** a retraining/feedback loop — that framing was rejected (see [[02-Decisions-Log]]) because real `inspection_reports` never carry the final delay/cost-overrun outcome labels the models train on, and the manuscript excludes continuous retraining anyway. What exists is a read-only "Model Validation" page comparing predicted risk vs. reported progress slippage — don't propose building an actual retraining pipeline if this comes up again without re-litigating why it was rejected.
+- The Dashboard's "Delay Trends" fake hardcoded trend chart is gone, replaced by a real Risk Tier Distribution chart — don't reintroduce a fabricated time-series chart if asked to "improve the chart," the backend has no historical snapshots to chart a real trend from (pipeline overwrites tables each run). The Dashboard's top-bar search input was deliberately removed (redundant with the Projects page's real search) — don't re-add a decorative one.
+- Tailwind CSS is in `frontend/package.json` but was never wired up (`postcss.config.mjs` is empty, not imported in `globals.css`) and this is intentional, not a bug to fix — the design system (`frontend/src/styles/tokens.css` + CSS Modules) was built on the existing approach rather than activating an unused framework mid-revamp.
 
 ## If you're picking this up cold (after `/compact` or a new session)
 

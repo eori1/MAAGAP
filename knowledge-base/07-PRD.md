@@ -90,9 +90,10 @@ This is the core PPDO-facing loop and the most important functional area. Requir
 ### FR-11: PDF report export — **Built (lightweight)**
 - Browser `window.print()`-based export on the Reports page, styled via a `data-print-hide`/`data-print-area` CSS convention. Not a server-generated PDF library — a deliberate lightweight choice for a thesis prototype, not a placeholder.
 
-### FR-12: Mobile responsiveness — **Partial, deferred**
-- Baseline done: off-canvas sidebar drawer, tables scroll horizontally, stat rows/layouts stack on narrow viewports.
-- User-tested and found still unsatisfactory for dense tables/charts specifically. **Decision: defer further polish to a planned full UI revamp** rather than keep patching the current design — see [[02-Decisions-Log]].
+### FR-12: Mobile responsiveness / UI revamp — **Partial, in progress**
+- Baseline mobile support done: off-canvas sidebar drawer, tables scroll horizontally, stat rows/layouts stack on narrow viewports.
+- User-tested and found still unsatisfactory for dense tables/charts. **Decision: defer further polish to a full UI revamp** rather than keep patching the old design — see [[02-Decisions-Log]].
+- **UI revamp Phase 1 now built and approved**: a formal/enterprise design-token system, Framer Motion animation, and a fully rebuilt, triage-first Dashboard (real loading/error/empty states, a real Risk Tier Distribution chart replacing a fake hardcoded one, reordered "attention → context → browse" layout instead of the old stats-then-charts-then-table template). Reusable primitives (`Skeleton`/`Badge`/`EmptyState`/`StatCard`) and tokens exist for the remaining 8 pages + login, but their rollout (and whether each page's *layout*, not just its skin, gets rethought the same way) is not yet scoped. See [[03-Progress-Log]] and [[06-Current-State-and-Next-Steps]].
 
 ### FR-13: Report review / approval workflow — **Built**
 - Manager and Admin can approve or request revision on a submitted report (`inspection_reports.review_status`: `pending`/`approved`/`needs_revision`, plus `review_comment`, `reviewed_by`, `reviewed_at`).
@@ -133,4 +134,4 @@ See [[01-Architecture#Supabase schema]] for the full table list. Core entities: 
 ## 8. Open questions (resolve before building the corresponding feature)
 
 - FR-15: is this a coding deliverable at all, or purely a research-methodology task for the manuscript's defense?
-- Full UI revamp (referenced in FR-12's deferral): no scope, timeline, or design direction agreed yet — a future conversation, not implied by this document.
+- UI revamp rollout scope (FR-12): Phase 1 (design system + Dashboard) is done; whether/how to extend it to the other 8 pages + login, and whether each page's layout gets rethought (not just re-skinned), is not yet decided — a future conversation.

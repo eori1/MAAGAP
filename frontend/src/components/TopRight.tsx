@@ -2,23 +2,15 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 import styles from "./TopRight.module.css";
-
-interface Alert {
-  id: string;
-  type: "TIER_ESCALATION" | "CRITICAL_RISK" | "REPORT_NEEDS_REVISION";
-  projectId: string;
-  fromTier: string | null;
-  toTier: string | null;
-  riskScore: number | null;
-  message: string;
-  date: string;
-}
+import type { Alert } from "@/lib/types";
+import EmptyState from "@/components/ui/EmptyState";
 
 const ALERT_DOT_COLOR: Record<Alert["type"], string> = {
-  CRITICAL_RISK: "#e74c3c",
-  TIER_ESCALATION: "#f59e0b",
-  REPORT_NEEDS_REVISION: "#8e44ad",
+  CRITICAL_RISK: "var(--status-critical)",
+  TIER_ESCALATION: "var(--status-warning)",
+  REPORT_NEEDS_REVISION: "var(--info-600)",
 };
 
 export default function TopRight() {
@@ -62,27 +54,50 @@ export default function TopRight() {
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
             <path d="M13.73 21a2 2 0 0 1-3.46 0" />
           </svg>
-          {alerts.length > 0 && <span className={styles.alertBadge}>{alerts.length > 9 ? "9+" : alerts.length}</span>}
+          <AnimatePresence>
+            {alerts.length > 0 && (
+              <motion.span
+                key={alerts.length}
+                className={styles.alertBadge}
+                initial={{ scale: 0.5, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.5, opacity: 0 }}
+                transition={{ type: "spring", stiffness: 400, damping: 20 }}
+              >
+                {alerts.length > 9 ? "9+" : alerts.length}
+              </motion.span>
+            )}
+          </AnimatePresence>
         </button>
 
-        {open && (
-          <div className={styles.alertPanel}>
-            <div className={styles.alertPanelHeader}>Risk Alerts</div>
-            {alerts.length === 0 && <div className={styles.alertEmpty}>No active alerts.</div>}
-            {alerts.slice(0, 10).map(a => (
-              <div key={a.id} className={styles.alertItem}>
-                <span
-                  className={styles.alertDot}
-                  style={{ background: ALERT_DOT_COLOR[a.type] }}
-                />
-                <div>
-                  <div className={styles.alertMsg}>{a.message}</div>
-                  <div className={styles.alertMeta}>{a.date}</div>
+        <AnimatePresence>
+          {open && (
+            <motion.div
+              className={styles.alertPanel}
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.15 }}
+            >
+              <div className={styles.alertPanelHeader}>Risk Alerts</div>
+              {alerts.length === 0 && (
+                <EmptyState title="No active alerts" message="You're all caught up." />
+              )}
+              {alerts.slice(0, 10).map(a => (
+                <div key={a.id} className={styles.alertItem}>
+                  <span
+                    className={styles.alertDot}
+                    style={{ background: ALERT_DOT_COLOR[a.type] }}
+                  />
+                  <div>
+                    <div className={styles.alertMsg}>{a.message}</div>
+                    <div className={styles.alertMeta}>{a.date}</div>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <Link className={styles.iconBtn} href="/account" aria-label="Account Settings">
