@@ -1,6 +1,6 @@
 # Current State and Next Steps
 
-**Last updated:** 2026-07-21, after PR #2 (FR-13) merged into `main`.
+**Last updated:** 2026-07-22, FR-14 (model validation) built and about to be opened as a PR.
 
 Related: [[03-Progress-Log]] · [[05-Manuscript-Alignment]] · [[04-Workflows-and-Gotchas]] · [[07-PRD]]
 
@@ -23,13 +23,16 @@ The system is fully functional end-to-end and manually verified:
 
 **FR-13 (report review/approval) is merged.** PR #2 (`https://github.com/eori1/MAAGAP/pull/2`, branch `feat/report-review-workflow`) squash-merged into `main` as `a20ddfa`. User verified the full walkthrough in-browser (Manager approve/request-revision → Inspector sees alert + resubmit → Manager sees it pending again) before merging. See [[03-Progress-Log]] for what was built and [[02-Decisions-Log]] for the scoping decisions, including the follow-up that replaced inline table review actions with a full `ReportDetailModal` (full-size photos, complete notes, both accomplishment percentages) and the "Pending Review"→"At Risk" rename that resolved a naming collision the user caught via screenshot. `npx tsc --noEmit` clean, `pytest` 25/25, ESLint clean throughout. The Supabase schema migration (`schema_review.sql`) has been applied. The `feat/report-review-workflow` branch still exists on `origin` post-merge (not deleted), same pattern as PR #1.
 
+**FR-14 (model validation, reframed from "ML feedback loop") is built** on branch `feat/model-validation`, off `main` after PR #2, not yet committed/pushed/opened as a PR as of this note. See [[03-Progress-Log]] for what was built and [[02-Decisions-Log]] for why the original "retraining loop" framing was rejected (no real outcome labels + manuscript delimitation conflict). `npx tsc --noEmit` clean, `pytest` 25/25, ESLint clean (one pre-existing unrelated error in `Sidebar.tsx` confirmed via `git stash` to predate this branch). User checked the new Model Validation page in-browser before this note was written.
+
 See [[05-Manuscript-Alignment]] for the objective-by-objective status.
 
 ## Immediate next steps
 
-1. **Mobile responsiveness** — ✅ baseline done (`e11ee9b`): sidebar off-canvas drawer, tables scroll horizontally, stat rows/two-column layouts stack, Projects header wraps. **User tested and confirmed it's a real improvement but tables/charts still aren't fully resolved on mobile.** **Decision: defer further polish to a planned full UI revamp later.** Don't re-attempt incremental mobile CSS fixes on the current design unless explicitly asked.
-2. **Loading states** — no page shows a spinner/skeleton while its initial fetch is in flight. Not started; likely folds into the same future UI revamp.
-3. **FR-14 (ML feedback loop)** and **FR-15 (ISO/IEC 25010 evaluation)** — still "Planned, not scoped" per [[07-PRD]]; ask the user before starting either.
+1. **Commit/push/open a PR for `feat/model-validation`**, then merge once reviewed.
+2. **Mobile responsiveness** — ✅ baseline done (`e11ee9b`): sidebar off-canvas drawer, tables scroll horizontally, stat rows/two-column layouts stack, Projects header wraps. **User tested and confirmed it's a real improvement but tables/charts still aren't fully resolved on mobile.** **Decision: defer further polish to a planned full UI revamp later.** Don't re-attempt incremental mobile CSS fixes on the current design unless explicitly asked.
+3. **Loading states** — no page shows a spinner/skeleton while its initial fetch is in flight. Not started; likely folds into the same future UI revamp.
+4. **FR-15 (ISO/IEC 25010 evaluation)** — still "Planned, not scoped" per [[07-PRD]]; likely a research-methodology task, not code — ask the user before assuming otherwise.
 
 ## Things that are known-fine, don't re-litigate
 
@@ -42,6 +45,7 @@ See [[05-Manuscript-Alignment]] for the objective-by-objective status.
 - Reports support photo upload (chosen over data-fields-only), there's no decline path (accept-only was chosen over accept/decline), and report submission is gated on acceptance (chosen over ungated) — all explicit scoping decisions made with the user, not oversights. See [[02-Decisions-Log]] before "fixing" any of them.
 - The Reports page now merges real `inspection_reports` with synthetic `inspection_logs` (real takes priority per project) — don't rebuild this if asked about "why does Reports still show fake data," check first whether the project actually has a real submission yet (most of the 450-project cohort still won't, since only test accounts have submitted so far).
 - FR-13 (report review/approval) exists and is verified working end-to-end (Manager/Admin approve/request-revision, Inspector notification + resubmit) — don't rebuild it if asked about "report approval" again; check [[02-Decisions-Log]] and [[03-Progress-Log]] first. Review happens via `ReportDetailModal` (full photos/notes/both accomplishment %s), not inline table buttons — that was a deliberate redesign after the first pass, not the current state to "simplify." The Reports page's older slippage-based status is "At Risk" (not "Pending Review") specifically to avoid colliding with the newer Review Status column.
+- FR-14 is deliberately **not** a retraining/feedback loop — that framing was rejected (see [[02-Decisions-Log]]) because real `inspection_reports` never carry the final delay/cost-overrun outcome labels the models train on, and the manuscript excludes continuous retraining anyway. What exists is a read-only "Model Validation" page comparing predicted risk vs. reported progress slippage — don't propose building an actual retraining pipeline if this comes up again without re-litigating why it was rejected.
 
 ## If you're picking this up cold (after `/compact` or a new session)
 

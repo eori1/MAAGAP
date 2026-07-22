@@ -101,8 +101,10 @@ This is the core PPDO-facing loop and the most important functional area. Requir
 - Review happens via a dedicated `ReportDetailModal` on the Reports page (full-size photos, complete notes/issues text, physical **and** financial accomplishment % side-by-side) rather than inline table buttons — the table row alone doesn't have room to actually judge a submission.
 - See [[02-Decisions-Log]] for the scoping decisions and [[03-Progress-Log]] for what was built.
 
-### FR-14: ML feedback loop using real report data — **Planned, not scoped**
-- Currently, `inspection_reports` (real, inspector-submitted data) is never read by the ML pipeline — models only ever train on synthetic data. Closing this loop (real accomplishment data informing future risk predictions / model retraining) would be a genuine improvement to the "predictive" half of the system but has not been designed.
+### FR-14: Model validation against real report data — **Built (reframed)**
+- Originally scoped as an "ML feedback loop" (real report data informing retraining). Reframed after finding two blockers: real `inspection_reports` only ever capture an interim signal (physical/financial accomplishment % at one point in time), never the final delay-days/cost-overrun-% outcome the models actually train on; and the manuscript's own delimitation (§6) excludes "real-time/continuous model retraining" outright.
+- Built instead as a **prediction-vs-reality tracking view**: a new "Model Validation" page comparing each project's predicted risk tier against its latest real report's progress slippage, with a Confirmed/Contradicted/Inconclusive read per project. No retraining, no model changes — a read-only evaluation angle distinct from Objective 2's existing synthetic-test-set metrics.
+- Deliberately scoped to delay/progress only (not cost-overrun) and to projects with at least one real report, with no filters yet — see [[02-Decisions-Log]].
 
 ### FR-15: ISO/IEC 25010 software quality evaluation — **Planned, not scoped**
 - Manuscript Objective 5. Likely a UAT/survey-design task (stakeholder or faculty evaluation instrument covering Functional Suitability, Usability, Reliability), not a coding task. Scope not yet clarified with the user.
@@ -130,6 +132,5 @@ See [[01-Architecture#Supabase schema]] for the full table list. Core entities: 
 
 ## 8. Open questions (resolve before building the corresponding feature)
 
-- FR-14: whether/how real report data should influence retraining, and on what cadence.
 - FR-15: is this a coding deliverable at all, or purely a research-methodology task for the manuscript's defense?
 - Full UI revamp (referenced in FR-12's deferral): no scope, timeline, or design direction agreed yet — a future conversation, not implied by this document.

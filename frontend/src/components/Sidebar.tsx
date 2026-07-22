@@ -26,6 +26,7 @@ const NAV_ITEMS: { label: string; href: string; icon: typeof DashboardIcon; excl
   { label: "Forecast Engine",  href: "/forecast-engine", icon: ForecastIcon   },
   { label: "Allocation",       href: "/allocation", icon: AllocationIcon },
   { label: "Reports",          href: "/reports",    icon: ReportsIcon    },
+  { label: "Model Validation", href: "/model-validation", icon: ValidationIcon },
   { label: "Project Timeline", href: "/timeline",   icon: TimelineIcon   },
   // Manager + Admin see everything; Inspector is scoped to their own schedule/reports only.
   { label: "User Management",  href: "/users",      icon: UsersIcon, excludeInspector: true },
@@ -189,6 +190,18 @@ function ReportsIcon({ className }: { className?: string }) {
       <line x1="8" y1="13" x2="16" y2="13" />
       <line x1="8" y1="17" x2="16" y2="17" />
       <line x1="8" y1="9"  x2="10" y2="9" />
+    </svg>
+  );
+}
+
+function ValidationIcon({ className }: { className?: string }) {
+  // Target with a checkmark -- prediction vs. reality
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="12" r="8" />
+      <circle cx="11" cy="12" r="4" />
+      <path d="M17 6l4-2M21 4v3.5" />
+      <path d="M15.5 12.5l1.5 1.5 3-3" />
     </svg>
   );
 }
