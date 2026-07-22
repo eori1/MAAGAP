@@ -1,0 +1,23 @@
+.track {
+  width: 80px;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--surface-sunken);
+  overflow: hidden;
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  transition: width var(--duration-slow) var(--ease-standard);
+}
+
+.good     { background: var(--status-good); }
+.warning  { background: var(--status-warning); }
+.serious  { background: var(--status-serious); }
+.critical { background: var(--status-critical); }
+.neutral  { background: var(--ink-500); }
+.accent   { background: var(--accent-600); }

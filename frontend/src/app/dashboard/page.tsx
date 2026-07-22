@@ -7,7 +7,6 @@ import Skeleton from "@/components/ui/Skeleton";
 import StatCard from "@/components/ui/StatCard";
 import EmptyState from "@/components/ui/EmptyState";
 import Badge from "@/components/ui/Badge";
-import type { BadgeTone } from "@/components/ui/Badge";
 import styles from "./page.module.css";
 import { motion } from "framer-motion";
 import { fadeInUp, staggerContainer } from "@/lib/motion";
@@ -16,6 +15,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Cell, LabelList, R
 import { useEffect, useMemo, useState } from "react";
 import type { Alert } from "@/lib/types";
 import type { SessionProfile } from "@/lib/supabaseSessionServer";
+import { RISK_TONE } from "@/lib/riskTone";
 
 function timeOfDayGreeting(): string {
   const hour = new Date().getHours();
@@ -23,13 +23,6 @@ function timeOfDayGreeting(): string {
   if (hour < 18) return "Good Afternoon";
   return "Good Evening";
 }
-
-const RISK_TONE: Record<string, BadgeTone> = {
-  Low: "good",
-  Medium: "warning",
-  High: "serious",
-  Critical: "critical",
-};
 
 const TIER_ORDER = ["Low", "Medium", "High", "Critical"] as const;
 const TIER_COLOR_VAR: Record<(typeof TIER_ORDER)[number], string> = {
