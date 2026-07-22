@@ -206,3 +206,7 @@ Group A (Projects, Forecast Engine, Model Validation) chosen first per an `Explo
 A real regression was caught and fixed during this work: the new `project_name`/`description` columns being selected in the *main* scored-project query (not just the isolated pending-entries branch) meant the entire `/api/projects` endpoint failed for everyone until the schema migration was applied — confirmed via the dev server log, not assumed.
 
 Verified throughout: `npx tsc --noEmit` clean, `pytest` 25/25 (no Python touched by any of this), ESLint clean except the one pre-existing, already-documented `Sidebar.tsx`-category `react-hooks/set-state-in-effect` occurrence (this time in `forecast-engine/page.tsx`'s detail-fetch effect). User reviewed and approved all of it in-browser, including one live UI iteration on the Import Data modal.
+
+## PR #5 — merged into `main` (2026-07-22)
+
+Squash-merged into `main` as `8326de1`. The `feat/ui-revamp-group-a` branch still exists on `origin` post-merge (not deleted), same as PR #1-#4. `backend/supabase/schema_manual_entry.sql` (including the later-added `project_name`/`description` columns) has been applied and confirmed working. Next decisions: real name/description backfill onto the existing ~450-project cohort, and the Group B/C rollout order — see [[06-Current-State-and-Next-Steps]].

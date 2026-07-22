@@ -1,6 +1,6 @@
 # Current State and Next Steps
 
-**Last updated:** 2026-07-22, UI revamp Phase 2 Group A + Add new PPA + Import Data built and approved, not yet committed/merged.
+**Last updated:** 2026-07-22, after PR #5 (UI revamp Phase 2 Group A + Add PPA/Import Data) merged into `main`.
 
 Related: [[03-Progress-Log]] · [[05-Manuscript-Alignment]] · [[04-Workflows-and-Gotchas]] · [[07-PRD]]
 
@@ -27,16 +27,15 @@ The system is fully functional end-to-end and manually verified:
 
 **UI revamp Phase 1 (design system + Dashboard flagship) is merged.** PR #4 (`https://github.com/eori1/MAAGAP/pull/4`, branch `feat/ui-revamp-dashboard`) squash-merged into `main` as `0373793`. See [[03-Progress-Log]] for everything built (tokens, primitives, motion, Dashboard triage-layout rebuild, Sidebar/TopRight re-skin) and [[02-Decisions-Log]] for the palette/motion/rollout rationale and the two layout bugs found+fixed during review. `npx tsc --noEmit` clean, `pytest` 25/25, ESLint clean (same pre-existing unrelated `Sidebar.tsx` error as always). User reviewed and approved both in-browser and the PR before merging. The `feat/ui-revamp-dashboard` branch still exists on `origin` post-merge (not deleted), same pattern as PR #1-#3.
 
-**UI revamp Phase 2, Group A (Projects/Forecast Engine/Model Validation) + Add new PPA + Import Data are built and user-approved**, on branch `feat/ui-revamp-group-a`, not yet committed/pushed/PR'd as of this note. See [[03-Progress-Log]] for everything built and [[02-Decisions-Log]] for the full rationale (real SHAP replacing a fake chart, the "Pending Assessment" batch-pipeline constraint, the name/description gap, shared validation/CSV-parsing/project-id-allocation extraction, and the dropzone UI iteration). `npx tsc --noEmit` clean, `pytest` 25/25, ESLint clean (same pre-existing `Sidebar.tsx`-category error, this time in `forecast-engine/page.tsx`). Requires `backend/supabase/schema_manual_entry.sql` applied (it now includes `project_name`/`description` in addition to `is_manual_entry`/`created_by`/`created_at` — **already applied and confirmed working** as of this note).
+**UI revamp Phase 2, Group A (Projects/Forecast Engine/Model Validation) + Add new PPA + Import Data are merged.** PR #5 (`https://github.com/eori1/MAAGAP/pull/5`, branch `feat/ui-revamp-group-a`) squash-merged into `main` as `8326de1`. See [[03-Progress-Log]] for everything built and [[02-Decisions-Log]] for the full rationale (real SHAP replacing a fake chart, the "Pending Assessment" batch-pipeline constraint, the name/description gap, shared validation/CSV-parsing/project-id-allocation extraction, and the dropzone UI iteration). `npx tsc --noEmit` clean, `pytest` 25/25, ESLint clean (same pre-existing `Sidebar.tsx`-category error, this time in `forecast-engine/page.tsx`). `backend/supabase/schema_manual_entry.sql` (includes `is_manual_entry`/`created_by`/`created_at`/`project_name`/`description`) has been applied and confirmed working. The `feat/ui-revamp-group-a` branch still exists on `origin` post-merge (not deleted), same pattern as PR #1-#4.
 
 See [[05-Manuscript-Alignment]] for the objective-by-objective status.
 
 ## Immediate next steps
 
-1. **Commit/push/open a PR for `feat/ui-revamp-group-a`**, then merge once reviewed.
-2. **Backfill real names/descriptions onto the existing ~450 (eventually ~3000) project cohort** — the user explicitly asked for this as a near-term follow-up after seeing that only newly-added PPAs get a real name today (everything else still falls back to displaying its `project_id`). Not yet scoped: likely a one-off backfill script plus a change to `backend/maagap/synthetic_generator.py` so future pipeline runs generate real names/descriptions too, rather than leaving every synthetic project nameless forever. Ask the user before assuming the approach (e.g. real generated titles vs. a simple templated name).
-3. **Decide the Group B/C rollout order** (Allocation/Reports/Timeline, then Users/Account/Login) — same "full layout rethink, mockup first" treatment as Group A, per the user's earlier standing instruction.
-4. **FR-15 (ISO/IEC 25010 evaluation)** — still "Planned, not scoped" per [[07-PRD]]; likely a research-methodology task, not code — ask the user before assuming otherwise.
+1. **Backfill real names/descriptions onto the existing ~450 (eventually ~3000) project cohort** — the user explicitly asked for this as a near-term follow-up after seeing that only newly-added PPAs get a real name today (everything else still falls back to displaying its `project_id`). Not yet scoped: likely a one-off backfill script plus a change to `backend/maagap/synthetic_generator.py` so future pipeline runs generate real names/descriptions too, rather than leaving every synthetic project nameless forever. Ask the user before assuming the approach (e.g. real generated titles vs. a simple templated name).
+2. **Decide the Group B/C rollout order** (Allocation/Reports/Timeline, then Users/Account/Login) — same "full layout rethink, mockup first" treatment as Group A, per the user's earlier standing instruction.
+3. **FR-15 (ISO/IEC 25010 evaluation)** — still "Planned, not scoped" per [[07-PRD]]; likely a research-methodology task, not code — ask the user before assuming otherwise.
 
 ## Things that are known-fine, don't re-litigate
 
