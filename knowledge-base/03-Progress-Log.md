@@ -166,3 +166,7 @@ Built on branch `feat/model-validation`, off `main` after PR #2. See [[02-Decisi
 - New page `frontend/src/app/model-validation/page.tsx` (+ `.module.css`): stats row (Projects Validated/Confirmed/Contradicted/Inconclusive) + a table listing only projects with a real report, showing predicted risk tier/delay probability against expected/actual progress, slippage, and the agreement badge.
 - New nav item "Model Validation" in `Sidebar.tsx` (between Reports and Project Timeline, visible to all three roles), with a new `ValidationIcon`.
 - Verified: `npx tsc --noEmit` clean, `pytest` 25/25 (no Python touched), ESLint clean (one pre-existing, unrelated `react-hooks/set-state-in-effect` error in `Sidebar.tsx`, confirmed via `git stash` to already exist on `main` before this branch). User checked the page in-browser (screenshots showing both real-report projects with correct Confirmed/Inconclusive reads) before merging.
+
+## PR #3 — merged into `main` (2026-07-22)
+
+Both commits (`057c94c` feature + `aaddad7` docs) squash-merged into `main` as one commit, `b13857d`. The `feat/model-validation` branch still exists on `origin` post-merge (not deleted), same as PR #1/#2. This closes out FR-14, leaving FR-15 (ISO/IEC 25010) as the only unbuilt PRD item besides the deferred UI revamp/loading states.

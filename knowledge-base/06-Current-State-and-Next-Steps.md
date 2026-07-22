@@ -1,6 +1,6 @@
 # Current State and Next Steps
 
-**Last updated:** 2026-07-22, FR-14 (model validation) built and about to be opened as a PR.
+**Last updated:** 2026-07-22, after PR #3 (FR-14) merged into `main`.
 
 Related: [[03-Progress-Log]] · [[05-Manuscript-Alignment]] · [[04-Workflows-and-Gotchas]] · [[07-PRD]]
 
@@ -23,16 +23,15 @@ The system is fully functional end-to-end and manually verified:
 
 **FR-13 (report review/approval) is merged.** PR #2 (`https://github.com/eori1/MAAGAP/pull/2`, branch `feat/report-review-workflow`) squash-merged into `main` as `a20ddfa`. User verified the full walkthrough in-browser (Manager approve/request-revision → Inspector sees alert + resubmit → Manager sees it pending again) before merging. See [[03-Progress-Log]] for what was built and [[02-Decisions-Log]] for the scoping decisions, including the follow-up that replaced inline table review actions with a full `ReportDetailModal` (full-size photos, complete notes, both accomplishment percentages) and the "Pending Review"→"At Risk" rename that resolved a naming collision the user caught via screenshot. `npx tsc --noEmit` clean, `pytest` 25/25, ESLint clean throughout. The Supabase schema migration (`schema_review.sql`) has been applied. The `feat/report-review-workflow` branch still exists on `origin` post-merge (not deleted), same pattern as PR #1.
 
-**FR-14 (model validation, reframed from "ML feedback loop") is built** on branch `feat/model-validation`, off `main` after PR #2, not yet committed/pushed/opened as a PR as of this note. See [[03-Progress-Log]] for what was built and [[02-Decisions-Log]] for why the original "retraining loop" framing was rejected (no real outcome labels + manuscript delimitation conflict). `npx tsc --noEmit` clean, `pytest` 25/25, ESLint clean (one pre-existing unrelated error in `Sidebar.tsx` confirmed via `git stash` to predate this branch). User checked the new Model Validation page in-browser before this note was written.
+**FR-14 (model validation, reframed from "ML feedback loop") is merged.** PR #3 (`https://github.com/eori1/MAAGAP/pull/3`, branch `feat/model-validation`) squash-merged into `main` as `b13857d`. See [[03-Progress-Log]] for what was built and [[02-Decisions-Log]] for why the original "retraining loop" framing was rejected (no real outcome labels + manuscript delimitation conflict). `npx tsc --noEmit` clean, `pytest` 25/25, ESLint clean (one pre-existing unrelated error in `Sidebar.tsx` confirmed via `git stash` to predate this branch). User checked the new Model Validation page in-browser and reviewed the PR before merging. The `feat/model-validation` branch still exists on `origin` post-merge (not deleted), same pattern as PR #1/#2.
 
 See [[05-Manuscript-Alignment]] for the objective-by-objective status.
 
 ## Immediate next steps
 
-1. **Commit/push/open a PR for `feat/model-validation`**, then merge once reviewed.
-2. **Mobile responsiveness** — ✅ baseline done (`e11ee9b`): sidebar off-canvas drawer, tables scroll horizontally, stat rows/two-column layouts stack, Projects header wraps. **User tested and confirmed it's a real improvement but tables/charts still aren't fully resolved on mobile.** **Decision: defer further polish to a planned full UI revamp later.** Don't re-attempt incremental mobile CSS fixes on the current design unless explicitly asked.
-3. **Loading states** — no page shows a spinner/skeleton while its initial fetch is in flight. Not started; likely folds into the same future UI revamp.
-4. **FR-15 (ISO/IEC 25010 evaluation)** — still "Planned, not scoped" per [[07-PRD]]; likely a research-methodology task, not code — ask the user before assuming otherwise.
+1. **Mobile responsiveness** — ✅ baseline done (`e11ee9b`): sidebar off-canvas drawer, tables scroll horizontally, stat rows/two-column layouts stack, Projects header wraps. **User tested and confirmed it's a real improvement but tables/charts still aren't fully resolved on mobile.** **Decision: defer further polish to a planned full UI revamp later.** Don't re-attempt incremental mobile CSS fixes on the current design unless explicitly asked.
+2. **Loading states** — no page shows a spinner/skeleton while its initial fetch is in flight. Not started; likely folds into the same future UI revamp.
+3. **FR-15 (ISO/IEC 25010 evaluation)** — still "Planned, not scoped" per [[07-PRD]]; likely a research-methodology task, not code — ask the user before assuming otherwise. This is the last unbuilt item in the PRD besides the deferred UI revamp/loading states.
 
 ## Things that are known-fine, don't re-litigate
 
