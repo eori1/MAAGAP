@@ -1,0 +1,202 @@
+/* ── Shell ───────────────────────────────────────────── */
+.shell {
+  display: block;
+  height: 100vh;
+  background: #f0f4f9;
+  font-family: 'Inter', system-ui, sans-serif;
+}
+
+.main {
+  margin-left: 210px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #f0f4f9;
+}
+
+@media (max-width: 768px) {
+  .main {
+    margin-left: 0;
+    padding-top: 3rem;
+  }
+}
+
+/* ── Top Bar ─────────────────────────────────────────── */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.65rem 1.5rem;
+  flex-shrink: 0;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: #7a8fa6;
+}
+.sep { color: #b0bec8; }
+.breadActive { color: #1b3a5e; font-weight: 600; }
+
+/* ── Page heading ────────────────────────────────────── */
+.headCard {
+  margin: 0 1.5rem 0.75rem;
+  background: linear-gradient(130deg, #1a6ed8 0%, #2756c5 55%, #1a4da8 100%);
+  border-radius: 14px;
+  padding: 1rem 1.4rem;
+  flex-shrink: 0;
+  box-shadow: 0 4px 18px rgba(39,86,197,0.28);
+}
+
+.headTitle {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #fff;
+  margin: 0 0 0.18rem;
+  letter-spacing: -0.02em;
+}
+
+.headSub {
+  font-size: 0.76rem;
+  color: rgba(255,255,255,0.75);
+  margin: 0;
+  font-weight: 400;
+}
+
+/* ── Stats row ───────────────────────────────────────── */
+.statsRow {
+  display: flex;
+  gap: 0.8rem;
+  margin: 0 1.5rem 0.8rem;
+  flex-shrink: 0;
+}
+
+.statCard {
+  flex: 1;
+  background: #fff;
+  border-radius: 13px;
+  border: 1px solid #e8edf5;
+  padding: 0.9rem 1.1rem;
+}
+
+.statLabel {
+  font-size: 0.71rem;
+  color: #7a8fa6;
+  font-weight: 500;
+  margin-bottom: 0.25rem;
+}
+
+.statValue {
+  font-size: 1.85rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+/* ── Main White Card ─────────────────────────────────── */
+.card {
+  flex: 1;
+  margin: 0 1.5rem 1.4rem;
+  background: #fff;
+  border-radius: 16px;
+  border: 1px solid #e8edf5;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.cardHeader {
+  padding: 1.1rem 1.5rem 0.75rem;
+  flex-shrink: 0;
+}
+
+.cardTitle {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #1b3a5e;
+  margin: 0 0 0.2rem;
+  letter-spacing: -0.02em;
+}
+
+.cardSub {
+  font-size: 0.76rem;
+  color: #7a8fa6;
+  margin: 0;
+}
+
+.divider {
+  height: 1px;
+  background: #eaeff6;
+  flex-shrink: 0;
+}
+
+/* ── Table ───────────────────────────────────────────── */
+.tableWrap {
+  overflow-x: auto;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.th {
+  padding: 0.55rem 1rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #94a3b8;
+  text-align: left;
+  background: #f8fafb;
+  border-bottom: 1px solid #eaeff6;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  white-space: nowrap;
+}
+
+.row {
+  border-bottom: 1px solid #f0f4f9;
+}
+.row:last-child { border-bottom: none; }
+
+.td {
+  padding: 0.75rem 1rem;
+  font-size: 0.79rem;
+  color: #1b3a5e;
+  vertical-align: middle;
+}
+
+.tdCenter { text-align: center; }
+
+.projectName {
+  font-weight: 600;
+  color: #1b3a5e;
+  font-size: 0.8rem;
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 0.25rem 0.8rem;
+  border-radius: 50px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.emptyRow {
+  padding: 3rem;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 0.82rem;
+}
+
+@media (max-width: 900px) {
+  .table { min-width: 720px; }
+}

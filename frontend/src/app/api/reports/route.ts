@@ -3,6 +3,7 @@ import { getSupabaseServerClient } from "@/lib/supabaseServer";
 import { getSessionProfile } from "@/lib/supabaseSessionServer";
 import { fetchAllRowsIn } from "@/lib/supabasePaging";
 import { pickLatestByKey } from "@/lib/inspectionReports";
+import { expectedProgressPct } from "@/lib/projectProgress";
 
 interface PredictionRow {
   project_id: string;
@@ -130,14 +131,6 @@ export async function GET() {
       (r) => r.submitted_at,
     );
 
-    function expectedProgressPct(projectId: string, asOf: Date): number | null {
-      const p = projectById.get(projectId);
-      if (!p || !p.start_date || !p.planned_duration_months) return null;
-      const start = new Date(p.start_date);
-      const elapsedMonths = (asOf.getTime() - start.getTime()) / (1000 * 60 * 60 * 24 * 30);
-      return Math.max(0, Math.min(100, (elapsedMonths / p.planned_duration_months) * 100));
-    }
-
     const reports = projectIds.map((projectId) => {
       const real = latestRealByProject.get(projectId);
       const assignedInspectorId = assignedInspectorByProject.get(projectId) ?? null;
@@ -146,7 +139,7 @@ export async function GET() {
 
       if (real) {
         const submittedAt = new Date(real.submitted_at);
-        const expected = expectedProgressPct(projectId, submittedAt);
+        const expected = expectedProgressPct(projectById.get(projectId), submittedAt);
         // physical_accomplishment_pct is an optional field on the report
         // form -- null means "not reported", not "reported as zero". Only
         // compute a slippage/status when the inspector actually gave a
