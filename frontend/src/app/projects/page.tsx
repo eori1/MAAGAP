@@ -1,59 +1,44 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
 import Sidebar from "@/components/Sidebar";
 import TopRight from "@/components/TopRight";
+import Skeleton from "@/components/ui/Skeleton";
+import EmptyState from "@/components/ui/EmptyState";
+import Badge from "@/components/ui/Badge";
+import ProgressBar from "@/components/ui/ProgressBar";
+import AddPpaModal from "@/components/AddPpaModal";
+import ImportPpaModal from "@/components/ImportPpaModal";
+import { RISK_TONE } from "@/lib/riskTone";
 import styles from "./page.module.css";
 import type { ProjectPin } from "@/components/IloiloMap";
+import { fetchProjects } from "@/lib/api";
 
-/* ── Dynamic import — Leaflet needs client-side only ─ */
 const IloiloMap = dynamic(() => import("@/components/IloiloMap"), {
   ssr: false,
   loading: () => (
     <div style={{
       width: "100%", height: "100%",
       display: "flex", alignItems: "center", justifyContent: "center",
-      background: "linear-gradient(145deg,#cde8f7,#a8d4ef)",
-      color: "#1264ae", fontWeight: 700, fontSize: "1rem",
+      background: "var(--surface-sunken)",
+      color: "var(--ink-500)", fontWeight: 700, fontSize: "1rem",
     }}>
       Loading map…
     </div>
   ),
 });
 
-import { useEffect } from "react";
-import { fetchProjects } from "@/lib/api";
-/* ── Badge helpers ────────────────────────────────── */
-function riskBarClass(risk: string, s: typeof styles) {
-  if (risk === "High" || risk === "Critical") return `${s.progressFill} ${s.progressRed}`;
-  if (risk === "Medium") return `${s.progressFill} ${s.progressAmber}`;
-  return `${s.progressFill} ${s.progressGreen}`;
-}
-function badgeClass(risk: string, s: typeof styles) {
-  if (risk === "Critical") return `${s.badge} ${s.badgeCritical}`;
-  if (risk === "High")     return `${s.badge} ${s.badgeHigh}`;
-  if (risk === "Medium")   return `${s.badge} ${s.badgeMedium}`;
-  return `${s.badge} ${s.badgeLow}`;
-}
-function statusBadgeClass(status: string, s: typeof styles) {
-  if (status === "Delayed")     return `${s.statusBadge} ${s.statusDelayed}`;
-  if (status === "On Schedule") return `${s.statusBadge} ${s.statusOnSchedule}`;
-  if (status === "Completed")   return `${s.statusBadge} ${s.statusCompleted}`;
-  return `${s.statusBadge} ${s.statusInProgress}`;
-}
+const STATUS_TONE: Record<string, "good" | "warning" | "serious" | "neutral"> = {
+  Delayed: "serious",
+  "On Schedule": "good",
+  Completed: "good",
+  "In Progress": "neutral",
+};
 
-/* ── Top Bar ──────────────────────────────────────── */
-function TopBar({ mapMode }: { mapMode: boolean }) {
-  return (
-    <div className={styles.topBar}>
-      <div className={styles.breadcrumb}>
-        Project Registry / <span>Programs and Activities{mapMode ? " / Map View" : ""}</span>
-      </div>
-      <TopRight />
-    </div>
-  );
-}
+type SortKey = "name" | "municipality" | "progress" | "risk" | "budget";
+const RISK_ORDER: Record<string, number> = { Pending: -1, Low: 0, Medium: 1, High: 2, Critical: 3 };
+const RISK_LABEL: Record<string, string> = { Pending: "Pending Assessment" };
 
 interface ProjectData {
   id: string;
@@ -68,78 +53,124 @@ interface ProjectData {
   lng: number;
 }
 
-/* ── Page ──────────────────────────────────────────── */
+function SortArrow({ active, asc }: { active: boolean; asc: boolean }) {
+  if (!active) return null;
+  return <span className={styles.sortArrow}>{asc ? "↑" : "↓"}</span>;
+}
+
+function TopBar({ mapMode }: { mapMode: boolean }) {
+  return (
+    <div className={styles.topBar}>
+      <div className={styles.breadcrumb}>
+        Project Registry / <span>Programs and Activities{mapMode ? " / Map View" : ""}</span>
+      </div>
+      <TopRight />
+    </div>
+  );
+}
+
 export default function ProjectsPage() {
-  const [projects,   setProjects]   = useState<ProjectData[]>([]);
-  const [mapMode,    setMapMode]    = useState(false);
-  const [search,     setSearch]     = useState("");
-  const [status,     setStatus]     = useState("All");
-  const [municipality, setMun]      = useState("");
-  const [activePin,  setActivePin]  = useState<string | null>(null);
+  const [projects, setProjects] = useState<ProjectData[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [mapMode, setMapMode] = useState(false);
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("All");
+  const [riskFilter, setRiskFilter] = useState("All");
+  const [municipality, setMun] = useState("");
+  const [activePin, setActivePin] = useState<string | null>(null);
+  const [sortKey, setSortKey] = useState<SortKey>("name");
+  const [sortAsc, setSortAsc] = useState(true);
+  const [viewerRole, setViewerRole] = useState<"manager" | "inspector" | "admin" | null>(null);
+  const [showAddPpa, setShowAddPpa] = useState(false);
+  const [showImportPpa, setShowImportPpa] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
 
+  const loadProjects = () => {
+    fetchProjects().then((data) => {
+      setProjects(data);
+      setLoading(false);
+    });
+  };
+
   useEffect(() => {
-    fetchProjects().then(data => setProjects(data));
+    loadProjects();
+    fetch("/api/me")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((profile) => setViewerRole(profile?.role ?? null))
+      .catch(() => setViewerRole(null));
   }, []);
 
-  const filtered = projects.filter(p => {
-    const q = search.toLowerCase();
-    const matchSearch = !search || p.name.toLowerCase().includes(q) || p.id.toLowerCase().includes(q);
-    const matchStatus = status === "All" || !status || p.status.toLowerCase().includes(status.toLowerCase()) || p.risk.toLowerCase().includes(status.toLowerCase());
-    const matchMun    = !municipality || p.municipality.toLowerCase().includes(municipality.toLowerCase());
-    return matchSearch && matchStatus && matchMun;
-  });
+  const canAddPpa = viewerRole === "manager" || viewerRole === "admin";
+
+  const filtered = useMemo(() => {
+    const list = projects.filter((p) => {
+      const q = search.toLowerCase();
+      const matchSearch = !search || p.name.toLowerCase().includes(q) || p.id.toLowerCase().includes(q);
+      const matchStatus = status === "All" || !status || p.status.toLowerCase().includes(status.toLowerCase());
+      const matchRisk = riskFilter === "All" || p.risk === riskFilter;
+      const matchMun = !municipality || p.municipality.toLowerCase().includes(municipality.toLowerCase());
+      return matchSearch && matchStatus && matchRisk && matchMun;
+    });
+
+    const dir = sortAsc ? 1 : -1;
+    list.sort((a, b) => {
+      if (sortKey === "progress") return (a.progress - b.progress) * dir;
+      if (sortKey === "risk") return ((RISK_ORDER[a.risk] ?? 0) - (RISK_ORDER[b.risk] ?? 0)) * dir;
+      if (sortKey === "municipality") return a.municipality.localeCompare(b.municipality) * dir;
+      if (sortKey === "budget") return (parseFloat(a.budget.replace(/[^0-9.]/g, "")) - parseFloat(b.budget.replace(/[^0-9.]/g, ""))) * dir;
+      return a.name.localeCompare(b.name) * dir;
+    });
+    return list;
+  }, [projects, search, status, riskFilter, municipality, sortKey, sortAsc]);
+
+  const criticalShown = filtered.filter((p) => p.risk === "Critical").length;
+
+  function handleSort(key: SortKey) {
+    if (sortKey === key) setSortAsc((a) => !a);
+    else { setSortKey(key); setSortAsc(true); }
+  }
+
+  function sortHeaderProps(key: SortKey) {
+    return {
+      className: `${styles.th} ${sortKey === key ? styles.thSorted : ""}`,
+      onClick: () => handleSort(key),
+    };
+  }
 
   function handlePinClick(id: string) {
-    setActivePin(prev => prev === id ? null : id);
-    // Scroll list item into view
+    setActivePin((prev) => (prev === id ? null : id));
     setTimeout(() => {
       const el = listRef.current?.querySelector(`[data-id="${id}"]`) as HTMLElement;
       el?.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }, 100);
   }
 
+  const clearFilters = () => { setSearch(""); setStatus("All"); setRiskFilter("All"); setMun(""); };
+
   /* ── Shared header + filters ─────────────────── */
   const renderPageHeader = () => (
     <div className={styles.pageHeader}>
-      <div className={styles.pageTitleGroup}>
+      <div>
         <h1 className={styles.pageTitle}>
-          <span className={styles.pageTitleBlue}>Projects</span>,{" "}
-          <span className={styles.pageTitleCyan}>Programs</span>, and Activities
+          <span className={styles.pageTitleAccent}>Projects</span>, Programs, and Activities
         </h1>
-        <p className={styles.pageSub}>Click any row for AI analysis</p>
+        <p className={styles.pageSub}>Browse and search the full monitored cohort</p>
       </div>
-      <div className={styles.actionBtns}>
-        <button className={styles.btnAction} onClick={() => setMapMode(m => !m)}>
-          {mapMode ? (
-            <>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/>
-              </svg>
-              Toggle Table View
-            </>
-          ) : (
-            <>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>
-              </svg>
-              Toggle Map View
-            </>
-          )}
-        </button>
-        <button className={styles.btnAction}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
-          Add new PPA
-        </button>
-        <button className={`${styles.btnAction} ${styles.btnActionPrimary}`}>
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-            <polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
-          </svg>
-          Import Data
-        </button>
+      <div className={styles.headerActions}>
+        {canAddPpa && (
+          <>
+            <button className={styles.importBtn} onClick={() => setShowImportPpa(true)}>
+              Import Data
+            </button>
+            <button className={styles.addPpaBtn} onClick={() => setShowAddPpa(true)}>
+              + Add new PPA
+            </button>
+          </>
+        )}
+        <div className={styles.viewToggle}>
+          <button className={`${styles.viewToggleBtn} ${!mapMode ? styles.viewToggleBtnActive : ""}`} onClick={() => setMapMode(false)}>Table</button>
+          <button className={`${styles.viewToggleBtn} ${mapMode ? styles.viewToggleBtnActive : ""}`} onClick={() => setMapMode(true)}>Map</button>
+        </div>
       </div>
     </div>
   );
@@ -148,30 +179,36 @@ export default function ProjectsPage() {
     <div className={styles.filterRow}>
       <div className={styles.filterGroup}>
         <label className={styles.filterLabel}>Search</label>
-        <input className={styles.filterInput} placeholder="Search Projects ..." value={search} onChange={e => setSearch(e.target.value)} />
+        <input className={styles.filterInput} placeholder="Search Projects ..." value={search} onChange={(e) => setSearch(e.target.value)} />
       </div>
       <div className={styles.filterGroup} style={{ flex: 1.5 }}>
         <label className={styles.filterLabel}>Status</label>
         <div className={styles.statusPills}>
-          {["All", "In Progress", "On Schedule", "Completed", "Delayed"].map(s => (
-            <button
-              key={s}
-              className={`${styles.statusPill} ${status === s ? styles.statusPillActive : ""}`}
-              onClick={() => setStatus(s)}
-            >
+          {["All", "In Progress", "On Schedule", "Completed", "Delayed"].map((s) => (
+            <button key={s} className={`${styles.statusPill} ${status === s ? styles.statusPillActive : ""}`} onClick={() => setStatus(s)}>
               {s}
             </button>
           ))}
         </div>
       </div>
       <div className={styles.filterGroup}>
-        <label className={styles.filterLabel}>Municipality</label>
-        <input className={styles.filterInput} placeholder="Search Projects ..." value={municipality} onChange={e => setMun(e.target.value)} />
+        <label className={styles.filterLabel}>Risk Tier</label>
+        <select className={styles.filterSelect} value={riskFilter} onChange={(e) => setRiskFilter(e.target.value)}>
+          {["All", "Pending", "Low", "Medium", "High", "Critical"].map((r) => <option key={r} value={r}>{RISK_LABEL[r] ?? r}</option>)}
+        </select>
       </div>
-      <button className={styles.clearBtn} onClick={() => { setSearch(""); setStatus(""); setMun(""); }}>
-        Clear Filters
-      </button>
+      <div className={styles.filterGroup}>
+        <label className={styles.filterLabel}>Municipality</label>
+        <input className={styles.filterInput} placeholder="Search Municipality ..." value={municipality} onChange={(e) => setMun(e.target.value)} />
+      </div>
+      <button className={styles.clearBtn} onClick={clearFilters}>Clear Filters</button>
     </div>
+  );
+
+  const resultSummary = (
+    <span className={styles.resultSummary}>
+      <strong>{filtered.length}</strong> of {projects.length} shown{criticalShown > 0 ? ` · ${criticalShown} Critical among them` : ""}
+    </span>
   );
 
   /* ═══ TABLE VIEW ═══ */
@@ -184,50 +221,62 @@ export default function ProjectsPage() {
           <div className={styles.contentCard}>
             {renderPageHeader()}
             {renderFilters()}
-            <div className={styles.sortRow}>
-              <div className={styles.sortLeft}>
-                <button className={styles.sortBtn}>Sort by: <strong>Most Recent</strong> ▾</button>
-                <button className={styles.sortBtn}>Order by: <strong>Ascending</strong> ▾</button>
-              </div>
-              <div className={styles.countBadge}>{filtered.length} PPAs Found</div>
-            </div>
+            <div className={styles.sortRow}>{resultSummary}</div>
             <div className={styles.tableWrap}>
               <table className={styles.table}>
                 <thead className={styles.thead}>
                   <tr>
-                    {["Project","Municipality","Progress","Budget","Risk","Inspector"].map(h => (
-                      <th key={h} className={styles.th}>{h}</th>
-                    ))}
+                    <th {...sortHeaderProps("name")}>Project <SortArrow active={sortKey === "name"} asc={sortAsc} /></th>
+                    <th {...sortHeaderProps("municipality")}>Municipality <SortArrow active={sortKey === "municipality"} asc={sortAsc} /></th>
+                    <th {...sortHeaderProps("progress")}>Progress <SortArrow active={sortKey === "progress"} asc={sortAsc} /></th>
+                    <th {...sortHeaderProps("budget")}>Budget <SortArrow active={sortKey === "budget"} asc={sortAsc} /></th>
+                    <th {...sortHeaderProps("risk")}>Risk <SortArrow active={sortKey === "risk"} asc={sortAsc} /></th>
+                    <th className={styles.th}>Inspector</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filtered.map(p => (
+                  {loading && Array.from({ length: 6 }).map((_, i) => (
+                    <tr key={i} className={styles.tr}>
+                      {Array.from({ length: 6 }).map((__, j) => (
+                        <td key={j} className={styles.td}><Skeleton height="1rem" /></td>
+                      ))}
+                    </tr>
+                  ))}
+
+                  {!loading && filtered.map((p) => (
                     <tr key={p.id} className={styles.tr}>
                       <td className={styles.td}>
                         <div className={styles.projName}>{p.name}</div>
                         <div className={styles.projId}>{p.id}</div>
-                        <div className={styles.progressBar}>
-                          <div className={riskBarClass(p.risk, styles)} style={{ width: `${p.progress}%` }} />
-                        </div>
+                        <ProgressBar value={p.progress} tone={RISK_TONE[p.risk] ?? "accent"} />
                       </td>
                       <td className={styles.td}>{p.municipality}</td>
-                      <td className={styles.td}>{p.progress}%</td>
+                      <td className={styles.td}>{p.risk === "Pending" ? "—" : `${p.progress}%`}</td>
                       <td className={styles.td}>{p.budget}</td>
-                      <td className={styles.td}><span className={badgeClass(p.risk, styles)}>{p.risk}</span></td>
+                      <td className={styles.td}><Badge tone={RISK_TONE[p.risk] ?? "neutral"}>{RISK_LABEL[p.risk] ?? p.risk}</Badge></td>
                       <td className={styles.td}>{p.inspector}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
+              {!loading && filtered.length === 0 && (
+                <EmptyState title="No projects match your filters" message="Try clearing filters or searching a different term." />
+              )}
             </div>
           </div>
         </div>
       </div>
+      {showAddPpa && (
+        <AddPpaModal onClose={() => setShowAddPpa(false)} onCreated={() => { setShowAddPpa(false); loadProjects(); }} />
+      )}
+      {showImportPpa && (
+        <ImportPpaModal onClose={() => setShowImportPpa(false)} onCreated={loadProjects} />
+      )}
     </div>
   );
 
   /* ═══ MAP VIEW ═══ */
-  const mapProjects: ProjectPin[] = filtered.map(p => ({
+  const mapProjects: ProjectPin[] = filtered.map((p) => ({
     id: p.id, name: p.name, municipality: p.municipality,
     status: p.status, risk: p.risk, lat: p.lat, lng: p.lng,
   }));
@@ -243,22 +292,14 @@ export default function ProjectsPage() {
             {renderFilters()}
             <div className={styles.divider} />
 
-            {/* ── Map area ──────────────────────── */}
             <div className={styles.mapArea}>
-
-              {/* Left list panel */}
               <div className={styles.mapList}>
                 <div className={styles.mapListHeader}>
-                  <div className={styles.mapListHeaderIcon}>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2">
-                      <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-                    </svg>
-                  </div>
                   <span className={styles.mapListHeaderTitle}>{filtered.length} PPAs Found</span>
                 </div>
 
                 <div className={styles.mapListScroll} ref={listRef}>
-                  {filtered.map(p => (
+                  {filtered.map((p) => (
                     <div
                       key={p.id}
                       data-id={p.id}
@@ -268,20 +309,19 @@ export default function ProjectsPage() {
                       <div className={styles.mapListItemName}>{p.name}</div>
                       <div className={styles.mapListItemMeta}>
                         <div className={styles.mapListItemLoc}>
-                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#9aaabb" strokeWidth="2.5">
-                            <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/>
-                            <circle cx="12" cy="10" r="3"/>
+                          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                            <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z" />
+                            <circle cx="12" cy="10" r="3" />
                           </svg>
                           {p.municipality}
                         </div>
-                        <span className={statusBadgeClass(p.status, styles)}>{p.status}</span>
+                        <Badge tone={STATUS_TONE[p.status] ?? "neutral"}>{p.status}</Badge>
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* Right: Leaflet Map */}
               <div className={styles.mapContainer}>
                 <IloiloMap
                   projects={mapProjects}
@@ -293,6 +333,12 @@ export default function ProjectsPage() {
           </div>
         </div>
       </div>
+      {showAddPpa && (
+        <AddPpaModal onClose={() => setShowAddPpa(false)} onCreated={() => { setShowAddPpa(false); loadProjects(); }} />
+      )}
+      {showImportPpa && (
+        <ImportPpaModal onClose={() => setShowImportPpa(false)} onCreated={loadProjects} />
+      )}
     </div>
   );
 }

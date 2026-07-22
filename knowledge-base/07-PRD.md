@@ -73,11 +73,12 @@ This is the core PPDO-facing loop and the most important functional area. Requir
 - **7e. Reports page integration.** The Reports page shows one row per monitored project, preferring the latest real `inspection_reports` submission over the synthetic pipeline baseline (`inspection_logs`) when one exists. A "Source" badge distinguishes "Field Report" from "Pipeline Estimate".
 
 ### FR-8: Dashboards & analytics — **Built**
-- **Dashboard**: portfolio-level stats (total/completed/ongoing/critical projects), delay trend chart, AI forecast alerts (from `risk_alerts`), recent projects table. All real data, no mock content remaining (see [[03-Progress-Log]] for the cleanup that removed the last hardcoded leftovers).
-- **Projects**: table + Leaflet map view of the monitored cohort. Map pins are deterministic centroid+jitter (no real per-project GPS data exists — see [[02-Decisions-Log]]).
-- **Forecast Engine**: per-project delay/cost-risk detail view with a forecast chart.
+- **Dashboard**: triage-first layout (a "Needs Attention" zone — ranked Critical/High-risk projects + AI alerts — leads the page; a "Portfolio at a Glance" section with a real Risk Tier Distribution chart and KPI totals is demoted below it; full projects table last). Real loading/error/empty states throughout. See [[02-Decisions-Log]] for the UI revamp rationale.
+- **Projects**: table + Leaflet map view of the monitored cohort, with working sort/filter (including a Risk Tier filter) and a result-summary line. Map pins are deterministic centroid+jitter (no real per-project GPS data exists — see [[02-Decisions-Log]]). Manager/Admin can also **add a PPA manually** (single form) or **bulk-import via CSV** (preview-before-commit, downloadable template) — new entries show as "Pending Assessment" until the next pipeline run scores them, since the ML pipeline is batch, not on-demand.
+- **Forecast Engine**: per-project real-time delay/cost-overrun-probability stats plus a **real SHAP feature-attribution view** (which factors pushed the risk score up or down, and by how much) — replacing an earlier fake "confidence %"/synthesized-chart implementation found during the UI revamp.
 - **Project Timeline**: Gantt-style view, elapsed-months-since-start axis (not calendar, since the cohort spans non-uniform years).
 - **Reports**: see FR-7e.
+- **Model Validation**: see FR-14; stat tiles double as agreement filters (Confirmed/Contradicted/Inconclusive).
 - All of the above are scoped to Inspector's own projects when viewed by an Inspector.
 
 ### FR-9: User/account management — **Built**
@@ -93,7 +94,8 @@ This is the core PPDO-facing loop and the most important functional area. Requir
 ### FR-12: Mobile responsiveness / UI revamp — **Partial, in progress**
 - Baseline mobile support done: off-canvas sidebar drawer, tables scroll horizontally, stat rows/layouts stack on narrow viewports.
 - User-tested and found still unsatisfactory for dense tables/charts. **Decision: defer further polish to a full UI revamp** rather than keep patching the old design — see [[02-Decisions-Log]].
-- **UI revamp Phase 1 now built and approved**: a formal/enterprise design-token system, Framer Motion animation, and a fully rebuilt, triage-first Dashboard (real loading/error/empty states, a real Risk Tier Distribution chart replacing a fake hardcoded one, reordered "attention → context → browse" layout instead of the old stats-then-charts-then-table template). Reusable primitives (`Skeleton`/`Badge`/`EmptyState`/`StatCard`) and tokens exist for the remaining 8 pages + login, but their rollout (and whether each page's *layout*, not just its skin, gets rethought the same way) is not yet scoped. See [[03-Progress-Log]] and [[06-Current-State-and-Next-Steps]].
+- **UI revamp Phase 1 built and merged**: a formal/enterprise design-token system, Framer Motion animation, and a fully rebuilt, triage-first Dashboard.
+- **UI revamp Phase 2, Group A built and approved** (Projects, Forecast Engine, Model Validation) — same "full layout rethink, not a reskin" treatment, including replacing Forecast Engine's fake confidence/chart with real SHAP explainability. Reusable primitives (`Skeleton`/`Badge`/`EmptyState`/`StatCard`/`ProgressBar`) and tokens exist for Groups B/C (Allocation/Reports/Timeline, then Users/Account/Login), but their rollout order/timing isn't yet decided. See [[03-Progress-Log]] and [[06-Current-State-and-Next-Steps]].
 
 ### FR-13: Report review / approval workflow — **Built**
 - Manager and Admin can approve or request revision on a submitted report (`inspection_reports.review_status`: `pending`/`approved`/`needs_revision`, plus `review_comment`, `reviewed_by`, `reviewed_at`).
@@ -134,4 +136,5 @@ See [[01-Architecture#Supabase schema]] for the full table list. Core entities: 
 ## 8. Open questions (resolve before building the corresponding feature)
 
 - FR-15: is this a coding deliverable at all, or purely a research-methodology task for the manuscript's defense?
-- UI revamp rollout scope (FR-12): Phase 1 (design system + Dashboard) is done; whether/how to extend it to the other 8 pages + login, and whether each page's layout gets rethought (not just re-skinned), is not yet decided — a future conversation.
+- UI revamp rollout scope (FR-12): Phase 1 (Dashboard) and Phase 2 Group A (Projects/Forecast Engine/Model Validation) are done; the Group B/C order and timing isn't yet decided — a future conversation.
+- Backfilling real `project_name`/`description` onto the existing ~450/~3000 project cohort (currently only new PPAs added via FR-8's manual-entry/import path get a real name — everything else still falls back to displaying its `project_id`) — not yet scoped, likely touching `backend/maagap/synthetic_generator.py`.

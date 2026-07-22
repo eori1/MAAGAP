@@ -1,6 +1,6 @@
 # Current State and Next Steps
 
-**Last updated:** 2026-07-22, after PR #4 (UI revamp Phase 1) merged into `main`.
+**Last updated:** 2026-07-22, UI revamp Phase 2 Group A + Add new PPA + Import Data built and approved, not yet committed/merged.
 
 Related: [[03-Progress-Log]] · [[05-Manuscript-Alignment]] · [[04-Workflows-and-Gotchas]] · [[07-PRD]]
 
@@ -27,12 +27,16 @@ The system is fully functional end-to-end and manually verified:
 
 **UI revamp Phase 1 (design system + Dashboard flagship) is merged.** PR #4 (`https://github.com/eori1/MAAGAP/pull/4`, branch `feat/ui-revamp-dashboard`) squash-merged into `main` as `0373793`. See [[03-Progress-Log]] for everything built (tokens, primitives, motion, Dashboard triage-layout rebuild, Sidebar/TopRight re-skin) and [[02-Decisions-Log]] for the palette/motion/rollout rationale and the two layout bugs found+fixed during review. `npx tsc --noEmit` clean, `pytest` 25/25, ESLint clean (same pre-existing unrelated `Sidebar.tsx` error as always). User reviewed and approved both in-browser and the PR before merging. The `feat/ui-revamp-dashboard` branch still exists on `origin` post-merge (not deleted), same pattern as PR #1-#3.
 
+**UI revamp Phase 2, Group A (Projects/Forecast Engine/Model Validation) + Add new PPA + Import Data are built and user-approved**, on branch `feat/ui-revamp-group-a`, not yet committed/pushed/PR'd as of this note. See [[03-Progress-Log]] for everything built and [[02-Decisions-Log]] for the full rationale (real SHAP replacing a fake chart, the "Pending Assessment" batch-pipeline constraint, the name/description gap, shared validation/CSV-parsing/project-id-allocation extraction, and the dropzone UI iteration). `npx tsc --noEmit` clean, `pytest` 25/25, ESLint clean (same pre-existing `Sidebar.tsx`-category error, this time in `forecast-engine/page.tsx`). Requires `backend/supabase/schema_manual_entry.sql` applied (it now includes `project_name`/`description` in addition to `is_manual_entry`/`created_by`/`created_at` — **already applied and confirmed working** as of this note).
+
 See [[05-Manuscript-Alignment]] for the objective-by-objective status.
 
 ## Immediate next steps
 
-1. **Decide whether/how to roll the new design system out to the other 8 pages** (Projects, Forecast Engine, Allocation, Reports, Model Validation, Timeline, Users, Account) + the login screen. They're all still on the old design. The Dashboard rebuild produced reusable primitives (`Skeleton`/`Badge`/`EmptyState`/`StatCard`, `frontend/src/components/ui/`) and tokens (`frontend/src/styles/tokens.css`) specifically so this rollout doesn't have to re-derive a design system per page — but each page's *layout* (not just its skin) may deserve the same "don't just reskin, rethink the structure" treatment Dashboard got, which needs its own scoping conversation per page (or a batch decision) rather than assuming a mechanical reskin.
-2. **FR-15 (ISO/IEC 25010 evaluation)** — still "Planned, not scoped" per [[07-PRD]]; likely a research-methodology task, not code — ask the user before assuming otherwise. Only remaining unbuilt PRD item besides the UI revamp rollout above.
+1. **Commit/push/open a PR for `feat/ui-revamp-group-a`**, then merge once reviewed.
+2. **Backfill real names/descriptions onto the existing ~450 (eventually ~3000) project cohort** — the user explicitly asked for this as a near-term follow-up after seeing that only newly-added PPAs get a real name today (everything else still falls back to displaying its `project_id`). Not yet scoped: likely a one-off backfill script plus a change to `backend/maagap/synthetic_generator.py` so future pipeline runs generate real names/descriptions too, rather than leaving every synthetic project nameless forever. Ask the user before assuming the approach (e.g. real generated titles vs. a simple templated name).
+3. **Decide the Group B/C rollout order** (Allocation/Reports/Timeline, then Users/Account/Login) — same "full layout rethink, mockup first" treatment as Group A, per the user's earlier standing instruction.
+4. **FR-15 (ISO/IEC 25010 evaluation)** — still "Planned, not scoped" per [[07-PRD]]; likely a research-methodology task, not code — ask the user before assuming otherwise.
 
 ## Things that are known-fine, don't re-litigate
 
@@ -48,6 +52,9 @@ See [[05-Manuscript-Alignment]] for the objective-by-objective status.
 - FR-14 is deliberately **not** a retraining/feedback loop — that framing was rejected (see [[02-Decisions-Log]]) because real `inspection_reports` never carry the final delay/cost-overrun outcome labels the models train on, and the manuscript excludes continuous retraining anyway. What exists is a read-only "Model Validation" page comparing predicted risk vs. reported progress slippage — don't propose building an actual retraining pipeline if this comes up again without re-litigating why it was rejected.
 - The Dashboard's "Delay Trends" fake hardcoded trend chart is gone, replaced by a real Risk Tier Distribution chart — don't reintroduce a fabricated time-series chart if asked to "improve the chart," the backend has no historical snapshots to chart a real trend from (pipeline overwrites tables each run). The Dashboard's top-bar search input was deliberately removed (redundant with the Projects page's real search) — don't re-add a decorative one.
 - Tailwind CSS is in `frontend/package.json` but was never wired up (`postcss.config.mjs` is empty, not imported in `globals.css`) and this is intentional, not a bug to fix — the design system (`frontend/src/styles/tokens.css` + CSS Modules) was built on the existing approach rather than activating an unused framework mid-revamp.
+- Forecast Engine's chart is real SHAP feature attribution now, not a trend line — don't reintroduce a fake "confidence %" or a synthesized history/forecast chart if asked to "improve" it; the real data (`predictions.shap_explanation`) already existed in the backend and was simply never surfaced before.
+- "Add new PPA" and "Import Data" both exist and work (Manager/Admin only) — don't rebuild either if asked about adding projects manually again; check [[02-Decisions-Log]] first. New/imported PPAs show as "Pending Assessment" until the next `python main.py` run scores them — this is a real architectural constraint (the ML pipeline is batch, not on-demand), not a bug to "fix" by trying to score them immediately.
+- `frontend/src/lib/ppaValidation.ts`, `csv.ts`, and `projectId.ts` are shared between the single-add and bulk-import PPA routes on purpose — don't duplicate their logic if extending either path.
 
 ## If you're picking this up cold (after `/compact` or a new session)
 

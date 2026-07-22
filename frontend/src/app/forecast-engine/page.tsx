@@ -1,230 +1,174 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { fetchProjects } from "@/lib/api";
 import Sidebar from "@/components/Sidebar";
 import TopRight from "@/components/TopRight";
+import Skeleton from "@/components/ui/Skeleton";
+import EmptyState from "@/components/ui/EmptyState";
+import Badge from "@/components/ui/Badge";
+import { RISK_TONE } from "@/lib/riskTone";
 import styles from "./page.module.css";
-
-import {
-  ComposedChart, Line, Area, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, ReferenceLine, TooltipProps
-} from "recharts";
 
 interface ProjectData {
   id: string;
   name: string;
+  description: string | null;
   municipality: string;
-  status: string;
-  delayProb: number;
-  projectedDelay: number;
-  costRisk: number;
-  confidence: number;
-  history: number[];
-  forecast: number[];
-  progress?: number;
+  risk: string;
+  budget: string;
 }
 
-/* ─── Mock project data ───────────────────────────────── */
-const WEEKS = ["W1", "W2", "W3", "W4", "W5", "W6", "W7", "W8"];
-
-function makeChartData(history: number[], forecast: number[]) {
-  return WEEKS.map((week, i) => ({
-    week,
-    actual: history[i] ?? null,
-    forecast: forecast[i] ?? null,
-  }));
+interface ShapFactor {
+  feature: string;
+  friendlyLabel: string;
+  shapValue: number;
 }
 
-// Fallback mock if data is empty
-const FALLBACK: ProjectData = { id: "p1", name: "Loading...", municipality: "Loading...", status: "Loading...", delayProb: 0, projectedDelay: 0, costRisk: 0, confidence: 0, history: [0, 0], forecast: [0, 0] };
-
-const STATUS_COLOR: Record<string, string> = {
-  "Delayed": "#e74c3c", "On Schedule": "#f39c12",
-  "On Time": "#27ae60", "Completed": "#27ae60",
-  "Cancelled": "#95a5a6", "In Progress": "#2756c5",
-};
-
-/* ─── Custom Tooltip ──────────────────────────────────── */
-interface CustomTooltipProps {
-  active?: boolean;
-  payload?: any[];
-  label?: string;
+interface ProjectDetail {
+  projectId: string;
+  riskTier: string;
+  delayProbability: number;
+  costOverrunProbability: number;
+  predictedDelayDays: number;
+  shap: { baseValue: number; predictedContribution: number; factors: ShapFactor[] } | null;
 }
 
-function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
-  if (!active || !payload?.length) return null;
+type SortKey = "name" | "risk";
+const RISK_ORDER: Record<string, number> = { Low: 0, Medium: 1, High: 2, Critical: 3 };
+
+/* ─── SHAP feature-attribution bars (real per-project model output) ── */
+function ShapFactors({ factors }: { factors: ShapFactor[] }) {
+  const maxAbs = Math.max(...factors.map((f) => Math.abs(f.shapValue)), 0.0001);
   return (
-    <div style={{
-      background: "#fff", border: "1px solid #dde4f0",
-      borderRadius: 8, padding: "0.5rem 0.75rem",
-      boxShadow: "0 4px 14px rgba(0,0,0,0.12)",
-      fontSize: "0.75rem", fontFamily: "Inter,system-ui,sans-serif",
-    }}>
-      <div style={{ fontWeight: 700, color: "#1b3a5e", marginBottom: 4 }}>{label}</div>
-      {payload.map((p: any) => (
-        <div key={p.name} style={{ color: p.color, fontWeight: 600 }}>
-          {p.name === "actual" ? "Actual" : "AI Forecast"}: {p.value}%
-        </div>
-      ))}
-    </div>
-  );
-}
-
-/* ─── Progress Chart using Recharts ──────────────────── */
-function ProgressChart({ history, forecast }: { history: number[]; forecast: number[] }) {
-  const data = makeChartData(history, forecast);
-  const lastActualIdx = history.length - 1;
-
-  return (
-    <ResponsiveContainer width="100%" height="100%">
-      <ComposedChart data={data} margin={{ top: 20, right: 16, left: 0, bottom: 0 }}>
-        <defs>
-          <linearGradient id="actualGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-          </linearGradient>
-        </defs>
-
-        <CartesianGrid stroke="#eaeff6" strokeDasharray="3 0" vertical={false} />
-
-        <XAxis
-          dataKey="week"
-          tick={{ fontSize: 11, fill: "#94a3b8", fontFamily: "Inter,system-ui" }}
-          axisLine={false} tickLine={false}
-        />
-        <YAxis
-          tick={{ fontSize: 11, fill: "#94a3b8", fontFamily: "Inter,system-ui" }}
-          axisLine={false} tickLine={false}
-          tickFormatter={(v) => `${v}`}
-          width={32}
-        />
-
-        <Tooltip content={<CustomTooltip />} />
-
-        {/* Divider between actual & forecast */}
-        <ReferenceLine
-          x={WEEKS[lastActualIdx]}
-          stroke="#cbd5e1"
-          strokeDasharray="4 3"
-          label={{ value: "Now", position: "top", fontSize: 10, fill: "#94a3b8" }}
-        />
-
-        {/* Area under actual */}
-        <Area
-          type="monotone"
-          dataKey="actual"
-          name="actual"
-          stroke="#3b82f6"
-          strokeWidth={2.5}
-          fill="url(#actualGrad)"
-          dot={{ r: 4, fill: "#fff", stroke: "#3b82f6", strokeWidth: 2 }}
-          activeDot={{ r: 6 }}
-          connectNulls={false}
-        />
-
-        {/* Forecast line (dashed) */}
-        <Line
-          type="monotone"
-          dataKey="forecast"
-          name="forecast"
-          stroke="#f59e0b"
-          strokeWidth={2.5}
-          strokeDasharray="6 4"
-          dot={false}
-          activeDot={{ r: 5, fill: "#f59e0b" }}
-          connectNulls={false}
-        />
-      </ComposedChart>
-    </ResponsiveContainer>
+    <>
+      {factors.map((f) => {
+        const increases = f.shapValue >= 0;
+        const widthPct = (Math.abs(f.shapValue) / maxAbs) * 45; // half-track max
+        return (
+          <div key={f.feature} className={styles.shapRow}>
+            <div className={styles.shapLabel}>{f.friendlyLabel}</div>
+            <div className={styles.shapTrack}>
+              <span className={styles.shapMid} />
+              <span
+                className={`${styles.shapBar} ${increases ? styles.shapBarIncrease : styles.shapBarDecrease}`}
+                style={{ width: `${widthPct}%` }}
+              />
+            </div>
+            <div className={`${styles.shapVal} ${increases ? styles.shapValIncrease : styles.shapValDecrease}`}>
+              {increases ? "+" : "−"}{Math.abs(f.shapValue).toFixed(2)}
+            </div>
+          </div>
+        );
+      })}
+    </>
   );
 }
 
 /* ─── Main Page ───────────────────────────────────────── */
 export default function ForecastEnginePage() {
   const [projects, setProjects] = useState<ProjectData[]>([]);
-  const [selected, setSelected] = useState<ProjectData>(FALLBACK);
-  const [sortBy, setSortBy] = useState("Most Recent");
-  const [orderBy, setOrderBy] = useState("Ascending");
+  const [listLoading, setListLoading] = useState(true);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [detail, setDetail] = useState<ProjectDetail | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState<SortKey>("risk");
+  const [orderAsc, setOrderAsc] = useState(false);
 
   useEffect(() => {
-    fetchProjects().then(data => {
-      // Map basic properties to the forecast format
-      const mapped: ProjectData[] = data.map((p: Partial<ProjectData>) => {
-        const progress = p.progress ?? 0;
-        const delayProb = p.delayProb ?? 0;
-        const costRisk = p.costRisk ?? 0;
-
-        const hist = [0, progress * 0.2, progress * 0.5, progress * 0.8, progress];
-        const projDelay = delayProb > 0.5 ? Math.round(delayProb * 60) : 0;
-        return {
-          ...p,
-          status: progress < 50 && delayProb > 0.5 ? "Delayed" : "On Schedule",
-          delayProb: Math.round(delayProb * 100),
-          costRisk: Math.round(costRisk * 100),
-          confidence: 85 + Math.floor(Math.random() * 10),
-          projectedDelay: projDelay,
-          history: hist,
-          forecast: [...hist, progress + 5, progress + 10, progress + 15]
-        } as ProjectData;
-      });
-      setProjects(mapped);
-      if (mapped.length > 0) setSelected(mapped[0]);
+    fetchProjects().then((data) => {
+      setProjects(data);
+      setListLoading(false);
+      if (data.length > 0) setSelectedId(data[0].id);
     });
   }, []);
 
-  const confColor = selected.confidence >= 85 ? "#27ae60" : "#f59e0b";
+  useEffect(() => {
+    if (!selectedId) return;
+    let cancelled = false;
+    setDetailLoading(true);
+    setDetail(null);
+    fetch(`/api/projects/${selectedId}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => { if (!cancelled) setDetail(data); })
+      .finally(() => { if (!cancelled) setDetailLoading(false); });
+    return () => { cancelled = true; };
+  }, [selectedId]);
+
+  const sortedProjects = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    const list = projects.filter((p) => !q || p.name.toLowerCase().includes(q) || p.municipality.toLowerCase().includes(q));
+    const dir = orderAsc ? 1 : -1;
+    list.sort((a, b) => {
+      if (sortBy === "risk") return ((RISK_ORDER[a.risk] ?? 0) - (RISK_ORDER[b.risk] ?? 0)) * dir;
+      return a.name.localeCompare(b.name) * dir;
+    });
+    return list;
+  }, [projects, search, sortBy, orderAsc]);
+
+  const selected = projects.find((p) => p.id === selectedId) ?? null;
 
   return (
     <div className={styles.shell}>
       <Sidebar />
       <div className={styles.main}>
 
-        {/* ── Top bar ── */}
         <div className={styles.topbar}>
           <div className={styles.breadcrumb}>
             <span>Forecast Engine</span>
             <span className={styles.sep}>/</span>
-            <span className={styles.breadActive}>Intelligence Engine</span>
+            <span className={styles.breadActive}>Prediction Explainability</span>
           </div>
           <TopRight />
         </div>
 
-        {/* ── Page heading card ── */}
         <div className={styles.headCard}>
           <h1 className={styles.headTitle}>
-            Forecast <span className={styles.accent}>Intelligence</span> Engine
+            Forecast <span className={styles.accent}>Explainability</span> Engine
           </h1>
-          <p className={styles.headSub}>AI-driven delay probability · XGBoost + LSTM forecasting models</p>
+          <p className={styles.headSub}>Why the model thinks a project is at risk — real SHAP feature attributions, not a synthesized forecast</p>
         </div>
 
-        {/* ── Body ── */}
         <div className={styles.body}>
 
           {/* LEFT — project list */}
           <div className={styles.leftPanel}>
-            <div className={styles.listHeader}>Select Project to Forecast</div>
+            <div className={styles.searchWrap}>
+              <input
+                className={styles.searchInput}
+                placeholder="Search projects..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
             <div className={styles.listControls}>
               <div className={styles.ctrlGroup}>
                 <span className={styles.ctrlLabel}>Sort by:</span>
-                <select className={styles.ctrlSelect} value={sortBy} onChange={e => setSortBy(e.target.value)}>
-                  <option>Most Recent</option><option>Name</option><option>Risk</option>
+                <select className={styles.ctrlSelect} value={sortBy} onChange={(e) => setSortBy(e.target.value as SortKey)}>
+                  <option value="risk">Risk</option>
+                  <option value="name">Name</option>
                 </select>
               </div>
               <div className={styles.ctrlGroup}>
-                <span className={styles.ctrlLabel}>Order by:</span>
-                <select className={styles.ctrlSelect} value={orderBy} onChange={e => setOrderBy(e.target.value)}>
-                  <option>Ascending</option><option>Descending</option>
+                <span className={styles.ctrlLabel}>Order:</span>
+                <select className={styles.ctrlSelect} value={orderAsc ? "asc" : "desc"} onChange={(e) => setOrderAsc(e.target.value === "asc")}>
+                  <option value="desc">Descending</option>
+                  <option value="asc">Ascending</option>
                 </select>
               </div>
             </div>
 
             <div className={styles.projectList}>
-              {projects.map((p) => (
+              {listLoading && Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} style={{ padding: "0 0.25rem" }}><Skeleton height={44} radius="var(--radius-md)" /></div>
+              ))}
+
+              {!listLoading && sortedProjects.map((p) => (
                 <button
                   key={p.id}
-                  className={`${styles.projectItem} ${selected.id === p.id ? styles.projectItemActive : ""}`}
-                  onClick={() => setSelected(p)}
+                  className={`${styles.projectItem} ${selectedId === p.id ? styles.projectItemActive : ""}`}
+                  onClick={() => setSelectedId(p.id)}
                 >
                   <div className={styles.projectItemName}>{p.name}</div>
                   <div className={styles.projectItemBottom}>
@@ -232,74 +176,95 @@ export default function ForecastEnginePage() {
                       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M12 21s-8-7.3-8-13a8 8 0 1 1 16 0c0 5.7-8 13-8 13z" /><circle cx="12" cy="8" r="3" /></svg>
                       {p.municipality}
                     </span>
-                    <span className={styles.badge} style={{ background: STATUS_COLOR[p.status] ?? "#999" }}>
-                      {p.status}
-                    </span>
+                    <Badge tone={RISK_TONE[p.risk] ?? "neutral"}>{p.risk}</Badge>
                   </div>
                 </button>
               ))}
+
+              {!listLoading && sortedProjects.length === 0 && (
+                <EmptyState title="No projects match" message="Try a different search term." />
+              )}
             </div>
           </div>
 
-          {/* RIGHT — forecast panel */}
+          {/* RIGHT — explainability panel */}
           <div className={styles.rightPanel}>
-
-            {/* Blue forecast card */}
-            <div className={styles.forecastCard}>
-              <div className={styles.fcTitle}>AI Forecast – {selected.name}</div>
-              <div className={styles.fcMetrics}>
-                <div className={styles.fcMetric}>
-                  <div className={styles.fcMetricLabel}>Delay Probability</div>
-                  <div className={styles.fcMetricValue}>{selected.delayProb}%</div>
-                  <div className={styles.fcMetricSub}>Confidence Level</div>
-                </div>
-                <div className={styles.fcMetric}>
-                  <div className={styles.fcMetricLabel}>Projected Delay</div>
-                  <div className={styles.fcMetricValue}>
-                    {selected.projectedDelay > 0 ? `+${selected.projectedDelay}d` : "On Track"}
+            {!selected ? (
+              <div className={styles.summaryCard}>
+                <EmptyState title="Select a project" message="Choose a project from the list to see its risk explanation." />
+              </div>
+            ) : (
+              <>
+                <div className={styles.summaryCard}>
+                  <div className={styles.summaryTop}>
+                    <div>
+                      <div className={styles.summaryTitle}>{selected.name}</div>
+                      <div className={styles.summaryMeta}>{selected.id} · {selected.municipality} · {selected.budget}</div>
+                      {selected.description && <div className={styles.summaryDescription}>{selected.description}</div>}
+                    </div>
+                    <Badge tone={RISK_TONE[selected.risk] ?? "neutral"}>
+                      {selected.risk === "Pending" ? "Pending Assessment" : `${selected.risk} Risk`}
+                    </Badge>
                   </div>
-                  <div className={styles.fcMetricSub}>Confidence Level</div>
+
+                  {detailLoading ? (
+                    <div className={styles.statGrid}>
+                      <Skeleton height={64} radius="var(--radius-md)" />
+                      <Skeleton height={64} radius="var(--radius-md)" />
+                      <Skeleton height={64} radius="var(--radius-md)" />
+                    </div>
+                  ) : detail ? (
+                    <>
+                      <div className={styles.statGrid}>
+                        <div className={styles.statBox}>
+                          <div className={styles.statBoxLabel}>Delay Probability</div>
+                          <div className={styles.statBoxValue}>{Math.round(detail.delayProbability * 100)}%</div>
+                        </div>
+                        <div className={styles.statBox}>
+                          <div className={styles.statBoxLabel}>Predicted Delay</div>
+                          <div className={styles.statBoxValue}>{Math.round(detail.predictedDelayDays)}d</div>
+                        </div>
+                        <div className={styles.statBox}>
+                          <div className={styles.statBoxLabel}>Cost Overrun Risk</div>
+                          <div className={styles.statBoxValue}>{Math.round(detail.costOverrunProbability * 100)}%</div>
+                        </div>
+                      </div>
+
+                      {(detail.riskTier === "High" || detail.riskTier === "Critical") && (
+                        <div className={`${styles.riskCallout} ${detail.riskTier === "Critical" ? styles.riskCalloutCritical : styles.riskCalloutSerious}`}>
+                          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ flexShrink: 0 }}><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
+                          This project is predicted to be delayed by approximately {Math.round(detail.predictedDelayDays)} days ({Math.round(detail.delayProbability * 100)}% delay probability).
+                        </div>
+                      )}
+                    </>
+                  ) : null}
                 </div>
-              </div>
-              {selected.projectedDelay > 0 && (
-                <div className={styles.warningBanner}>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" /><line x1="12" y1="9" x2="12" y2="13" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>
-                  Project is already delayed for {Math.round(selected.projectedDelay * 0.22)} days and likely will be delayed by {Math.round(selected.projectedDelay * 0.1)} more days.&nbsp;({selected.delayProb}% Confidence)
-                </div>
-              )}
-            </div>
 
-            {/* Stats row */}
-            <div className={styles.statsRow}>
-              <div className={styles.statCard}>
-                <div className={styles.statLabel}>Cost Overrun Risk</div>
-                <div className={styles.statValue} style={{ color: "#e74c3c" }}>{selected.costRisk}%</div>
-              </div>
-              <div className={styles.statCard}>
-                <div className={styles.statLabel}>Confidence</div>
-                <div className={styles.statValue} style={{ color: confColor }}>{selected.confidence}%</div>
-              </div>
-            </div>
-
-            {/* Chart card */}
-            <div className={styles.chartCard}>
-              <div className={styles.chartTitle}>Historical Progress vs. Forecast</div>
-              <div className={styles.chartSub}>Actual vs. AI Projected Trajectory</div>
-              <div className={styles.chartLegend}>
-                <span className={styles.legendItem}>
-                  <span className={styles.legendDot} style={{ background: "#3b82f6" }} />
-                  Actual Progress
-                </span>
-                <span className={styles.legendItem}>
-                  <span style={{ display: "inline-block", width: 16, borderTop: "2.5px dashed #f59e0b", marginRight: 4 }} />
-                  AI Forecast
-                </span>
-              </div>
-              <div style={{ flex: 1, minHeight: 0, marginTop: '0.5rem' }}>
-                <ProgressChart history={selected.history} forecast={selected.forecast} />
-              </div>
-            </div>
-
+                {detailLoading ? (
+                  <div className={styles.shapCard}>
+                    <div className={styles.shapTitle}>Top Contributing Factors</div>
+                    <div className={styles.shapSub}>SHAP feature attribution for this prediction — how much each real factor pushed the risk score up or down</div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+                      {Array.from({ length: 5 }).map((_, i) => <Skeleton key={i} height={16} />)}
+                    </div>
+                  </div>
+                ) : !detail ? (
+                  <div className={styles.shapCard}>
+                    <EmptyState title="Not yet assessed" message="This project hasn't been scored by a pipeline run yet — it will get a full risk analysis (including SHAP feature attributions) the next time python main.py runs." />
+                  </div>
+                ) : (
+                  <div className={styles.shapCard}>
+                    <div className={styles.shapTitle}>Top Contributing Factors</div>
+                    <div className={styles.shapSub}>SHAP feature attribution for this prediction — how much each real factor pushed the risk score up or down</div>
+                    {detail.shap && detail.shap.factors.length > 0 ? (
+                      <ShapFactors factors={detail.shap.factors} />
+                    ) : (
+                      <EmptyState title="No explanation available" message="This project doesn't have SHAP attribution data yet." />
+                    )}
+                  </div>
+                )}
+              </>
+            )}
           </div>
         </div>
       </div>
