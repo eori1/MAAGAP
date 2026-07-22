@@ -3,16 +3,12 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import { getSupabaseBrowserClient } from "@/lib/supabaseBrowserClient";
+import type { SessionProfile } from "@/lib/supabaseSessionServer";
 import styles from "./Sidebar.module.css";
 
-type Role = "manager" | "inspector" | "admin";
-
-interface SessionProfile {
-  email: string;
-  role: Role;
-  fullName: string | null;
-}
+type Role = SessionProfile["role"];
 
 const ROLE_LABELS: Record<Role, string> = {
   admin: "Administrator",
@@ -32,8 +28,8 @@ const NAV_ITEMS: { label: string; href: string; icon: typeof DashboardIcon; excl
   { label: "User Management",  href: "/users",      icon: UsersIcon, excludeInspector: true },
 ];
 
-function initials(name: string | null, email: string): string {
-  const source = name?.trim() || email;
+function initials(name: string | null, email: string | undefined): string {
+  const source = name?.trim() || email || "";
   const parts = source.split(/[\s.@]+/).filter(Boolean);
   return (parts[0]?.[0] ?? "").toUpperCase() + (parts[1]?.[0] ?? "").toUpperCase();
 }
@@ -43,12 +39,20 @@ export default function Sidebar() {
   const router = useRouter();
   const [profile, setProfile] = useState<SessionProfile | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(() => (typeof window !== "undefined" ? window.matchMedia("(max-width: 768px)").matches : false));
 
   useEffect(() => {
     fetch("/api/me")
       .then((res) => (res.ok ? res.json() : null))
       .then(setProfile)
       .catch(() => setProfile(null));
+  }, []);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 768px)");
+    const onChange = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
   }, []);
 
   // Close the mobile drawer on every navigation.
@@ -81,18 +85,34 @@ export default function Sidebar() {
         </svg>
       </button>
 
-      {mobileOpen && <div className={styles.backdropOpen} onClick={() => setMobileOpen(false)} />}
+      <AnimatePresence>
+        {mobileOpen && (
+          <motion.div
+            className={styles.backdropOpen}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            onClick={() => setMobileOpen(false)}
+          />
+        )}
+      </AnimatePresence>
 
-      <aside className={`${styles.sidebar} ${mobileOpen ? styles.sidebarOpen : ""}`}>
+      <motion.aside
+        className={styles.sidebar}
+        initial={false}
+        animate={{ x: isMobile && !mobileOpen ? "-100%" : 0 }}
+        transition={{ type: "spring", stiffness: 320, damping: 32 }}
+      >
 
         {/* ── Logo ─────────────────────────────────── */}
         <div className={styles.logoArea}>
           {/* Two-tone arrow/chevron mark matching MAAGAP brand */}
           <svg className={styles.logoIcon} viewBox="0 0 34 34" fill="none">
             {/* Dark navy body */}
-            <path d="M17 3L5 28h8l4-9 4 9h8L17 3z" fill="#1b3a5e"/>
-            {/* Blue accent stripe */}
-            <path d="M17 3l5 11.5L17 18l-5-3.5L17 3z" fill="#1264ae"/>
+            <path d="M17 3L5 28h8l4-9 4 9h8L17 3z" fill="var(--ink-900)"/>
+            {/* Accent stripe */}
+            <path d="M17 3l5 11.5L17 18l-5-3.5L17 3z" fill="var(--accent-600)"/>
           </svg>
           <span className={styles.logoText}>
             MAA<span className={styles.logoTextBlue}>GAP</span>
@@ -109,8 +129,15 @@ export default function Sidebar() {
                 href={href}
                 className={`${styles.navItem} ${isActive ? styles.navItemActive : ""}`}
               >
+                {isActive && (
+                  <motion.span
+                    layoutId="nav-active-pill"
+                    className={styles.navActivePill}
+                    transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                  />
+                )}
                 <Icon className={styles.navIcon} />
-                {label}
+                <span className={styles.navLabel}>{label}</span>
               </Link>
             );
           })}
@@ -127,7 +154,7 @@ export default function Sidebar() {
           </div>
           <button className={styles.logoutBtn} onClick={handleLogout}>Log out</button>
         </div>
-      </aside>
+      </motion.aside>
     </>
   );
 }

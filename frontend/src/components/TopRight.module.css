@@ -9,11 +9,11 @@
   align-items: center;
   gap: 0.4rem;
   padding: 0.35rem 0.85rem;
-  border-radius: 50px;
-  border: 1.5px solid #dde4f0;
-  background: #fff;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid var(--border-default);
+  background: var(--surface-card);
   font-size: 0.8rem;
-  color: #1b3a5e;
+  color: var(--ink-900);
   font-weight: 500;
 }
 
@@ -21,20 +21,21 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  border: 1.5px solid #dde4f0;
-  background: #fff;
+  border: 1.5px solid var(--border-default);
+  background: var(--surface-card);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #1b3a5e;
+  color: var(--ink-900);
   cursor: pointer;
-  transition: background 0.15s;
+  transition: background var(--duration-fast) var(--ease-standard);
   padding: 0;
   outline: none;
+  position: relative;
 }
 
 .iconBtn:hover {
-  background: #f0f4f9;
+  background: var(--surface-sunken);
 }
 
 .alertWrap {
@@ -48,15 +49,15 @@
   min-width: 16px;
   height: 16px;
   padding: 0 3px;
-  border-radius: 50px;
-  background: #e74c3c;
-  color: #fff;
+  border-radius: var(--radius-pill);
+  background: var(--status-critical);
+  color: var(--ink-inverse);
   font-size: 0.6rem;
   font-weight: 700;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1.5px solid #fff;
+  border: 1.5px solid var(--surface-card);
 }
 
 .alertPanel {
@@ -66,10 +67,10 @@
   width: 320px;
   max-height: 380px;
   overflow-y: auto;
-  background: #fff;
-  border: 1px solid #dde4f0;
-  border-radius: 12px;
-  box-shadow: 0 12px 32px rgba(27, 58, 94, 0.15);
+  background: var(--surface-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-lg);
   z-index: 50;
 }
 
@@ -82,15 +83,8 @@
   padding: 0.75rem 1rem;
   font-size: 0.82rem;
   font-weight: 700;
-  color: #1b3a5e;
-  border-bottom: 1px solid #eaeff6;
-}
-
-.alertEmpty {
-  padding: 1.5rem 1rem;
-  text-align: center;
-  font-size: 0.78rem;
-  color: #94a3b8;
+  color: var(--ink-900);
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .alertItem {
@@ -98,7 +92,7 @@
   align-items: flex-start;
   gap: 0.6rem;
   padding: 0.65rem 1rem;
-  border-bottom: 1px solid #f2f5fa;
+  border-bottom: 1px solid var(--surface-sunken);
 }
 .alertItem:last-child { border-bottom: none; }
 
@@ -112,12 +106,12 @@
 
 .alertMsg {
   font-size: 0.76rem;
-  color: #1b3a5e;
+  color: var(--ink-900);
   line-height: 1.4;
 }
 
 .alertMeta {
   font-size: 0.68rem;
-  color: #94a3b8;
+  color: var(--ink-500);
   margin-top: 0.15rem;
 }

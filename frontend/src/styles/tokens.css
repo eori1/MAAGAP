@@ -1,0 +1,75 @@
+/* ─────────────────────────────────────────────────────────
+   MAAGAP design tokens — formal government/enterprise mood.
+   Values are individually WCAG-contrast-checked and the status
+   scale is checked against the dataviz skill's validator; see
+   knowledge-base/02-Decisions-Log.md for the full rationale.
+   ───────────────────────────────────────────────────────── */
+:root {
+  /* Ink / text */
+  --ink-900: #101828; /* headings */
+  --ink-700: #344054; /* body */
+  --ink-500: #667085; /* muted / secondary */
+  --ink-inverse: #ffffff;
+
+  /* Surfaces */
+  --surface-app: #f4f6f8;
+  --surface-card: #ffffff;
+  --surface-sunken: #eef1f5;
+  --border-subtle: #e3e8ef;
+  --border-default: #d0d7e2;
+
+  /* Accent (restrained slate-blue, not the old bright #2756c5) */
+  --accent-600: #26548c;
+  --accent-500: #35699f;
+  --accent-100: #e6eef7;
+
+  /* Status (reserved -- never reused for anything else). Chart-mark
+     use only; labels/values always render in ink, never in these
+     hues directly, since warning/serious are too light for text. */
+  --status-good: #0ca30c;
+  --status-good-bg: #e6f6e6;
+  --status-good-text: #0b6b0b;
+
+  --status-warning: #e0a000;
+  --status-warning-bg: #fdf0d9;
+  --status-warning-text: #8a6200;
+
+  --status-serious: #ec835a;
+  --status-serious-bg: #fbe6dd;
+  --status-serious-text: #a3441f;
+
+  --status-critical: #d03b3b;
+  --status-critical-bg: #fbe2e2;
+  --status-critical-text: #a11f1f;
+
+  /* Info (workflow events that aren't a risk severity, e.g. "report needs
+     revision" -- distinct from the status scale on purpose) */
+  --info-600: #6b4fa0;
+
+  /* Spacing scale (4px base) */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+  --space-6: 2rem;
+  --space-7: 3rem;
+  --space-8: 4rem;
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+
+  /* Shadow (subtle -- formal, not heavy) */
+  --shadow-sm: 0 1px 2px rgba(16, 24, 40, 0.06);
+  --shadow-md: 0 4px 12px rgba(16, 24, 40, 0.08);
+  --shadow-lg: 0 12px 32px rgba(16, 24, 40, 0.12);
+
+  /* Motion (mirrored as plain constants in src/lib/motion.ts) */
+  --ease-standard: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast: 120ms;
+  --duration-base: 200ms;
+  --duration-slow: 320ms;
+}
