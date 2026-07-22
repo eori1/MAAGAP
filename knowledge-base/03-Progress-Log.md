@@ -156,3 +156,13 @@ Added a **Review Status** filter (Awaiting Review / Approved / Needs Revision / 
 ## PR #2 — merged into `main` (2026-07-21)
 
 User verified the full FR-13 walkthrough in-browser (Manager approve/request-revision → Inspector sees the notification-bell alert and a Resubmit Report button on Allocation → resubmission resets to Awaiting Review and the Manager sees Approve/Request Revision reappear) before merging. All 5 commits from `313976d` through `4c67f64` were squash-merged into `main` as one commit, `a20ddfa`. The `feat/report-review-workflow` branch still exists on `origin` post-merge (not deleted), same as PR #1.
+
+## FR-14 — model validation (prediction-vs-reality tracking)
+
+Built on branch `feat/model-validation`, off `main` after PR #2. See [[02-Decisions-Log]] for why "ML feedback loop" was reframed into this instead.
+
+- Extracted `expectedProgressPct()` from `/api/reports/route.ts` into `frontend/src/lib/projectProgress.ts`, reused by the new route below.
+- New `GET /api/model-validation`: joins `predictions` with the latest real `inspection_reports` per project (via the existing `pickLatestByKey()`), computes a predicted risk bucket (High/Critical → "risk") vs. an actual bucket derived from progress slippage (>5 pts → "risk", else "on_track", `null` slippage → "inconclusive"), and an agreement verdict (Confirmed/Contradicted/Inconclusive). Scoped to Inspector's own projects via `assignments`, same pattern as `/api/reports`/`/api/alerts`.
+- New page `frontend/src/app/model-validation/page.tsx` (+ `.module.css`): stats row (Projects Validated/Confirmed/Contradicted/Inconclusive) + a table listing only projects with a real report, showing predicted risk tier/delay probability against expected/actual progress, slippage, and the agreement badge.
+- New nav item "Model Validation" in `Sidebar.tsx` (between Reports and Project Timeline, visible to all three roles), with a new `ValidationIcon`.
+- Verified: `npx tsc --noEmit` clean, `pytest` 25/25 (no Python touched), ESLint clean (one pre-existing, unrelated `react-hooks/set-state-in-effect` error in `Sidebar.tsx`, confirmed via `git stash` to already exist on `main` before this branch). User checked the page in-browser (screenshots showing both real-report projects with correct Confirmed/Inconclusive reads) before merging.
